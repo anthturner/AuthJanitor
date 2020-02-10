@@ -57,7 +57,7 @@ namespace AuthorizationJanitor.Functions
 
             // Schedule this Task as long-running to avoid zombie threads after the handler returns (if time expires below)
             var rotationTask = new Task(
-                async () => await ExecuteRotation(await ConfigurationStore.Get(appSecretName)), 
+                async () => await ExecuteRotation(appSecretConfig), 
                 TaskCreationOptions.LongRunning);
             rotationTask.Start();
 
