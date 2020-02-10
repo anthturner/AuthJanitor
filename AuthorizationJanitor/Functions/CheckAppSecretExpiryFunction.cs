@@ -46,30 +46,35 @@ namespace AuthorizationJanitor.Functions
             // Grab the configuration details for the given AppSecret
             var appSecretConfig = await ConfigurationStore.Get(appSecretName);
 
-            // Check AppSecret validity based on the nonce -- caller app should know the nonce from the previous Key Vault retrieval!
-            if (appSecretConfig.Nonce.Equals(nonce))
-                return new OkObjectResult(RETURN_NO_CHANGE);
-
-            // Check if AppSecret has expired; if not, client nonce has expired and CHANGE_OCCURRED is returned.
-            // This should prompt the client to re-request the AppSecret and Nonce from Key Vault.
             if (appSecretConfig.IsValid)
-                return new OkObjectResult(RETURN_CHANGE_OCCURRED);
-
-            // Schedule this Task as long-running to avoid zombie threads after the handler returns (if time expires below)
-            var rotationTask = new Task(
-                async () => await ExecuteRotation(appSecretConfig), 
-                TaskCreationOptions.LongRunning);
-            rotationTask.Start();
-
-            if (!rotationTask.Wait(MAX_EXECUTION_SECONDS_BEFORE_RETRY))
             {
-                // Rotation is taking too long for this single request, ask the client to call back shortly
-                // This record will be locked until it is complete, so it should continue to return RETRY
-                //   until the AppSecret has been completely updated by the IRotation instance
-                return new OkObjectResult(RETURN_RETRY_SHORTLY);
+                // Check AppSecret validity based on the nonce -- caller app should know the nonce from the previous Key Vault retrieval!
+                if (appSecretConfig.IsValid && appSecretConfig.Nonce.Equals(nonce))
+                    return new OkObjectResult(RETURN_NO_CHANGE);
+                // If the AppSecret is still valid but the nonce doesn't match, the client's AppSecret has expired!
+                // The client should restart or re-request the AppSecret and Nonce from Key Vault on CHANGE_OCCURRED
+                else if (appSecretConfig.IsValid && !appSecretConfig.Nonce.Equals(nonce))
+                    return new OkObjectResult(RETURN_CHANGE_OCCURRED);
             }
             else
-                return new OkObjectResult(RETURN_CHANGE_OCCURRED);
+            {
+                // The AppSecret needs to be rotated!
+                // Schedule this Task as long-running to avoid zombie threads after the handler returns (if time expires below)
+                var rotationTask = new Task(
+                    async () => await ExecuteRotation(appSecretConfig),
+                    TaskCreationOptions.LongRunning);
+                rotationTask.Start();
+
+                if (!rotationTask.Wait(MAX_EXECUTION_SECONDS_BEFORE_RETRY))
+                {
+                    // Rotation is taking too long for this single request, ask the client to call back shortly
+                    // This record will be locked until it is complete, so it should continue to return RETRY
+                    //   until the AppSecret has been completely updated by the IRotation instance
+                    return new OkObjectResult(RETURN_RETRY_SHORTLY);
+                }
+                else
+                    return new OkObjectResult(RETURN_CHANGE_OCCURRED);
+            }
         }
 
         private static async Task ExecuteRotation(JanitorConfigurationEntity entity)
