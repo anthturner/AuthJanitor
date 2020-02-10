@@ -59,6 +59,7 @@ namespace AuthorizationJanitor.Functions
             var rotationTask = new Task(
                 async () => await ExecuteRotation(await ConfigurationStore.Get(appSecretName)), 
                 TaskCreationOptions.LongRunning);
+            rotationTask.Start();
 
             if (!rotationTask.Wait(MAX_EXECUTION_SECONDS_BEFORE_RETRY))
             {
