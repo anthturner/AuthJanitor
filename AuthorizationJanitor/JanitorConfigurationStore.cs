@@ -28,7 +28,7 @@ namespace AuthorizationJanitor
 
         public async Task Update(JanitorConfigurationEntity entity)
         {
-            var blob = GetBlob(entity.FriendlyKeyName);
+            var blob = GetBlob(entity.AppSecretName);
             var bytes = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(entity));
             await blob.UploadFromByteArrayAsync(bytes, 0, bytes.Length);
         }

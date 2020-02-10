@@ -7,7 +7,7 @@ namespace AuthorizationJanitor
 {
     public class JanitorConfigurationEntity
     {
-        public enum KeyType : int
+        public enum AppSecretType : int
         {
             AccessToken = 1,
             EncryptionKey = 2,
@@ -25,23 +25,23 @@ namespace AuthorizationJanitor
         }
 
         /// <summary>
-        /// Name of key to rotate -- identifies the key configuration, otherwise arbitrary.
+        /// Name of AppSecret to rotate -- identifies the configuration, otherwise arbitrary.
         /// </summary>
-        public string FriendlyKeyName { get; set; }
+        public string AppSecretName { get; set; }
 
         /// <summary>
         /// Type of key
         /// </summary>
-        public KeyType Type { get; set; }
+        public AppSecretType Type { get; set; }
 
         /// <summary>
-        /// Arbitrary, cryptographically safe random value to point to the VERSION of this key, but is not related to the actual key value.
-        /// Used to check for key updates from the application.
+        /// Arbitrary, cryptographically safe random value to point to the VERSION of this AppSecret, but is not related to the actual secret value.
+        /// Used to check for AppSecret updates from the application.
         /// </summary>
         public string Nonce { get; set; }
 
         /// <summary>
-        /// Name of Secret storing this credential or password in the janitor-managed Key Vault
+        /// Name of Key Vault Secret storing this credential or password in the janitor-managed AppSecret Key Vault
         /// </summary>
         public string KeyVaultSecretName { get; set; }
 
@@ -51,26 +51,26 @@ namespace AuthorizationJanitor
         public string TargetString { get; set; }
 
         /// <summary>
-        /// Configurable timespan representing the time between key rotations
+        /// Configurable TimeSpan representing the time between AppSecret rotations
         /// </summary>
-        public TimeSpan KeyValidPeriod { get; set; }
+        public TimeSpan AppSecretValidPeriod { get; set; }
 
         /// <summary>
-        /// Last time this key was updated
+        /// Last time this AppSecret was updated
         /// </summary>
-        public DateTime LastChanged { get; set; }
+        public DateTimeOffset LastChanged { get; set; }
 
         /// <summary>
-        /// If the key is valid
+        /// If the AppSecret is valid
         /// </summary>
         [IgnoreProperty]
-        public bool IsValid => LastChanged + KeyValidPeriod < DateTime.Now;
+        public bool IsValid => LastChanged + AppSecretValidPeriod < DateTime.Now;
 
         /// <summary>
-        /// Updated key to commit to Key Vault; this is not and cannot be serialized into the configuration table!
+        /// Updated AppSecret to commit to Key Vault; this is not and cannot be serialized into the configuration table!
         /// </summary>
         [IgnoreProperty]
-        public string UpdatedKey { get; set; }
+        public string UpdatedAppSecret { get; set; }
 
         /// <summary>
         /// Get the Target details
@@ -83,12 +83,12 @@ namespace AuthorizationJanitor
         {
             return new JanitorConfigurationEntity()
             {
-                FriendlyKeyName = FriendlyKeyName,
+                AppSecretName = AppSecretName,
                 Type = Type,
                 Nonce = Nonce,
                 KeyVaultSecretName = KeyVaultSecretName,
                 TargetString = TargetString,
-                KeyValidPeriod = KeyValidPeriod,
+                AppSecretValidPeriod = AppSecretValidPeriod,
                 LastChanged = LastChanged
             };
         }

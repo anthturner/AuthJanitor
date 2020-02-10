@@ -1,9 +1,12 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 
 namespace AuthorizationJanitor.RotationActions
 {
+    /// <summary>
+    /// Regenerates an Azure Storage key and commits it to the AppSecrets Key Vault
+    /// </summary>
     public class StorageKeyRotation : IRotation
     {
         public async Task<JanitorConfigurationEntity> Execute(JanitorConfigurationEntity entity)
@@ -17,19 +20,19 @@ namespace AuthorizationJanitor.RotationActions
 
             var newKey = newKeys.FirstOrDefault(k => k.KeyName == GetKeyName(entity.Type));
             newEntity.LastChanged = DateTime.Now;
-            newEntity.UpdatedKey = newKey.Value;
+            newEntity.UpdatedAppSecret = newKey.Value;
 
             return newEntity;
         }
 
-        private static string GetKeyName(JanitorConfigurationEntity.KeyType type)
+        private static string GetKeyName(JanitorConfigurationEntity.AppSecretType type)
         {
             switch (type)
             {
-                case JanitorConfigurationEntity.KeyType.AzureStorageKey1: return "key1";
-                case JanitorConfigurationEntity.KeyType.AzureStorageKey2: return "key2";
-                case JanitorConfigurationEntity.KeyType.AzureStorageKerb1: return "kerb1";
-                case JanitorConfigurationEntity.KeyType.AzureStorageKerb2: return "kerb2";
+                case JanitorConfigurationEntity.AppSecretType.AzureStorageKey1: return "key1";
+                case JanitorConfigurationEntity.AppSecretType.AzureStorageKey2: return "key2";
+                case JanitorConfigurationEntity.AppSecretType.AzureStorageKerb1: return "kerb1";
+                case JanitorConfigurationEntity.AppSecretType.AzureStorageKerb2: return "kerb2";
             }
             return null;
         }

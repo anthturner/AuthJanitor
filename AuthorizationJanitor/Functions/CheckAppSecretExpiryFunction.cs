@@ -12,7 +12,7 @@ using Microsoft.WindowsAzure.Storage.Blob;
 
 namespace AuthorizationJanitor.Functions
 {
-    public static class CheckKeyExpiryFunction
+    public static class CheckAppSecretExpiryFunction
     {
         private const string TAG_NONCE = "JANITOR_NONCE";
         private const string VAULT_NAME_ENV = "VAULT_NAME";
@@ -21,12 +21,12 @@ namespace AuthorizationJanitor.Functions
         private const int RETURN_CHANGE_OCCURRED = 1;
         private const int RETURN_RETRY_SHORTLY = 2;
 
-        private const int MAX_EXECUTION_SECONDS_BEFORE_RETRY = 300;
+        private const int MAX_EXECUTION_SECONDS_BEFORE_RETRY = 30;
         private const int NONCE_LENGTH = 64;
 
         public static JanitorConfigurationStore ConfigurationStore { get; set; }
 
-        [FunctionName("CheckKeyExpiry")]
+        [FunctionName("CheckAppSecretExpiry")]
         public static async Task<IActionResult> Run(
             [Blob("/authjanitor/")] CloudBlobDirectory cloudBlobDirectory,
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "/check/{keyName}/{nonce}")] HttpRequest req,
@@ -46,16 +46,16 @@ namespace AuthorizationJanitor.Functions
             // Grab the configuration details for the given AppSecret
             var appSecretConfig = await ConfigurationStore.Get(appSecretName);
 
-            // Check key validity based on the nonce -- app should know the nonce from previous retrieval!
+            // Check AppSecret validity based on the nonce -- caller app should know the nonce from the previous Key Vault retrieval!
             if (appSecretConfig.Nonce.Equals(nonce))
                 return new OkObjectResult(RETURN_NO_CHANGE);
 
-            // Check if AppSecret has expired; if not, client nonce is incorrect and CHANGE_OCCURRED is needed.
-            //   This should prompt the client to re-request the AppSecret and Nonce from Key Vault, because its copy is out of date.
+            // Check if AppSecret has expired; if not, client nonce has expired and CHANGE_OCCURRED is returned.
+            // This should prompt the client to re-request the AppSecret and Nonce from Key Vault.
             if (appSecretConfig.IsValid)
                 return new OkObjectResult(RETURN_CHANGE_OCCURRED);
 
-            // Schedule this as long-running to avoid zombie threads after the handler returns (if time expires below)
+            // Schedule this Task as long-running to avoid zombie threads after the handler returns (if time expires below)
             var rotationTask = new Task(
                 async () => await ExecuteRotation(await ConfigurationStore.Get(appSecretName)), 
                 TaskCreationOptions.LongRunning);
@@ -64,7 +64,7 @@ namespace AuthorizationJanitor.Functions
             {
                 // Rotation is taking too long for this single request, ask the client to call back shortly
                 // This record will be locked until it is complete, so it should continue to return RETRY
-                //   until the key has been completely updated by the IRotation instance
+                //   until the AppSecret has been completely updated by the IRotation instance
                 return new OkObjectResult(RETURN_RETRY_SHORTLY);
             }
             else
@@ -74,11 +74,11 @@ namespace AuthorizationJanitor.Functions
         private static async Task ExecuteRotation(JanitorConfigurationEntity entity)
         {
             // ConfigurationStore will handle lock/unlock around this Func<Task>
-            await ConfigurationStore.PerformLockedTask(entity.FriendlyKeyName, async () =>
+            await ConfigurationStore.PerformLockedTask(entity.AppSecretName, async () =>
             {
-                // Get the rotation strategy based on the key type and run it;
-                //   the rotation strategy should *block* until it can confirm the key has actually changed
-                // The outer handler will take care of sending back a RETRY for long-running tasks
+                // Get the rotation strategy based on the AppSecret type and run it;
+                //   the rotation strategy should *block* until it can confirm the rotation has actually occurred.
+                // The outer handler will take care of continually sending back a RETRY_SHORTLY for long-running Tasks.
                 var replacementEntity = await RotationActionFactory.CreateRotationStrategy(entity.Type).Execute(entity);
 
                 // Regenerate the entity's nonce; if anything below fails, it won't be committed.
@@ -91,18 +91,18 @@ namespace AuthorizationJanitor.Functions
                 var currentSecret = await client.GetSecretAsync(replacementEntity.KeyVaultSecretName);
 
                 // Create a new version of the Secret
-                var newSecret = new KeyVaultSecret(replacementEntity.KeyVaultSecretName, replacementEntity.UpdatedKey);
+                var newSecret = new KeyVaultSecret(replacementEntity.KeyVaultSecretName, replacementEntity.UpdatedAppSecret);
                 newSecret.Properties.ContentType = currentSecret.Value.Properties.ContentType;
                 newSecret.Properties.NotBefore = DateTimeOffset.Now;
-                newSecret.Properties.ExpiresOn = DateTimeOffset.Now + replacementEntity.KeyValidPeriod;
+                newSecret.Properties.ExpiresOn = DateTimeOffset.Now + replacementEntity.AppSecretValidPeriod;
                 foreach (var tag in currentSecret.Value.Properties.Tags)
                     newSecret.Properties.Tags.Add(tag.Key, tag.Value);
                 newSecret.Properties.Tags[TAG_NONCE] = replacementEntity.Nonce;
 
                 await client.SetSecretAsync(newSecret);
 
-                // Purge key
-                replacementEntity.UpdatedKey = string.Empty;
+                // Purge new AppSecret
+                replacementEntity.UpdatedAppSecret = string.Empty;
 
                 // Commit
                 await ConfigurationStore.Update(replacementEntity);

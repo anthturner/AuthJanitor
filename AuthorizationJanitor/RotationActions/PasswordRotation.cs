@@ -1,27 +1,22 @@
-﻿using Azure.Identity;
-using Azure.Security.KeyVault.Secrets;
 using System;
 using System.Threading.Tasks;
 
 namespace AuthorizationJanitor.RotationActions
 {
+    /// <summary>
+    /// Generates a cryptographically secure alphanumeric password and commits it to the AppSecrets Key Vault
+    /// </summary>
     public class PasswordRotation : IRotation
     {
-        public async Task<JanitorConfigurationEntity> Execute(JanitorConfigurationEntity entity)
+        public Task<JanitorConfigurationEntity> Execute(JanitorConfigurationEntity entity)
         {
             var newEntity = entity.Clone();
-            var target = newEntity.GetTarget<Targets.KeyVaultTarget>();
+            var target = newEntity.GetTarget<Targets.PasswordTarget>();
 
-            var client = new SecretClient(new Uri($"https://{target.VaultName}.vault.azure.net/"), new DefaultAzureCredential(false));
-            var currentSecret = await client.GetSecretAsync(target.KeyOrSecretName);
-
-            var newPassword = HelperMethods.GenerateCryptographicallySecureString(target.SecretLength);
-            await client.SetSecretAsync(target.KeyOrSecretName, newPassword);
-
-            newEntity.UpdatedKey = newPassword;
+            newEntity.UpdatedAppSecret = HelperMethods.GenerateCryptographicallySecureString(target.Length);
             newEntity.LastChanged = DateTime.Now;
 
-            return newEntity;
+            return Task.FromResult(newEntity);
         }
     }
 }

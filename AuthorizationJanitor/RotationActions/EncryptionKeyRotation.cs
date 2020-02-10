@@ -1,10 +1,13 @@
-﻿using Azure.Identity;
+using Azure.Identity;
 using Azure.Security.KeyVault.Keys;
 using System;
 using System.Threading.Tasks;
 
 namespace AuthorizationJanitor.RotationActions
 {
+    /// <summary>
+    /// Regenerates a requested Key Vault Key and commits the new KID to the AppSecrets Key Vault
+    /// </summary>
     public class EncryptionKeyRotation : IRotation
     {
         public async Task<JanitorConfigurationEntity> Execute(JanitorConfigurationEntity entity)
@@ -18,7 +21,7 @@ namespace AuthorizationJanitor.RotationActions
             var creationOptions = new CreateKeyOptions()
             {
                 Enabled = true,
-                ExpiresOn = DateTimeOffset.Now + entity.KeyValidPeriod,
+                ExpiresOn = DateTimeOffset.Now + entity.AppSecretValidPeriod,
                 NotBefore = DateTimeOffset.Now
             };
             foreach (var op in currentKey.Value.KeyOperations)
@@ -28,7 +31,7 @@ namespace AuthorizationJanitor.RotationActions
 
             var key = await client.CreateKeyAsync(target.KeyOrSecretName, currentKey.Value.KeyType, creationOptions);
 
-            newEntity.UpdatedKey = key.Value.Id.ToString();
+            newEntity.UpdatedAppSecret = key.Value.Id.ToString();
             newEntity.LastChanged = DateTime.Now;
 
             return newEntity;

@@ -4,31 +4,31 @@ namespace AuthorizationJanitor.RotationActions
 {
     public static class RotationActionFactory
     {
-        public static IRotation CreateRotationStrategy(JanitorConfigurationEntity.KeyType keyType)
+        public static IRotation CreateRotationStrategy(JanitorConfigurationEntity.AppSecretType appSecretType)
         {
-            switch (keyType)
+            switch (appSecretType)
             {
-                case JanitorConfigurationEntity.KeyType.AccessToken:
+                case JanitorConfigurationEntity.AppSecretType.AccessToken:
                     return new RotationActions.AccessTokenRotation();
-                case JanitorConfigurationEntity.KeyType.AzureStorageKey1:
-                case JanitorConfigurationEntity.KeyType.AzureStorageKey2:
-                case JanitorConfigurationEntity.KeyType.AzureStorageKerb1:
-                case JanitorConfigurationEntity.KeyType.AzureStorageKerb2:
+                case JanitorConfigurationEntity.AppSecretType.AzureStorageKey1:
+                case JanitorConfigurationEntity.AppSecretType.AzureStorageKey2:
+                case JanitorConfigurationEntity.AppSecretType.AzureStorageKerb1:
+                case JanitorConfigurationEntity.AppSecretType.AzureStorageKerb2:
                     return new RotationActions.StorageKeyRotation();
-                case JanitorConfigurationEntity.KeyType.CosmosDbPrimary:
-                case JanitorConfigurationEntity.KeyType.CosmosDbPrimaryReadonly:
-                case JanitorConfigurationEntity.KeyType.CosmosDbSecondary:
-                case JanitorConfigurationEntity.KeyType.CosmosDbSecondaryReadonly:
+                case JanitorConfigurationEntity.AppSecretType.CosmosDbPrimary:
+                case JanitorConfigurationEntity.AppSecretType.CosmosDbPrimaryReadonly:
+                case JanitorConfigurationEntity.AppSecretType.CosmosDbSecondary:
+                case JanitorConfigurationEntity.AppSecretType.CosmosDbSecondaryReadonly:
                     return new RotationActions.CosmosDbKeyRotation();
-                case JanitorConfigurationEntity.KeyType.EncryptionKey:
+                case JanitorConfigurationEntity.AppSecretType.EncryptionKey:
                     return new RotationActions.EncryptionKeyRotation();
-                case JanitorConfigurationEntity.KeyType.ServiceBusPrimary:
-                case JanitorConfigurationEntity.KeyType.ServiceBusSecondary:
+                case JanitorConfigurationEntity.AppSecretType.ServiceBusPrimary:
+                case JanitorConfigurationEntity.AppSecretType.ServiceBusSecondary:
                     return new RotationActions.ServiceBusKeyRotation();
-                case JanitorConfigurationEntity.KeyType.SecretPassword:
+                case JanitorConfigurationEntity.AppSecretType.SecretPassword:
                     return new RotationActions.PasswordRotation();
             }
-            throw new NotImplementedException($"KeyType '{keyType}' not implemented");
+            throw new NotImplementedException($"AppSecret Type '{appSecretType}' not implemented");
         }
     }
 }
