@@ -18,8 +18,7 @@ namespace AuthorizationJanitor
 
         public async Task<JanitorConfigurationEntity> Get(string keyName)
         {
-            var blobName = HelperMethods.SHA256HashString(keyName);
-            var blob = _configurationBlobDirectory.GetBlockBlobReference(blobName);
+            var blob = GetBlob(keyName);
             await blob.FetchAttributesAsync();
 
             var bytes = new byte[blob.Properties.Length];
@@ -29,9 +28,7 @@ namespace AuthorizationJanitor
 
         public async Task Update(JanitorConfigurationEntity entity)
         {
-            var blobName = HelperMethods.SHA256HashString(entity.FriendlyKeyName);
-            var blob = _configurationBlobDirectory.GetBlockBlobReference(blobName);
-
+            var blob = GetBlob(entity.FriendlyKeyName);
             var bytes = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(entity));
             await blob.UploadFromByteArrayAsync(bytes, 0, bytes.Length);
         }
@@ -56,7 +53,7 @@ namespace AuthorizationJanitor
 
         public async Task<bool> IsLocked(string keyName)
         {
-            var blob = _configurationBlobDirectory.GetBlockBlobReference(HelperMethods.SHA256HashString(keyName));
+            var blob = GetBlob(keyName);
             await blob.FetchAttributesAsync();
             return blob.Properties.LeaseState != LeaseState.Available;
         }
