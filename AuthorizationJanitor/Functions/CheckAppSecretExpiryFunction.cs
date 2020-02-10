@@ -29,7 +29,7 @@ namespace AuthorizationJanitor.Functions
         [FunctionName("CheckAppSecretExpiry")]
         public static async Task<IActionResult> Run(
             [Blob("/authjanitor/")] CloudBlobDirectory cloudBlobDirectory,
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "/check/{keyName}/{nonce}")] HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "/check/{appSecretName}/{nonce}")] HttpRequest req,
             string appSecretName,
             string nonce,
             ILogger log)
@@ -59,6 +59,7 @@ namespace AuthorizationJanitor.Functions
             var rotationTask = new Task(
                 async () => await ExecuteRotation(await ConfigurationStore.Get(appSecretName)), 
                 TaskCreationOptions.LongRunning);
+            rotationTask.Start();
 
             if (!rotationTask.Wait(MAX_EXECUTION_SECONDS_BEFORE_RETRY))
             {
