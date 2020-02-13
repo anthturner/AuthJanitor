@@ -5,6 +5,10 @@ VisualStudioVersion = 16.0.29411.138
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AuthorizationJanitor", "AuthorizationJanitor\AuthorizationJanitor.csproj", "{47DAE82D-30D9-415B-A61A-2168768E9ADE}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AJManager", "AJManager\AJManager.csproj", "{7BD6995D-F08B-4314-8C35-80C668B5716E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AuthorizationJanitor.Shared", "AuthorizationJanitor.Shared\AuthorizationJanitor.Shared.csproj", "{8016098B-3CFF-4346-AC8C-EE45F4BBCD02}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +19,14 @@ Global
 		{47DAE82D-30D9-415B-A61A-2168768E9ADE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{47DAE82D-30D9-415B-A61A-2168768E9ADE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{47DAE82D-30D9-415B-A61A-2168768E9ADE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7BD6995D-F08B-4314-8C35-80C668B5716E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7BD6995D-F08B-4314-8C35-80C668B5716E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7BD6995D-F08B-4314-8C35-80C668B5716E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7BD6995D-F08B-4314-8C35-80C668B5716E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8016098B-3CFF-4346-AC8C-EE45F4BBCD02}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8016098B-3CFF-4346-AC8C-EE45F4BBCD02}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8016098B-3CFF-4346-AC8C-EE45F4BBCD02}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8016098B-3CFF-4346-AC8C-EE45F4BBCD02}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

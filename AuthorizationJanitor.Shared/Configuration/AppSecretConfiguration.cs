@@ -1,27 +1,19 @@
-﻿using AuthorizationJanitor.Targets;
-using Microsoft.WindowsAzure.Storage.Table;
+﻿using AuthorizationJanitor.Shared.RotationStrategies;
 using Newtonsoft.Json;
 using System;
 
-namespace AuthorizationJanitor
+namespace AuthorizationJanitor.Shared.Configuration
 {
-    public class JanitorConfigurationEntity
+    public class AppSecretConfiguration
     {
         public enum AppSecretType : int
         {
             AccessToken = 1,
             EncryptionKey = 2,
-            AzureStorageKey1 = 3,
-            AzureStorageKey2 = 4,
-            AzureStorageKerb1 = 5,
-            AzureStorageKerb2 = 6,
-            CosmosDbPrimary = 7,
-            CosmosDbPrimaryReadonly = 8,
-            CosmosDbSecondary = 9,
-            CosmosDbSecondaryReadonly = 10,
-            ServiceBusPrimary = 11,
-            ServiceBusSecondary = 12,
-            SecretPassword = 13
+            AzureStorage = 3,
+            CosmosDb = 4,
+            ServiceBus = 5,
+            SecretPassword = 6
         }
 
         /// <summary>
@@ -46,9 +38,9 @@ namespace AuthorizationJanitor
         public string KeyVaultSecretName { get; set; }
 
         /// <summary>
-        /// Description of the Target
+        /// JSON Serialized Rotation Configuration
         /// </summary>
-        public string TargetString { get; set; }
+        public string SerializedRotationConfiguration { get; set; }
 
         /// <summary>
         /// Configurable TimeSpan representing the time between AppSecret rotations
@@ -63,34 +55,29 @@ namespace AuthorizationJanitor
         /// <summary>
         /// If the AppSecret is valid
         /// </summary>
-        [IgnoreProperty]
+        [JsonIgnore]
         public bool IsValid => LastChanged + AppSecretValidPeriod < DateTime.Now;
 
         /// <summary>
         /// Updated AppSecret to commit to Key Vault; this is not and cannot be serialized into the configuration table!
         /// </summary>
-        [IgnoreProperty]
+        [JsonIgnore]
         public string UpdatedAppSecret { get; set; }
 
         /// <summary>
-        /// Get the Target details
+        /// Get the RotationConfiguration based on its expected Type
         /// </summary>
-        /// <typeparam name="TTarget">Target type</typeparam>
-        /// <returns></returns>
-        public TTarget GetTarget<TTarget>() where TTarget : ITarget => JsonConvert.DeserializeObject<TTarget>(TargetString);
+        /// <typeparam name="TRotationConfiguration">Rotation configuration Type</typeparam>
+        /// <returns>RotationConfiguration object for type</returns>
+        public TRotationConfiguration GetRotationConfiguration<TRotationConfiguration>() where TRotationConfiguration : IRotationConfiguration => 
+            JsonConvert.DeserializeObject<TRotationConfiguration>(SerializedRotationConfiguration);
 
-        public JanitorConfigurationEntity Clone()
-        {
-            return new JanitorConfigurationEntity()
-            {
-                AppSecretName = AppSecretName,
-                Type = Type,
-                Nonce = Nonce,
-                KeyVaultSecretName = KeyVaultSecretName,
-                TargetString = TargetString,
-                AppSecretValidPeriod = AppSecretValidPeriod,
-                LastChanged = LastChanged
-            };
-        }
+        /// <summary>
+        /// Update the RotationConfiguration
+        /// </summary>
+        /// <typeparam name="TRotationConfiguration">Rotation configuration Type</typeparam>
+        /// <param name="configuration">Updated configuration</param>
+        public void PutRotationConfiguration<TRotationConfiguration>(TRotationConfiguration configuration) where TRotationConfiguration : IRotationConfiguration =>
+            SerializedRotationConfiguration = JsonConvert.SerializeObject(configuration);
     }
 }

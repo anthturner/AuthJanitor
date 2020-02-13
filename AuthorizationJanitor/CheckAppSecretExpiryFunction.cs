@@ -5,12 +5,14 @@ using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
-using AuthorizationJanitor.RotationActions;
 using Azure.Security.KeyVault.Secrets;
 using Azure.Identity;
-using Microsoft.WindowsAzure.Storage.Blob;
+using AuthorizationJanitor.Shared.Configuration;
+using AuthorizationJanitor.Shared.RotationStrategies;
+using AuthorizationJanitor.Shared;
+using System.Web.Http;
 
-namespace AuthorizationJanitor.Functions
+namespace AuthorizationJanitor
 {
     public static class CheckAppSecretExpiryFunction
     {
@@ -24,11 +26,10 @@ namespace AuthorizationJanitor.Functions
         private const int MAX_EXECUTION_SECONDS_BEFORE_RETRY = 30;
         private const int NONCE_LENGTH = 64;
 
-        public static JanitorConfigurationStore ConfigurationStore { get; set; }
+        public static AppSecretConfigurationStore ConfigurationStore { get; set; }
 
         [FunctionName("CheckAppSecretExpiry")]
         public static async Task<IActionResult> Run(
-            [Blob("/authjanitor/")] CloudBlobDirectory cloudBlobDirectory,
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "/check/{appSecretName}/{nonce}")] HttpRequest req,
             string appSecretName,
             string nonce,
@@ -37,7 +38,9 @@ namespace AuthorizationJanitor.Functions
             // todo: check appSecretName/nonce sanitization -- regex to A-Za-z0-9_
 
             // Populate the wrapper around the configuration storage
-            ConfigurationStore = new JanitorConfigurationStore(cloudBlobDirectory);
+            ConfigurationStore = new AppSecretConfigurationStore(
+                Environment.GetEnvironmentVariable("AzureWebJobsStorage"),
+                Environment.GetEnvironmentVariable("AJContainerName"));
 
             // Check if an update is already in progress -- if so, client should call back shortly
             if (await ConfigurationStore.IsLocked(appSecretName))
@@ -61,7 +64,7 @@ namespace AuthorizationJanitor.Functions
                 // The AppSecret needs to be rotated!
                 // Schedule this Task as long-running to avoid zombie threads after the handler returns (if time expires below)
                 var rotationTask = new Task(
-                    async () => await ExecuteRotation(appSecretConfig),
+                    async () => await ExecuteRotation(log, appSecretConfig),
                     TaskCreationOptions.LongRunning);
                 rotationTask.Start();
 
@@ -75,9 +78,10 @@ namespace AuthorizationJanitor.Functions
                 else
                     return new OkObjectResult(RETURN_CHANGE_OCCURRED);
             }
+            return new InternalServerErrorResult();
         }
 
-        private static async Task ExecuteRotation(JanitorConfigurationEntity entity)
+        private static async Task ExecuteRotation(ILogger logger, AppSecretConfiguration entity)
         {
             // ConfigurationStore will handle lock/unlock around this Func<Task>
             await ConfigurationStore.PerformLockedTask(entity.AppSecretName, async () =>
@@ -85,33 +89,40 @@ namespace AuthorizationJanitor.Functions
                 // Get the rotation strategy based on the AppSecret type and run it;
                 //   the rotation strategy should *block* until it can confirm the rotation has actually occurred.
                 // The outer handler will take care of continually sending back a RETRY_SHORTLY for long-running Tasks.
-                var replacementEntity = await RotationActionFactory.CreateRotationStrategy(entity.Type).Execute(entity);
+                var rotationStrategy = RotationStrategyFactory.CreateRotationStrategy(logger, entity);
+                await rotationStrategy.Rotate();
 
                 // Regenerate the entity's nonce; if anything below fails, it won't be committed.
-                replacementEntity.Nonce = HelperMethods.GenerateCryptographicallySecureString(NONCE_LENGTH);
+                entity.Nonce = HelperMethods.GenerateCryptographicallySecureString(NONCE_LENGTH);
 
                 // Connect to the Key Vault storing application secrets
                 var client = new SecretClient(
                     new Uri($"https://{Environment.GetEnvironmentVariable(VAULT_NAME_ENV)}.vault.azure.net/"), 
                     new DefaultAzureCredential(false));
-                var currentSecret = await client.GetSecretAsync(replacementEntity.KeyVaultSecretName);
+                var currentSecret = await client.GetSecretAsync(entity.KeyVaultSecretName);
 
                 // Create a new version of the Secret
-                var newSecret = new KeyVaultSecret(replacementEntity.KeyVaultSecretName, replacementEntity.UpdatedAppSecret);
-                newSecret.Properties.ContentType = currentSecret.Value.Properties.ContentType;
+                var newSecret = new KeyVaultSecret(entity.KeyVaultSecretName, entity.UpdatedAppSecret);
+
+                // Copy in metadata from the old Secret if it existed
+                if (currentSecret != null && currentSecret.Value != null)
+                {
+                    newSecret.Properties.ContentType = currentSecret.Value.Properties.ContentType;
+                    foreach (var tag in currentSecret.Value.Properties.Tags)
+                        newSecret.Properties.Tags.Add(tag.Key, tag.Value);
+                }
+                
                 newSecret.Properties.NotBefore = DateTimeOffset.Now;
-                newSecret.Properties.ExpiresOn = DateTimeOffset.Now + replacementEntity.AppSecretValidPeriod;
-                foreach (var tag in currentSecret.Value.Properties.Tags)
-                    newSecret.Properties.Tags.Add(tag.Key, tag.Value);
-                newSecret.Properties.Tags[TAG_NONCE] = replacementEntity.Nonce;
+                newSecret.Properties.ExpiresOn = DateTimeOffset.Now + entity.AppSecretValidPeriod;
+                newSecret.Properties.Tags[TAG_NONCE] = entity.Nonce;
 
                 await client.SetSecretAsync(newSecret);
 
                 // Purge new AppSecret
-                replacementEntity.UpdatedAppSecret = string.Empty;
+                entity.UpdatedAppSecret = string.Empty;
 
                 // Commit
-                await ConfigurationStore.Update(replacementEntity);
+                await ConfigurationStore.Update(entity);
             });
         }
     }

@@ -1,16 +1,14 @@
-﻿using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Http;
-using Microsoft.Azure.Management.Fluent;
+﻿using Microsoft.Azure.Management.Fluent;
 using Microsoft.Azure.Management.ResourceManager.Fluent;
 using Microsoft.Azure.Management.ResourceManager.Fluent.Authentication;
-using Microsoft.IdentityModel.Clients.ActiveDirectory;
 using System;
-using System.Security.Claims;
+using System.ComponentModel;
+using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace AuthorizationJanitor
+namespace AuthorizationJanitor.Shared
 {
     public static class HelperMethods
     {
@@ -60,20 +58,23 @@ namespace AuthorizationJanitor
                 .WithDefaultSubscriptionAsync();
         }
 
-        public static async Task<Microsoft.IdentityModel.Clients.ActiveDirectory.AuthenticationResult> GetToken(HttpRequest req, string resource, string clientId, string clientSecret)
-        {
-            string token = await req.HttpContext.GetTokenAsync("access_token");
-            string assertionType = "urn:ietf:params:oauth:grant-type:jwt-bearer";
+        public static string GetEnumString(this Enum enumValue) =>
+            enumValue.GetType().GetField(enumValue.ToString()).GetCustomAttribute<DescriptionAttribute>()?.Description;
 
-            string userName =
-                req.HttpContext.User.FindFirst(ClaimTypes.Upn)?.Value ??
-                req.HttpContext.User.FindFirst(ClaimTypes.Email)?.Value;
-            var userAssertion = new Microsoft.IdentityModel.Clients.ActiveDirectory.UserAssertion(token, assertionType, userName);
+        //public static async Task<Microsoft.IdentityModel.Clients.ActiveDirectory.AuthenticationResult> GetToken(HttpRequest req, string resource, string clientId, string clientSecret)
+        //{
+        //    string token = await req.HttpContext.GetTokenAsync("access_token");
+        //    string assertionType = "urn:ietf:params:oauth:grant-type:jwt-bearer";
 
-            var authContext = new AuthenticationContext($"https://login.microsoftonline.com/common");
-            var clientCredential = new Microsoft.IdentityModel.Clients.ActiveDirectory.ClientCredential(clientId, clientSecret);
-            var result = await authContext.AcquireTokenAsync(resource, clientCredential, userAssertion);
-            return result;
-        }
+        //    string userName =
+        //        req.HttpContext.User.FindFirst(ClaimTypes.Upn)?.Value ??
+        //        req.HttpContext.User.FindFirst(ClaimTypes.Email)?.Value;
+        //    var userAssertion = new Microsoft.IdentityModel.Clients.ActiveDirectory.UserAssertion(token, assertionType, userName);
+
+        //    var authContext = new AuthenticationContext($"https://login.microsoftonline.com/common");
+        //    var clientCredential = new Microsoft.IdentityModel.Clients.ActiveDirectory.ClientCredential(clientId, clientSecret);
+        //    var result = await authContext.AcquireTokenAsync(resource, clientCredential, userAssertion);
+        //    return result;
+        //}
     }
 }
