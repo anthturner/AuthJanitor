@@ -1,10 +1,10 @@
-using AuthorizationJanitor.Extensions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace AuthorizationJanitor
@@ -13,29 +13,42 @@ namespace AuthorizationJanitor
     {
         [FunctionName("AdminPreview")]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = "/admin/preview/{managedSecretId}")] HttpRequest req,
-            string managedSecretId,
+            [HttpTrigger(AuthorizationLevel.Function, "get", Route = "/admin/preview/{taskId:guid}")] HttpRequest req,
+            Guid taskId,
             ILogger log)
         {
-            log.LogInformation("C# HTTP trigger function processed a request.");
+            log.LogInformation("Administrator requested operation preview for Task ID {0}", taskId);
 
-            // get managed secret from its ID
-            // Link OBO credential to Extension
+            var taskStore = new QueuedRekeyingTaskStore();
+            var secretStore = new ManagedSecretStore();
 
-            //foreach...
-            ManagedSecret secret = null;
-            // .../foreach
-            AuthorizationJanitorTask task = JsonConvert.DeserializeObject<AuthorizationJanitorTask>(secret.SerializedTask);
-            IConsumingApplicationExtension instance = task.CreateExtensionInstance(log);
-            string description = instance.GetDescription();
-            System.Collections.Generic.IList<RiskyConfigurationItem> risks = instance.GetRisks();
-            bool testResult = await instance.Test();
+            var task = await taskStore.GetTask(taskId);
+            var results = new List<object>();
+            foreach (var managedSecretId in task.ManagedSecretIds)
+            {
+                var secret = await secretStore.GetManagedSecret(managedSecretId);
 
+                var instance = await secretStore.CreateExtensionFromManagedSecret(log, managedSecretId);
+                var description = instance.GetDescription();
+                var risks = instance.GetRisks();
+                var testResult = await instance.Test();
+
+                results.Add(new
+                {
+                    managedSecretId,
+                    name = secret.Name,
+                    expiry = secret.LastChanged + secret.ValidPeriod,
+                    description,
+                    risks,
+                    testResult
+                });
+            }
+            
             return new OkObjectResult(new
             {
-                description,
-                risks,
-                testResult
+                queued = task.Queued,
+                dropDead = task.DropDead,
+                secrets = results
             });
         }
     }

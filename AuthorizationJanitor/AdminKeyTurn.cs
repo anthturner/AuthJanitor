@@ -1,13 +1,11 @@
-using AuthorizationJanitor.Extensions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
-using System.Web.Http;
 
 namespace AuthorizationJanitor
 {
@@ -15,29 +13,34 @@ namespace AuthorizationJanitor
     {
         [FunctionName("AdminKeyTurn")]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = "/admin/keyturn/{managedSecretId}")] HttpRequest req,
-            string managedSecretId,
+            [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = "/admin/keyturn/{taskId:guid}")] HttpRequest req,
+            Guid taskId,
             ILogger log)
         {
-            log.LogInformation("C# HTTP trigger function processed a request.");
+            log.LogInformation("Administrator approved Task ID {0}", taskId);
 
-            try
+            var taskStore = new QueuedRekeyingTaskStore();
+            var secretStore = new ManagedSecretStore();
+
+            var task = await taskStore.GetTask(taskId);
+            var secretResults = new Dictionary<Guid, string>();
+
+            if (task.DropDead < DateTime.Now)
+                log.LogError("DropDead time has expired; this rekeying operation may be a little bumpy!");
+
+            foreach (var managedSecretId in task.ManagedSecretIds)
             {
-                // Get managedsecret from ID
-                // Link OBO credential to Extension
+                log.LogInformation("Rekeying Managed Secret ID {0}", managedSecretId);
+                var secret = await secretStore.GetManagedSecret(managedSecretId);
+                var instance = await secretStore.CreateExtensionFromManagedSecret(log, managedSecretId);
+                if (!await instance.Test())
+                    log.LogWarning("Instance test failed, skipping!");
 
-                //foreach...
-                ManagedSecret secret = null;
-                // .../foreach
-                AuthorizationJanitorTask task = JsonConvert.DeserializeObject<AuthorizationJanitorTask>(secret.SerializedTask);
-                IConsumingApplicationExtension instance = task.CreateExtensionInstance(log);
                 await instance.Rekey();
+                secretResults.Add(managedSecretId, "Success");
+            }            
 
-                // Adopt RETRY strategy from previous incarnation?
-
-                return new OkResult();
-            }
-            catch (Exception) { return new InternalServerErrorResult(); }
+            return new OkObjectResult(secretResults);
         }
     }
 }

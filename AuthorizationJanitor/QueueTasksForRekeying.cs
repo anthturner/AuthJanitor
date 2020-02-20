@@ -1,35 +1,43 @@
-using AuthorizationJanitor.Extensions;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace AuthorizationJanitor
 {
     public static class QueueTasksForRekeying
     {
+        private const int NUMBER_OF_HOURS_LEAD_TIME = 48;
+
         [FunctionName("QueueTasksForRekeying")]
-        public static void Run([TimerTrigger("0 */5 * * * *")]TimerInfo myTimer, ILogger log)
+        public static async Task Run([TimerTrigger("0 */5 * * * *")]TimerInfo myTimer, ILogger log)
         {
             log.LogInformation($"C# Timer trigger function executed at: {DateTime.Now}");
 
-            // TODO: Iterate over configuration for managed secrets
-            //       Create an AuthorizationJanitorTask for each
+            var taskStore = new QueuedRekeyingTaskStore();
+            var secretStore = new ManagedSecretStore();
+            var tasks = await taskStore.GetTasks();
+            var secrets = await secretStore.GetManagedSecrets();
 
-            //foreach...
-            ManagedSecret secret = null;
-            // .../foreach
-            AuthorizationJanitorTask task = JsonConvert.DeserializeObject<AuthorizationJanitorTask>(secret.SerializedTask);
+            var candidates = secrets.Where(s => s.LastChanged + s.ValidPeriod > DateTime.Now - TimeSpan.FromHours(NUMBER_OF_HOURS_LEAD_TIME)).ToList();
+            log.LogInformation("{0} candidates are expiring soon!", candidates.Count);
+            var newTasks = new List<QueuedRekeyingTask>();
+            foreach (var candidate in candidates)
+            {
+                if (tasks.Any(t => t.ManagedSecretIds.Contains(candidate.ManagedSecretId)))
+                    continue;
 
-            // Put task on some sort of queue to be executed as-available
+                log.LogInformation("Creating rekeying task for Managed Secret ID {0}, which expires at {1}", candidate.LastChanged + candidate.ValidPeriod);
+                await taskStore.Enqueue(new QueuedRekeyingTask()
+                {
+                    ManagedSecretIds = new List<Guid>() { candidate.ManagedSecretId },
+                    DropDead = candidate.LastChanged + candidate.ValidPeriod,
+                    Queued = DateTime.Now,
+                    TaskId = Guid.NewGuid()
+                });
+            }
         }
-    }
-
-    public class ManagedSecret
-    {
-        /// <summary>
-        /// Contains all config for consumer and service provider
-        /// </summary>
-        public string SerializedTask { get; set; }
     }
 }
