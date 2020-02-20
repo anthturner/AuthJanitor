@@ -4,6 +4,12 @@
     <AzureFunctionsVersion>v2</AzureFunctionsVersion>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Remove="CheckAppSecretExpiryFunction.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="CheckAppSecretExpiryFunction.cs" />
+  </ItemGroup>
+  <ItemGroup>
     <PackageReference Include="Azure.Identity" Version="1.1.1" />
     <PackageReference Include="Azure.Security.KeyVault.Certificates" Version="4.0.0" />
     <PackageReference Include="Azure.Security.KeyVault.Keys" Version="4.0.1" />
@@ -16,7 +22,13 @@
     <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="3.0.3" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\AuthorizationJanitor.Shared\AuthorizationJanitor.Shared.csproj" />
+    <ProjectReference Include="..\AuthorizationJanitor.Extensions.AppServices\AuthorizationJanitor.Extensions.AppServices.csproj" />
+    <ProjectReference Include="..\AuthorizationJanitor.Extensions.AzureAD\AuthorizationJanitor.Extensions.AzureAD.csproj" />
+    <ProjectReference Include="..\AuthorizationJanitor.Extensions.CosmosDb\AuthorizationJanitor.Extensions.CosmosDb.csproj" />
+    <ProjectReference Include="..\AuthorizationJanitor.Extensions.KeyVault\AuthorizationJanitor.Extensions.KeyVault.csproj" />
+    <ProjectReference Include="..\AuthorizationJanitor.Extensions.ServiceBus\AuthorizationJanitor.Extensions.ServiceBus.csproj" />
+    <ProjectReference Include="..\AuthorizationJanitor.Extensions.Storage\AuthorizationJanitor.Extensions.Storage.csproj" />
+    <ProjectReference Include="..\AuthorizationJanitor.Extensions\AuthorizationJanitor.Extensions.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Update="host.json">
