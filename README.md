@@ -65,17 +65,17 @@ A GUID-identified pointer to a **Managed Secret** which needs to be rekeyed. A R
 expiry date refers to the point in time where the key is rendered invalid. A Rekeying Task must be approved by an administrator.
 
 ## Sample Code
-```
+```csharp
 public static async Task RotateKey()
 {
-	// Initialize DI container with your own LoggerFactory
+    // Initialize DI container with your own LoggerFactory
     HelperMethods.InitializeServiceProvider(new LoggerFactory());
 
-	// Get a RekeyableObjectProvider (this one is for Azure Storage keys)
+    // Get a RekeyableObjectProvider (this one is for Azure Storage keys)
     var rekeyableProvider = HelperMethods.ServiceProvider.GetService(
         typeof(Providers.Storage.StorageAccountRekeyableObjectProvider)) as Providers.Storage.StorageAccountRekeyableObjectProvider;
-	
-	// Configure the RekeyableObjectProvider
+
+    // Configure the RekeyableObjectProvider
     rekeyableProvider.Configuration = new Providers.Storage.StorageAccountKeyConfiguration()
     {
         KeyType = Providers.Storage.StorageAccountKeyConfiguration.StorageKeyTypes.Key1,
@@ -84,12 +84,12 @@ public static async Task RotateKey()
         SkipScramblingOtherKey = false
     };
 
-	// Get an ApplicationLifecycleProvider (this one is for an Azure WebApp, consuming from AppSettings)
+    // Get an ApplicationLifecycleProvider (this one is for an Azure WebApp, consuming from AppSettings)
     var appProvider = HelperMethods.ServiceProvider.GetService(
         typeof(Providers.AppServices.WebApps.AppSettingsWebAppApplicationLifecycleProvider)) as Providers.AppServices.WebApps.AppSettingsWebAppApplicationLifecycleProvider;
     
-	// Configure the ApplicationLifecycleProvider
-	appProvider.Configuration = new Providers.AppServices.AppSettingConfiguration()
+    // Configure the ApplicationLifecycleProvider
+    appProvider.Configuration = new Providers.AppServices.AppSettingConfiguration()
     {
         ResourceGroup = "resource_group",
         ResourceName = "resource_name",
@@ -99,13 +99,13 @@ public static async Task RotateKey()
         DestinationSlot = "production"
     };
 
-	// Execute the rekeying workflow.
-	// This will:
-	// - Run sanity tests on all Providers
-	// - Prep all ApplicationLifecycleProviders
-	// - Rekey all RekeyableObjectProviders
-	// - Commit generated keys to ApplicationLifecycleProviders
-	// - Run post-commit activities on all ApplicationLifecycleProviders
+    // Execute the rekeying workflow.
+    // This will:
+    // - Run sanity tests on all Providers
+    // - Prep all ApplicationLifecycleProviders
+    // - Rekey all RekeyableObjectProviders
+    // - Commit generated keys to ApplicationLifecycleProviders
+    // - Run post-commit activities on all ApplicationLifecycleProviders
     await HelperMethods.RunRekeyingWorkflow(TimeSpan.FromDays(7), rekeyableProvider, appProvider);
 }
 ```
