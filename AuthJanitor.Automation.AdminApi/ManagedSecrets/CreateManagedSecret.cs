@@ -1,4 +1,3 @@
-using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
@@ -8,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using AuthJanitor.Automation.Shared;
 using System.Linq;
 using System.Web.Http;
+using Microsoft.WindowsAzure.Storage.Blob;
 
 namespace AuthJanitor.Automation.AdminApi
 {
@@ -21,9 +21,12 @@ namespace AuthJanitor.Automation.AdminApi
         {
             log.LogInformation("Creating new Managed Secret");
 
-            var resourceStore = new ResourceStore();
-            var allResourceIds = resourceStore.GetResources().Select(r => r.ResourceId);
+            CloudBlobDirectory secretStoreDirectory = null;
+            CloudBlobDirectory resourceStoreDirectory = null;
+            IDataStore<ManagedSecret> secretStore = new BlobDataStore<ManagedSecret>(secretStoreDirectory);
+            IDataStore<Resource> resourceStore = new BlobDataStore<Resource>(resourceStoreDirectory);
 
+            var allResourceIds = await resourceStore.List();
             if (inputSecret.ResourceIds.Any(r => !allResourceIds.Contains(r)))
                 return new BadRequestErrorMessageResult("One or more ResourceIds not found!");
 
@@ -35,11 +38,7 @@ namespace AuthJanitor.Automation.AdminApi
                 ResourceIds = inputSecret.ResourceIds
             };
 
-            var secretStore = new ManagedSecretStore();
-
-            // TODO: Actually create secret
-            // TODO: Data validation
-
+            await secretStore.Create(newManagedSecret);
             return new OkObjectResult(newManagedSecret);
         }
     }

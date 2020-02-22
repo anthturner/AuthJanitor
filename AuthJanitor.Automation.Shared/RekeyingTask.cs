@@ -3,13 +3,15 @@ using System.Collections.Generic;
 
 namespace AuthJanitor.Automation.Shared
 {
-    public class RekeyingTask
+    public class RekeyingTask : IDataStoreCompatibleStructure
     {
-        public Guid RekeyingTaskId { get; set; }
+        public Guid ObjectId { get; set; }
 
-        public DateTime Queued { get; set; }
-        public DateTime Expiry { get; set; }
+        public DateTimeOffset Queued { get; set; }
+        public DateTimeOffset Expiry { get; set; }
 
         public IList<Guid> ManagedSecretIds { get; set; }
+
+        public RekeyingTask() => ObjectId = Guid.NewGuid();
     }
 }

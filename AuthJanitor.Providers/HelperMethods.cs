@@ -27,6 +27,9 @@ namespace AuthJanitor.Providers
             typeof(ILogger)
         };
 
+        public static List<Type> ProviderTypes { get; } = new List<Type>();
+        public static IServiceProvider ServiceProvider { get; private set; }
+
         public static string GenerateCryptographicallySecureString(int length, string chars = CHARS_ALPHANUMERIC_ONLY)
         {
             // Cryptography Tip!
@@ -54,8 +57,6 @@ namespace AuthJanitor.Providers
             return sb.ToString();
         }
 
-        private static List<Type> _providerTypes = new List<Type>();
-        public static IServiceProvider ServiceProvider { get; set; }
         public static void InitializeServiceProvider(ILoggerFactory loggerFactory)
         {
             var serviceCollection = new ServiceCollection();
@@ -75,7 +76,7 @@ namespace AuthJanitor.Providers
                           .GetTypes()
                           .Where(t => !t.IsAbstract && t.IsSubclassOf(typeof(IAuthJanitorProvider))))
                 {
-                    _providerTypes.Add(providerType);
+                    ProviderTypes.Add(providerType);
                     serviceCollection.AddTransient(providerType);
                 }
             }
@@ -148,7 +149,7 @@ namespace AuthJanitor.Providers
         }
 
         public static IAuthJanitorProvider GetProvider(string name) =>
-            (_providerTypes.Any(t => t.Name == name) ? ServiceProvider.GetService(_providerTypes.First(t => t.Name == name)) : null) as IAuthJanitorProvider;
+            (ProviderTypes.Any(t => t.Name == name) ? ServiceProvider.GetService(ProviderTypes.First(t => t.Name == name)) : null) as IAuthJanitorProvider;
 
         public static string SHA256HashString(string str)
         {

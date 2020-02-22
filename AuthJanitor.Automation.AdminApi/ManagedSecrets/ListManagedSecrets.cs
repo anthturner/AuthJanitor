@@ -5,6 +5,7 @@ using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using AuthJanitor.Automation.Shared;
+using Microsoft.WindowsAzure.Storage.Blob;
 
 namespace AuthJanitor.Automation.AdminApi
 {
@@ -15,11 +16,12 @@ namespace AuthJanitor.Automation.AdminApi
             [HttpTrigger(AuthorizationLevel.Function, "put", Route = "/secrets/list")] HttpRequest req,
             ILogger log)
         {
-            log.LogInformation("C# HTTP trigger function processed a request.");
+            log.LogInformation("Listing all Managed Secret IDs.");
 
-            var secretStore = new ManagedSecretStore();
+            CloudBlobDirectory secretStoreDirectory = null;
+            IDataStore<ManagedSecret> secretStore = new BlobDataStore<ManagedSecret>(secretStoreDirectory);
 
-            return new OkObjectResult(await secretStore.GetManagedSecrets());
+            return new OkObjectResult(await secretStore.List());
         }
     }
 }

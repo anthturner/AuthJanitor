@@ -6,6 +6,10 @@ using System.Threading.Tasks;
 
 namespace AuthJanitor.Providers.Storage
 {
+    [Provider(
+        Name = "Storage Account",
+        Description = "Rekey a Storage Account",
+        Icon = "fas fa-file-alt")]
     public class StorageAccountRekeyableObjectProvider : RekeyableObjectProvider<StorageAccountKeyConfiguration>
     {
         private const string KEY1 = "key1";

@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Threading.Tasks;
 
 namespace AuthJanitor.Providers
@@ -47,6 +48,11 @@ namespace AuthJanitor.Providers
         /// <param name="requestedValidPeriod">Requested period of validity</param>
         /// <returns></returns>
         IList<RiskyConfigurationItem> GetRisks(TimeSpan requestedValidPeriod);
+
+        /// <summary>
+        /// Get the Provider's metadata
+        /// </summary>
+        ProviderAttribute ProviderMetadata => this.GetType().GetCustomAttribute<ProviderAttribute>();
     }
 
     /// <summary>

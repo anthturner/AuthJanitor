@@ -5,11 +5,11 @@ using System.Collections.Generic;
 
 namespace AuthJanitor.Automation.Shared
 {
-    public class ManagedSecret
+    public class ManagedSecret : IDataStoreCompatibleStructure
     {
         public const int DEFAULT_NONCE_LENGTH = 64;
 
-        public Guid ManagedSecretId { get; set; }
+        public Guid ObjectId { get; set; }
         public string Name { get; set; }
         public string Description { get; set; }
 
@@ -26,7 +26,7 @@ namespace AuthJanitor.Automation.Shared
 
         public ManagedSecret()
         {
-            ManagedSecretId = Guid.NewGuid();
+            ObjectId = Guid.NewGuid();
             LastChanged = DateTime.MinValue;
             Nonce = HelperMethods.GenerateCryptographicallySecureString(DEFAULT_NONCE_LENGTH);
         }
