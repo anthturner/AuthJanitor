@@ -1,5 +1,4 @@
-﻿using AuthJanitor.Providers;
-using Microsoft.Azure.Management.CosmosDB.Fluent;
+﻿using Microsoft.Azure.Management.CosmosDB.Fluent;
 using System;
 using System.Threading.Tasks;
 

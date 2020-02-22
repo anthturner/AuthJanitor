@@ -1,5 +1,5 @@
-﻿using AuthJanitor.Providers;
-using System;
+﻿using System;
+using System.ComponentModel;
 
 namespace AuthJanitor.Providers.AppServices
 {
@@ -11,6 +11,7 @@ namespace AuthJanitor.Providers.AppServices
         /// <summary>
         /// AppSetting Name
         /// </summary>
+        [Description("AppSetting Name")]
         public string SettingName { get; set; }
 
         /// <summary>

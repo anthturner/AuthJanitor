@@ -1,5 +1,4 @@
-﻿using AuthJanitor.Providers;
-using Microsoft.Azure.Management.Storage.Fluent.Models;
+﻿using Microsoft.Azure.Management.Storage.Fluent.Models;
 using System;
 using System.Linq;
 using System.Threading.Tasks;

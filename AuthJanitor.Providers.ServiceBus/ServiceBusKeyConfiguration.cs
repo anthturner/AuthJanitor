@@ -1,6 +1,6 @@
-﻿using AuthJanitor.Providers;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 
 namespace AuthJanitor.Providers.ServiceBus
 {
@@ -16,18 +16,21 @@ namespace AuthJanitor.Providers.ServiceBus
         }
 
         /// <summary>
-        /// Kind (type) of CosmosDb Key
+        /// Kind (type) of Service Bus Key
         /// </summary>
+        [Description("Service Bus Key Type")]
         public ServiceBusKeyTypes KeyType { get; set; }
 
         /// <summary>
         /// Service Bus Authorization Rule name
         /// </summary>
+        [Description("Authorization Rule")]
         public string AuthorizationRuleName { get; set; }
 
         /// <summary>
         /// Skip the process of scrambling the other (non-active) key
         /// </summary>
+        [Description("Skip Scrambling Other Key?")]
         public bool SkipScramblingOtherKey { get; set; }
 
         /// <summary>

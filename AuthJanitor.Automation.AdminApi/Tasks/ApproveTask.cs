@@ -33,27 +33,31 @@ namespace AuthJanitor
             IDataStore<ManagedSecret> secretStore = new BlobDataStore<ManagedSecret>(secretsDirectory);
             IDataStore<Resource> resourceStore = new BlobDataStore<Resource>(resourcesDirectory);
 
-            var task = await taskStore.Get(taskId);
-            var secretResults = new Dictionary<Guid, string>();
+            RekeyingTask task = await taskStore.Get(taskId);
+            Dictionary<Guid, string> secretResults = new Dictionary<Guid, string>();
 
             if (task.Expiry < DateTime.Now)
+            {
                 log.LogError("Drop-dead time has expired; this rekeying operation may be a little bumpy!");
+            }
 
-            var allResources = await resourceStore.Get();
-            var allResourceIds = allResources.Select(r => r.ObjectId);
+            IList<Resource> allResources = await resourceStore.Get();
+            IEnumerable<Guid> allResourceIds = allResources.Select(r => r.ObjectId);
 
-            foreach (var managedSecretId in task.ManagedSecretIds)
+            foreach (Guid managedSecretId in task.ManagedSecretIds)
             {
                 try
                 {
                     log.LogInformation("Rekeying Managed Secret ID {0}", managedSecretId);
-                    var secret = await secretStore.Get(managedSecretId);
+                    ManagedSecret secret = await secretStore.Get(managedSecretId);
 
                     if (secret.ResourceIds.Any(id => !allResourceIds.Contains(id)))
+                    {
                         return new BadRequestErrorMessageResult("Invalid Resource ID in set");
+                    }
 
-                    var resources = secret.ResourceIds.Select(id => resourceStore.Get(id).Result);
-                    var providers = resources.Select(r => AuthJanitorProviderFactory.CreateFromResource<IAuthJanitorProvider>(r)).ToArray();
+                    IEnumerable<Resource> resources = secret.ResourceIds.Select(id => resourceStore.Get(id).Result);
+                    IAuthJanitorProvider[] providers = resources.Select(r => AuthJanitorProviderFactory.CreateFromResource<IAuthJanitorProvider>(r)).ToArray();
                     await HelperMethods.RunRekeyingWorkflow(secret.ValidPeriod, providers);
                     secretResults.Add(managedSecretId, "Success");
                 }
@@ -61,7 +65,7 @@ namespace AuthJanitor
                 {
                     secretResults.Add(managedSecretId, $"Error: {ex.Message}");
                 }
-            }            
+            }
 
             return new OkObjectResult(secretResults);
         }

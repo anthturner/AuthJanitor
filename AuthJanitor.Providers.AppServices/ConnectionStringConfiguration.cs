@@ -1,6 +1,6 @@
-﻿using AuthJanitor.Providers;
-using Microsoft.Azure.Management.AppService.Fluent.Models;
+﻿using Microsoft.Azure.Management.AppService.Fluent.Models;
 using System;
+using System.ComponentModel;
 
 namespace AuthJanitor.Providers.AppServices
 {
@@ -12,11 +12,13 @@ namespace AuthJanitor.Providers.AppServices
         /// <summary>
         /// Connection String name
         /// </summary>
+        [Description("Connection String Name")]
         public string ConnectionStringName { get; set; }
 
         /// <summary>
         /// Connection String type
         /// </summary>
+        [Description("Connection String Type")]
         public ConnectionStringType ConnectionStringType { get; set; }
 
         /// <summary>

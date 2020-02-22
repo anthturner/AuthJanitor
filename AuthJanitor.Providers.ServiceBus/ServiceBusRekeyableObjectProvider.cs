@@ -1,5 +1,4 @@
-﻿using AuthJanitor.Providers;
-using Microsoft.Azure.Management.ServiceBus.Fluent;
+﻿using Microsoft.Azure.Management.ServiceBus.Fluent;
 using Microsoft.Azure.Management.ServiceBus.Fluent.Models;
 using System;
 using System.Threading.Tasks;

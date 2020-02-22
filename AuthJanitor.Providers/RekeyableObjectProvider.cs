@@ -35,7 +35,10 @@ namespace AuthJanitor.Providers
         /// Call when the ConsumingApplication has been moved to the RegeneratedKey (from Rekey())
         /// </summary>
         /// <returns></returns>
-        public virtual Task OnConsumingApplicationSwapped() => Task.FromResult(true);
+        public virtual Task OnConsumingApplicationSwapped()
+        {
+            return Task.FromResult(true);
+        }
 
         public override string GetDescription()
         {

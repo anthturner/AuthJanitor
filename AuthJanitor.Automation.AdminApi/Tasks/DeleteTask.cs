@@ -1,12 +1,12 @@
-using System.Threading.Tasks;
+using AuthJanitor.Automation.Shared;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
-using AuthJanitor.Automation.Shared;
 using Microsoft.WindowsAzure.Storage.Blob;
 using System;
+using System.Threading.Tasks;
 
 namespace AuthJanitor.Automation.AdminApi.Resources
 {

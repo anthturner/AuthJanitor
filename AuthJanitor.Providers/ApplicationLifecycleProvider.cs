@@ -38,7 +38,10 @@ namespace AuthJanitor.Providers
         /// <summary>
         /// Call to prepare the application for a new secret
         /// </summary>
-        public virtual Task BeforeRekeying() => Task.FromResult(true);
+        public virtual Task BeforeRekeying()
+        {
+            return Task.FromResult(true);
+        }
 
         /// <summary>
         /// Call to commit the newly generated secret(s)
@@ -48,7 +51,10 @@ namespace AuthJanitor.Providers
         /// <summary>
         /// Call after all new keys have been committed
         /// </summary>
-        public virtual Task AfterRekeying() => Task.FromResult(true);
+        public virtual Task AfterRekeying()
+        {
+            return Task.FromResult(true);
+        }
 
         public override string GetDescription()
         {

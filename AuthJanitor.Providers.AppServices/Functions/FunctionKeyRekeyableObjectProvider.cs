@@ -1,5 +1,4 @@
-﻿using AuthJanitor.Providers;
-using System;
+﻿using System;
 using System.Threading.Tasks;
 
 namespace AuthJanitor.Providers.AppServices.Functions

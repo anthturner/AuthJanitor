@@ -12,6 +12,9 @@ namespace AuthJanitor.Automation.Shared
         public string ProviderName { get; set; }
         public string ProviderConfiguration { get; set; }
 
-        public Resource() => ObjectId = Guid.NewGuid();
+        public Resource()
+        {
+            ObjectId = Guid.NewGuid();
+        }
     }
 }

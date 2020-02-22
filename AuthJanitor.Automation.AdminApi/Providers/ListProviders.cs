@@ -1,13 +1,13 @@
-using System;
-using System.Threading.Tasks;
+using AuthJanitor.Providers;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
-using AuthJanitor.Providers;
+using System;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 
 namespace AuthJanitor.Automation.AdminApi.Providers
 {

@@ -1,16 +1,16 @@
-using System.Threading.Tasks;
+using AuthJanitor.Automation.Shared;
+using AuthJanitor.Providers;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
-using AuthJanitor.Automation.Shared;
 using Microsoft.WindowsAzure.Storage.Blob;
 using System;
-using System.Linq;
-using System.Web.Http;
-using AuthJanitor.Providers;
 using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using System.Web.Http;
 
 namespace AuthJanitor.Automation.AdminApi.Resources
 {
@@ -31,22 +31,24 @@ namespace AuthJanitor.Automation.AdminApi.Resources
             IDataStore<Resource> resourceStore = new BlobDataStore<Resource>(resourceStoreDirectory);
             IDataStore<ManagedSecret> secretStore = new BlobDataStore<ManagedSecret>(secretStoreDirectory);
 
-            var allRegisteredResources = await resourceStore.List();
+            IList<Guid> allRegisteredResources = await resourceStore.List();
 
-            var task = await taskStore.Get(taskId);
-            var secrets = new List<object>();
-            foreach (var managedSecretId in task.ManagedSecretIds)
+            RekeyingTask task = await taskStore.Get(taskId);
+            List<object> secrets = new List<object>();
+            foreach (Guid managedSecretId in task.ManagedSecretIds)
             {
-                var managedSecret = await secretStore.Get(managedSecretId);
+                ManagedSecret managedSecret = await secretStore.Get(managedSecretId);
 
                 if (managedSecret.ResourceIds.Any(id => !allRegisteredResources.Contains(id)))
-                    return new BadRequestErrorMessageResult("Unknown Resource ID in Task");
-
-                var resources = new List<ResourceSummary>();
-                foreach (var resourceId in managedSecret.ResourceIds)
                 {
-                    var resource = await resourceStore.Get(resourceId);
-                    var provider = AuthJanitorProviderFactory.CreateFromResource<IAuthJanitorProvider>(resource);
+                    return new BadRequestErrorMessageResult("Unknown Resource ID in Task");
+                }
+
+                List<ResourceSummary> resources = new List<ResourceSummary>();
+                foreach (Guid resourceId in managedSecret.ResourceIds)
+                {
+                    Resource resource = await resourceStore.Get(resourceId);
+                    IAuthJanitorProvider provider = AuthJanitorProviderFactory.CreateFromResource<IAuthJanitorProvider>(resource);
                     resources.Add(new ResourceSummary(resource)
                     {
                         ActionDescription = provider.GetDescription(),

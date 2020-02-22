@@ -1,5 +1,4 @@
-﻿using AuthJanitor.Providers;
-using Azure.Identity;
+﻿using Azure.Identity;
 using Azure.Security.KeyVault.Secrets;
 using System;
 using System.Collections.Generic;
@@ -17,12 +16,12 @@ namespace AuthJanitor.Providers.KeyVault
             // Connect to the Key Vault storing application secrets
             SecretClient client = new SecretClient(new Uri($"https://{Configuration.VaultName}.vault.azure.net/"), new DefaultAzureCredential(true));
 
-            foreach (var secret in newSecrets)
+            foreach (RegeneratedSecret secret in newSecrets)
             {
                 Azure.Response<KeyVaultSecret> currentSecret = await client.GetSecretAsync(Configuration.KeyOrSecretName);
 
                 // Create a new version of the Secret
-                var secretName = string.IsNullOrEmpty(secret.UserHint) ? Configuration.KeyOrSecretName : $"{Configuration.KeyOrSecretName}-{secret.UserHint}";
+                string secretName = string.IsNullOrEmpty(secret.UserHint) ? Configuration.KeyOrSecretName : $"{Configuration.KeyOrSecretName}-{secret.UserHint}";
                 KeyVaultSecret newKvSecret = new KeyVaultSecret(secretName, secret.NewSecretValue);
 
                 // Copy in metadata from the old Secret if it existed

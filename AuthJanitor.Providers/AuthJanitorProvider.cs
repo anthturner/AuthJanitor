@@ -52,7 +52,7 @@ namespace AuthJanitor.Providers
         /// <summary>
         /// Get the Provider's metadata
         /// </summary>
-        ProviderAttribute ProviderMetadata => this.GetType().GetCustomAttribute<ProviderAttribute>();
+        ProviderAttribute ProviderMetadata => GetType().GetCustomAttribute<ProviderAttribute>();
     }
 
     /// <summary>
@@ -108,7 +108,10 @@ namespace AuthJanitor.Providers
         /// Test if the current credentials can execute an Extension 
         /// </summary>
         /// <returns></returns>
-        public virtual Task<bool> Test() => Task.FromResult(true);
+        public virtual Task<bool> Test()
+        {
+            return Task.FromResult(true);
+        }
 
         /// <summary>
         /// Get a text description of the action which is taken by the Provider
@@ -121,12 +124,17 @@ namespace AuthJanitor.Providers
         /// </summary>
         /// <param name="requestedValidPeriod">Requested period of validity</param>
         /// <returns></returns>
-        public virtual IList<RiskyConfigurationItem> GetRisks(TimeSpan requestedValidPeriod) => Configuration.GetRiskyConfigurations();
+        public virtual IList<RiskyConfigurationItem> GetRisks(TimeSpan requestedValidPeriod)
+        {
+            return Configuration.GetRiskyConfigurations();
+        }
 
         protected async Task<Microsoft.Azure.Management.Fluent.IAzure> GetAzure()
         {
             if (AzureCredentials == null && StaticAzureCredentials != null)
+            {
                 AzureCredentials = StaticAzureCredentials;
+            }
 
             return await Microsoft.Azure.Management.Fluent.Azure
                 .Configure()

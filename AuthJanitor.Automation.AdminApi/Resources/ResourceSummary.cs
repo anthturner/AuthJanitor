@@ -2,7 +2,6 @@
 using AuthJanitor.Providers;
 using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace AuthJanitor.Automation.AdminApi.Resources
 {

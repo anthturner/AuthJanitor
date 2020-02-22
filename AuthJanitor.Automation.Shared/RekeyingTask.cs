@@ -12,6 +12,9 @@ namespace AuthJanitor.Automation.Shared
 
         public IList<Guid> ManagedSecretIds { get; set; }
 
-        public RekeyingTask() => ObjectId = Guid.NewGuid();
+        public RekeyingTask()
+        {
+            ObjectId = Guid.NewGuid();
+        }
     }
 }

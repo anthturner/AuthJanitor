@@ -1,5 +1,4 @@
-﻿using AuthJanitor.Providers;
-using Microsoft.Azure.Management.AppService.Fluent;
+﻿using Microsoft.Azure.Management.AppService.Fluent;
 using Microsoft.Azure.Management.AppService.Fluent.WebAppBase.Update;
 using System;
 using System.Collections.Generic;
@@ -13,7 +12,10 @@ namespace AuthJanitor.Providers.AppServices.Functions
         /// <summary>
         /// Call to prepare the application for a new secret
         /// </summary>
-        public override Task BeforeRekeying() => PrepareTemporaryDeploymentSlot();
+        public override Task BeforeRekeying()
+        {
+            return PrepareTemporaryDeploymentSlot();
+        }
 
         /// <summary>
         /// Call to commit the newly generated secret
@@ -21,20 +23,28 @@ namespace AuthJanitor.Providers.AppServices.Functions
         public override async Task CommitNewSecrets(List<RegeneratedSecret> newSecrets)
         {
             if (newSecrets.Count > 1 && newSecrets.Select(s => s.UserHint).Distinct().Count() != newSecrets.Count)
+            {
                 throw new Exception("Multiple secrets sent to Provider but without distinct UserHints!");
+            }
 
             IUpdate<IFunctionDeploymentSlot> updateBase = (await GetDeploymentSlot(TemporarySlotName)).Update();
-            foreach (var secret in newSecrets)
+            foreach (RegeneratedSecret secret in newSecrets)
+            {
                 updateBase = updateBase.WithConnectionString($"{Configuration.ConnectionStringName}-{secret.UserHint}",
                     secret.NewConnectionStringOrKey,
                     Configuration.ConnectionStringType);
+            }
+
             await updateBase.ApplyAsync();
         }
 
         /// <summary>
         /// Call after all new keys have been committed
         /// </summary>
-        public override Task AfterRekeying() => SwapTemporaryToDestination();
+        public override Task AfterRekeying()
+        {
+            return SwapTemporaryToDestination();
+        }
 
         public override string GetDescription()
         {

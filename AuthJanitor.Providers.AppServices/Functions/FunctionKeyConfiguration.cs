@@ -1,6 +1,4 @@
-﻿using AuthJanitor.Providers;
-
-namespace AuthJanitor.Providers.AppServices.Functions
+﻿namespace AuthJanitor.Providers.AppServices.Functions
 {
     /// <summary>
     /// Defines the configuration to rotate a Function Key for an Azure Functions application

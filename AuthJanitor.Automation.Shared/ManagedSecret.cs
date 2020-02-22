@@ -15,7 +15,7 @@ namespace AuthJanitor.Automation.Shared
 
         public DateTime LastChanged { get; set; }
         public TimeSpan ValidPeriod { get; set; }
-        
+
         public string Nonce { get; set; }
 
         /// <summary>

@@ -22,13 +22,15 @@ namespace AuthJanitor
             IDataStore<RekeyingTask> taskStore = new BlobDataStore<RekeyingTask>(taskStoreDirectory);
             IDataStore<ManagedSecret> secretStore = new BlobDataStore<ManagedSecret>(secretsDirectory);
 
-            var candidates = await secretStore.Get(s => s.LastChanged + s.ValidPeriod > DateTime.Now - TimeSpan.FromHours(NUMBER_OF_HOURS_LEAD_TIME));
+            IList<ManagedSecret> candidates = await secretStore.Get(s => s.LastChanged + s.ValidPeriod > DateTime.Now - TimeSpan.FromHours(NUMBER_OF_HOURS_LEAD_TIME));
             log.LogInformation("{0} candidates are expiring soon!", candidates.Count);
-            var newTasks = new List<RekeyingTask>();
-            foreach (var candidate in candidates)
+            List<RekeyingTask> newTasks = new List<RekeyingTask>();
+            foreach (ManagedSecret candidate in candidates)
             {
                 if (await taskStore.Get(t => t.ManagedSecretIds.Contains(candidate.ObjectId)) != null)
+                {
                     continue;
+                }
 
                 log.LogInformation("Creating rekeying task for Managed Secret ID {0}, which expires at {1}", candidate.LastChanged + candidate.ValidPeriod);
                 await taskStore.Create(new RekeyingTask()

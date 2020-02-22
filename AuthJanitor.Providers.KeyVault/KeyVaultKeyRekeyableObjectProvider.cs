@@ -1,5 +1,4 @@
-﻿using AuthJanitor.Providers;
-using Azure.Identity;
+﻿using Azure.Identity;
 using Azure.Security.KeyVault.Keys;
 using System;
 using System.Collections.Generic;
@@ -37,13 +36,13 @@ namespace AuthJanitor.Providers.KeyVault
             return new RegeneratedSecret()
             {
                 UserHint = Configuration.UserHint,
-                NewSecretValue = key.Value.Key.Id.ToString() 
+                NewSecretValue = key.Value.Key.Id.ToString()
             };
         }
 
         public override IList<RiskyConfigurationItem> GetRisks(TimeSpan requestedValidPeriod)
         {
-            var issues = new List<RiskyConfigurationItem>();
+            List<RiskyConfigurationItem> issues = new List<RiskyConfigurationItem>();
             if (requestedValidPeriod == TimeSpan.MaxValue)
             {
                 issues.Add(new RiskyConfigurationItem()

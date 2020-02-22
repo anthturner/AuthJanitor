@@ -27,12 +27,18 @@ namespace AuthJanitor.Providers
         /// Get a string describing the Configuration
         /// </summary>
         /// <returns></returns>
-        public virtual string GetDescriptiveString() => $"Resource Group: {ResourceGroup} - Resource Name: {ResourceName}";
+        public virtual string GetDescriptiveString()
+        {
+            return $"Resource Group: {ResourceGroup} - Resource Name: {ResourceName}";
+        }
 
         /// <summary>
         /// Get a list of configuration choices that might be risky
         /// </summary>
         /// <returns></returns>
-        public virtual IList<RiskyConfigurationItem> GetRiskyConfigurations() => new List<RiskyConfigurationItem>();
+        public virtual IList<RiskyConfigurationItem> GetRiskyConfigurations()
+        {
+            return new List<RiskyConfigurationItem>();
+        }
     }
 }

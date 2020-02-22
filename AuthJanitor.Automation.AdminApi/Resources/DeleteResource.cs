@@ -1,13 +1,13 @@
-using System.Threading.Tasks;
+using AuthJanitor.Automation.Shared;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
-using AuthJanitor.Automation.Shared;
-using System;
-using System.Web.Http;
 using Microsoft.WindowsAzure.Storage.Blob;
+using System;
+using System.Threading.Tasks;
+using System.Web.Http;
 
 namespace AuthJanitor.Automation.AdminApi.Resources
 {
@@ -25,7 +25,7 @@ namespace AuthJanitor.Automation.AdminApi.Resources
             IDataStore<Resource> resourceStore = new BlobDataStore<Resource>(resourceStoreDirectory);
 
             try { await resourceStore.Delete(resourceId); return new OkResult(); }
-            catch (Exception ex) { return new BadRequestErrorMessageResult("Invalid Resource ID"); }
+            catch (Exception) { return new BadRequestErrorMessageResult("Invalid Resource ID"); }
         }
     }
 }

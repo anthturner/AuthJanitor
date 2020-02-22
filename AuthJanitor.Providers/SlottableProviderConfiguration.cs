@@ -1,4 +1,5 @@
 ﻿using System;
+using System.ComponentModel;
 
 namespace AuthJanitor.Providers
 {
@@ -14,16 +15,19 @@ namespace AuthJanitor.Providers
         /// <summary>
         /// Source Slot (original application)
         /// </summary>
+        [Description("Original Application Slot")]
         public string SourceSlot { get; set; } = DEFAULT_ORIGINAL_SLOT;
 
         /// <summary>
         /// Temporary Slot (to coalesce new keys/configuration)
         /// </summary>
+        [Description("Temporary Application Slot")]
         public string TemporarySlot { get; set; } = DEFAULT_TEMPORARY_SLOT;
 
         /// <summary>
         /// Destination Slot (updated application). By default this is the same as the Source Slot.
         /// </summary>
+        [Description("Destination Application Slot")]
         public string DestinationSlot { get; set; } = DEFAULT_DESTINATION_SLOT;
 
         /// <summary>
@@ -32,7 +36,7 @@ namespace AuthJanitor.Providers
         /// <returns></returns>
         public override string GetDescriptiveString()
         {
-            return base.GetDescriptiveString() + Environment.NewLine + 
+            return base.GetDescriptiveString() + Environment.NewLine +
                 $"Slots = Source: {SourceSlot} - Temporary: {TemporarySlot} - Destination: {DestinationSlot}";
         }
     }

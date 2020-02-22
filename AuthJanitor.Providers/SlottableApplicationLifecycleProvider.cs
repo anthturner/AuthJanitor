@@ -5,7 +5,7 @@ namespace AuthJanitor.Providers
     /// <summary>
     /// Describes a ConsumingApplication which implements a slot pattern (such as Functions or WebApps)
     /// </summary>
-    public abstract class SlottableApplicationLifecycleProvider<TSlottableProviderConfiguration> : 
+    public abstract class SlottableApplicationLifecycleProvider<TSlottableProviderConfiguration> :
         ApplicationLifecycleProvider<TSlottableProviderConfiguration>
         where TSlottableProviderConfiguration : SlottableProviderConfiguration
     {

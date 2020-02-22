@@ -1,13 +1,13 @@
-using System.Threading.Tasks;
+using AuthJanitor.Automation.Shared;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
-using AuthJanitor.Automation.Shared;
 using Microsoft.WindowsAzure.Storage.Blob;
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Web.Http;
 
 namespace AuthJanitor.Automation.AdminApi.Resources
@@ -27,11 +27,13 @@ namespace AuthJanitor.Automation.AdminApi.Resources
             IDataStore<RekeyingTask> taskStore = new BlobDataStore<RekeyingTask>(taskStoreDirectory);
             IDataStore<ManagedSecret> secretStore = new BlobDataStore<ManagedSecret>(secretsDirectory);
 
-            var secretIds = await secretStore.List();
+            System.Collections.Generic.IList<Guid> secretIds = await secretStore.List();
             if (resource.ManagedSecretIds.Any(id => !secretIds.Contains(id)))
+            {
                 return new BadRequestErrorMessageResult("Invalid Managed Secret ID in set");
+            }
 
-            var newTask = new RekeyingTask()
+            RekeyingTask newTask = new RekeyingTask()
             {
                 Queued = DateTimeOffset.Now,
                 Expiry = resource.Expiry,

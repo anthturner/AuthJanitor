@@ -1,6 +1,6 @@
-﻿using AuthJanitor.Providers;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 
 namespace AuthJanitor.Providers.CosmosDb
 {
@@ -17,11 +17,13 @@ namespace AuthJanitor.Providers.CosmosDb
         /// <summary>
         /// Kind (type) of CosmosDb Key
         /// </summary>
+        [Description("CosmosDB Key Kind")]
         public CosmosDbKeyKinds KeyKind { get; set; }
 
         /// <summary>
         /// Skip the process of scrambling the other (non-active) key
         /// </summary>
+        [Description("Skip Scrambling Other Key")]
         public bool SkipScramblingOtherKey { get; set; }
 
         /// <summary>

@@ -1,6 +1,6 @@
-﻿using AuthJanitor.Providers;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 
 namespace AuthJanitor.Providers.Storage
 {
@@ -17,11 +17,13 @@ namespace AuthJanitor.Providers.Storage
         /// <summary>
         /// Kind (type) of Storage Key
         /// </summary>
+        [Description("Storage Key")]
         public StorageKeyTypes KeyType { get; set; }
 
         /// <summary>
         /// Skip the process of scrambling the other (non-active) key
         /// </summary>
+        [Description("Skip Scrambling Other Key?")]
         public bool SkipScramblingOtherKey { get; set; }
 
         /// <summary>

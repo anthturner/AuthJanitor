@@ -1,5 +1,4 @@
-﻿using AuthJanitor.Providers;
-using Azure.Identity;
+﻿using Azure.Identity;
 using Azure.Security.KeyVault.Secrets;
 using System;
 using System.Collections.Generic;
@@ -44,7 +43,7 @@ namespace AuthJanitor.Providers.KeyVault
 
         public override IList<RiskyConfigurationItem> GetRisks(TimeSpan requestedValidPeriod)
         {
-            var issues = new List<RiskyConfigurationItem>();
+            List<RiskyConfigurationItem> issues = new List<RiskyConfigurationItem>();
             if (requestedValidPeriod == TimeSpan.MaxValue)
             {
                 issues.Add(new RiskyConfigurationItem()

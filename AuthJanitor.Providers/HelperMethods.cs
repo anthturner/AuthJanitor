@@ -15,7 +15,7 @@ namespace AuthJanitor.Providers
     {
         private const string PROVIDER_SEARCH_MASK = "AuthJanitor.Providers.*.dll";
         private const string CHARS_ALPHANUMERIC_ONLY = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-        private static Type[] PROVIDER_SHARED_TYPES = new Type[]
+        private static readonly Type[] PROVIDER_SHARED_TYPES = new Type[]
         {
             typeof(IAuthJanitorProvider),
             typeof(AuthJanitorProvider<>),
@@ -59,19 +59,19 @@ namespace AuthJanitor.Providers
 
         public static void InitializeServiceProvider(ILoggerFactory loggerFactory)
         {
-            var serviceCollection = new ServiceCollection();
+            ServiceCollection serviceCollection = new ServiceCollection();
             serviceCollection.AddSingleton(loggerFactory);
 
-            foreach (var libraryFile in Directory.GetFiles(
+            foreach (string libraryFile in Directory.GetFiles(
                 AppDomain.CurrentDomain.BaseDirectory,
                 PROVIDER_SEARCH_MASK,
                 new EnumerationOptions() { RecurseSubdirectories = true }))
             {
-                var loader = PluginLoader.CreateFromAssemblyFile(
+                PluginLoader loader = PluginLoader.CreateFromAssemblyFile(
                     assemblyFile: libraryFile,
                     sharedTypes: PROVIDER_SHARED_TYPES);
 
-                foreach (var providerType in
+                foreach (Type providerType in
                     loader.LoadDefaultAssembly()
                           .GetTypes()
                           .Where(t => !t.IsAbstract && t.IsSubclassOf(typeof(IAuthJanitorProvider))))
@@ -88,15 +88,17 @@ namespace AuthJanitor.Providers
             TimeSpan requestedValidPeriod,
             params IAuthJanitorProvider[] providers)
         {
-            var alcProviders = providers.Where(p => p is IApplicationLifecycleProvider).Cast<IApplicationLifecycleProvider>().ToList();
-            var rkoProviders = providers.Where(p => p is IRekeyableObjectProvider).Cast<IRekeyableObjectProvider>().ToList();
+            List<IApplicationLifecycleProvider> alcProviders = providers.Where(p => p is IApplicationLifecycleProvider).Cast<IApplicationLifecycleProvider>().ToList();
+            List<IRekeyableObjectProvider> rkoProviders = providers.Where(p => p is IRekeyableObjectProvider).Cast<IRekeyableObjectProvider>().ToList();
 
             bool testFailed = false;
-            await Task.WhenAll(providers.Select(p => p.Test().ContinueWith(task => { if (!task.Result) testFailed = true; })));
+            await Task.WhenAll(providers.Select(p => p.Test().ContinueWith(task => { if (!task.Result) { testFailed = true; } })));
             if (testFailed)
+            {
                 throw new Exception("Sanity check failed!");
-            
-            var log = ServiceProvider.GetService<ILoggerFactory>().CreateLogger("RekeyingWorkflow");
+            }
+
+            ILogger log = ServiceProvider.GetService<ILoggerFactory>().CreateLogger("RekeyingWorkflow");
             log.LogInformation("Preparing {0} Application Lifecycle Providers...", alcProviders.Count);
             try
             {
@@ -113,7 +115,7 @@ namespace AuthJanitor.Providers
             List<RegeneratedSecret> generatedSecrets = new List<RegeneratedSecret>();
             try
             {
-                await Task.WhenAll(rkoProviders.Select(rop => 
+                await Task.WhenAll(rkoProviders.Select(rop =>
                             rop.Rekey(requestedValidPeriod)
                             .ContinueWith(task => generatedSecrets.Add(task.Result))));
             }
@@ -148,8 +150,10 @@ namespace AuthJanitor.Providers
             }
         }
 
-        public static IAuthJanitorProvider GetProvider(string name) =>
-            (ProviderTypes.Any(t => t.Name == name) ? ServiceProvider.GetService(ProviderTypes.First(t => t.Name == name)) : null) as IAuthJanitorProvider;
+        public static IAuthJanitorProvider GetProvider(string name)
+        {
+            return (ProviderTypes.Any(t => t.Name == name) ? ServiceProvider.GetService(ProviderTypes.First(t => t.Name == name)) : null) as IAuthJanitorProvider;
+        }
 
         public static string SHA256HashString(string str)
         {

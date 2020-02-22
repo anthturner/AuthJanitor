@@ -1,6 +1,6 @@
-﻿using AuthJanitor.Providers;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 
 namespace AuthJanitor.Providers.KeyVault
@@ -12,16 +12,19 @@ namespace AuthJanitor.Providers.KeyVault
         /// <summary>
         /// Key Vault name (xxxxx.vault.azure.net)
         /// </summary>
+        [Description("Vault Name")]
         public string VaultName { get; set; }
 
         /// <summary>
         /// Name of Key or Secret being operated upon
         /// </summary>
+        [Description("Key or Secret Name")]
         public string KeyOrSecretName { get; set; }
 
         /// <summary>
         /// Length of secret to regenerate, if appropriate
         /// </summary>
+        [Description("New Secret Length")]
         public int SecretLength { get; set; } = DEFAULT_SECRET_LENGTH;
 
         /// <summary>
@@ -40,7 +43,7 @@ $"Key Vault Name: {VaultName} - Object Name: {KeyOrSecretName} - Secret Length: 
         /// <returns></returns>
         public override IList<RiskyConfigurationItem> GetRiskyConfigurations()
         {
-            var issues = new List<RiskyConfigurationItem>();
+            List<RiskyConfigurationItem> issues = new List<RiskyConfigurationItem>();
             if (SecretLength < 16)
             {
                 issues.Add(new RiskyConfigurationItem()
