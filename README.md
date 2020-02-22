@@ -38,13 +38,74 @@ When the Task is ready to be executed, the rotation occurs in several steps:
 * The ConsumingApplication performs a swap or other action to "commit" configuration changes
 * The rekeying action is informed the ConsumingApplication has completed its swap. This allows for the scrambling of unused keys.
 
-## Extensions
-AuthJanitor Extensions are one of two types:
+## Glossary
+#### Provider
+A module which implements some functionality, either to handle an **Application Lifecycle** or rekey a **Rekeyable Object**.
 
-### RekeyableService
-A service (or key) which can be rekeyed. This service is accessed by the ConsumingApplication and may or may not have interlocking
-keys which can be rotated independently.
+##### Provider Configuration
+Configuration which the **Provider** consumes in order to access the **Application Lifecycle** or **Rekeyable Object**.
 
-### ConsumingApplication
-An application which consumes some information to connect to a RekeyableService. This could be a connection string, app setting,
-environment variable, etc.
+#### Application Lifecycle Provider
+A **Provider** with the logic necessary to handle the lifecycle of application which consumes some information (key, secret, environment variable,
+connection string) to access a **Rekeyable Object**.
+
+#### Rekeyable Object Provider
+A **Provider** with the logic necessary to rekey a service or object. This might be a database, storage, or an encryption key.
+
+#### Resource
+A GUID-identified pair which joins a **Provider** with its **Provider Configuration**. Resources also have a display name and description.
+A Resource can either be an **Application Lifecycle** _or_ a **Rekeyable Object**.
+
+#### Managed Secret
+A GUID-identified pair which joins an **Application Lifecycle Resource** with a **Rekeyable Object Resource**. Managed Secrets also have a
+display name and description, as well as metadata on the validity period and rotation history.
+
+#### Rekeying Task
+A GUID-identified pointer to a **Managed Secret** which needs to be rekeyed. A Rekeying Task has a queued date and an expiry date; the
+expiry date refers to the point in time where the key is rendered invalid. A Rekeying Task must be approved by an administrator.
+
+## Sample Code
+```
+public static async Task RotateKey()
+{
+	// Initialize DI container with your own LoggerFactory
+    HelperMethods.InitializeServiceProvider(new LoggerFactory());
+
+	// Get a RekeyableObjectProvider (this one is for Azure Storage keys)
+    var rekeyableProvider = HelperMethods.ServiceProvider.GetService(
+        typeof(Providers.Storage.StorageAccountRekeyableObjectProvider)) as Providers.Storage.StorageAccountRekeyableObjectProvider;
+	
+	// Configure the RekeyableObjectProvider
+    rekeyableProvider.Configuration = new Providers.Storage.StorageAccountKeyConfiguration()
+    {
+        KeyType = Providers.Storage.StorageAccountKeyConfiguration.StorageKeyTypes.Key1,
+        ResourceGroup = "resource_group",
+        ResourceName = "resource_name",
+        SkipScramblingOtherKey = false
+    };
+
+	// Get an ApplicationLifecycleProvider (this one is for an Azure WebApp, consuming from AppSettings)
+    var appProvider = HelperMethods.ServiceProvider.GetService(
+        typeof(Providers.AppServices.WebApps.AppSettingsWebAppApplicationLifecycleProvider)) as Providers.AppServices.WebApps.AppSettingsWebAppApplicationLifecycleProvider;
+    
+	// Configure the ApplicationLifecycleProvider
+	appProvider.Configuration = new Providers.AppServices.AppSettingConfiguration()
+    {
+        ResourceGroup = "resource_group",
+        ResourceName = "resource_name",
+        SettingName = "storage_key",
+        SourceSlot = "production",
+        TemporarySlot = "temporary",
+        DestinationSlot = "production"
+    };
+
+	// Execute the rekeying workflow.
+	// This will:
+	// - Run sanity tests on all Providers
+	// - Prep all ApplicationLifecycleProviders
+	// - Rekey all RekeyableObjectProviders
+	// - Commit generated keys to ApplicationLifecycleProviders
+	// - Run post-commit activities on all ApplicationLifecycleProviders
+    await HelperMethods.RunRekeyingWorkflow(TimeSpan.FromDays(7), rekeyableProvider, appProvider);
+}
+```
