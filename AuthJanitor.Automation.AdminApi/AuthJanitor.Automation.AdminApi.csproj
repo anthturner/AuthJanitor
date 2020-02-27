@@ -1,13 +1,38 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
-    <AzureFunctionsVersion>v2</AzureFunctionsVersion>
+    <TargetFramework>netcoreapp3.0</TargetFramework>
+    <AzureFunctionsVersion>v3</AzureFunctionsVersion>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Remove="Tasks\ApproveTask.cs" />
+    <Compile Remove="Tasks\CreateTask.cs" />
+    <Compile Remove="Tasks\DeleteTask.cs" />
+    <Compile Remove="Tasks\ListTasks.cs" />
+    <Compile Remove="Tasks\PreviewTaskActions.cs" />
+    <Compile Remove="Tasks\RekeyingTaskViewModel.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Tasks\ApproveTask.cs" />
+    <None Include="Tasks\CreateTask.cs" />
+    <None Include="Tasks\DeleteTask.cs" />
+    <None Include="Tasks\ListTasks.cs" />
+    <None Include="Tasks\PreviewTaskActions.cs" />
+    <None Include="Tasks\RekeyingTaskViewModel.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.Storage" Version="3.0.10" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="3.1.2" />
     <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="3.0.3" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\AuthJanitor.Automation.Shared\AuthJanitor.Automation.Shared.csproj" />
+    <ProjectReference Include="..\AuthJanitor.Providers.AppServices\AuthJanitor.Providers.AppServices.csproj" />
+    <ProjectReference Include="..\AuthJanitor.Providers.AzureAD\AuthJanitor.Providers.AzureAD.csproj" />
+    <ProjectReference Include="..\AuthJanitor.Providers.CosmosDb\AuthJanitor.Providers.CosmosDb.csproj" />
+    <ProjectReference Include="..\AuthJanitor.Providers.KeyVault\AuthJanitor.Providers.KeyVault.csproj" />
+    <ProjectReference Include="..\AuthJanitor.Providers.ServiceBus\AuthJanitor.Providers.ServiceBus.csproj" />
+    <ProjectReference Include="..\AuthJanitor.Providers.Storage\AuthJanitor.Providers.Storage.csproj" />
+    <ProjectReference Include="..\AuthJanitor.Providers\AuthJanitor.Providers.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Update="host.json">

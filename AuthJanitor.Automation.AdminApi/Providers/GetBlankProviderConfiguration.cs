@@ -1,9 +1,11 @@
 using AuthJanitor.Automation.Shared;
+using AuthJanitor.Providers;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Logging;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Web.Http;
 
@@ -13,7 +15,7 @@ namespace AuthJanitor.Automation.AdminApi.Providers
     {
         [FunctionName("GetBlankProviderConfiguration")]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Function, "put", Route = "/providers/{providerType}/configuration")] HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "providers/{providerType:alpha}")] HttpRequest req,
             string providerType,
             ILogger log)
         {
@@ -25,7 +27,9 @@ namespace AuthJanitor.Automation.AdminApi.Providers
                 return new BadRequestErrorMessageResult("Invalid Provider Type");
             }
 
-            return new OkObjectResult(configuration);
+            return new OkObjectResult(configuration.GetType().GetProperties()
+                                                   .Select(p => ProviderConfigurationItemViewModel.FromProperty(p))
+                                                   .Where(p => p != null));
         }
     }
 }

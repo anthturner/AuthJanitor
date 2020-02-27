@@ -3,6 +3,9 @@ using System.Threading.Tasks;
 
 namespace AuthJanitor.Providers.AppServices.Functions
 {
+    [Provider(Name = "Functions App Key",
+              IconClass = "fa fa-key",
+              Description = "Rekeys a Function Key for an Azure Functions Application")]
     public class FunctionKeyRekeyableObjectProvider : RekeyableObjectProvider<FunctionKeyConfiguration>
     {
         public override async Task<RegeneratedSecret> Rekey(TimeSpan requestedValidPeriod)

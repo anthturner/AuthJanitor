@@ -16,7 +16,7 @@ namespace AuthJanitor.Automation.AdminApi.Resources
     {
         [FunctionName("CreateTask")]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Function, "put", Route = "/tasks/create")] HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Function, "post", Route = "/tasks")] HttpRequest req,
             [FromBody] RekeyingTask resource,
             ILogger log)
         {
@@ -27,7 +27,7 @@ namespace AuthJanitor.Automation.AdminApi.Resources
             IDataStore<RekeyingTask> taskStore = new BlobDataStore<RekeyingTask>(taskStoreDirectory);
             IDataStore<ManagedSecret> secretStore = new BlobDataStore<ManagedSecret>(secretsDirectory);
 
-            System.Collections.Generic.IList<Guid> secretIds = await secretStore.List();
+            System.Collections.Generic.IList<Guid> secretIds = await secretStore.ListIds();
             if (resource.ManagedSecretIds.Any(id => !secretIds.Contains(id)))
             {
                 return new BadRequestErrorMessageResult("Invalid Managed Secret ID in set");

@@ -1,4 +1,4 @@
-﻿using Azure.Identity;
+﻿using Azure.Core;
 using Azure.Security.KeyVault.Keys;
 using System;
 using System.Collections.Generic;
@@ -7,12 +7,16 @@ using System.Threading.Tasks;
 
 namespace AuthJanitor.Providers.KeyVault
 {
+    [Provider(Name = "Key Vault Key",
+              IconClass = "fa fa-key",
+              Description = "Regenerates a Key Vault Key")]
     public class KeyVaultKeyRekeyableObjectProvider : RekeyableObjectProvider<KeyVaultConfiguration>
     {
         public override async Task<RegeneratedSecret> Rekey(TimeSpan requestedValidPeriod)
         {
             // TODO: This doesn't use the other credential set, it tries to execute its own set of fallbacks!
-            KeyClient client = new KeyClient(new Uri($"https://{Configuration.VaultName}.vault.azure.net/"), new DefaultAzureCredential(true));
+            KeyClient client = new KeyClient(new Uri($"https://{Configuration.VaultName}.vault.azure.net/"),
+                HelperMethods.ServiceProvider.GetService(typeof(TokenCredential)) as TokenCredential);
             Azure.Response<KeyVaultKey> currentKey = await client.GetKeyAsync(Configuration.KeyOrSecretName);
 
             CreateKeyOptions creationOptions = new CreateKeyOptions()
@@ -47,7 +51,7 @@ namespace AuthJanitor.Providers.KeyVault
             {
                 issues.Add(new RiskyConfigurationItem()
                 {
-                    Score = 0.8,
+                    Score = 80,
                     Risk = $"The specificed Valid Period is TimeSpan.MaxValue, which is effectively Infinity; it is dangerous to allow infinite periods of validity because it allows an object's prior version to be available after the object has been rotated",
                     Recommendation = "Specify a reasonable value for Valid Period"
                 });
@@ -56,7 +60,7 @@ namespace AuthJanitor.Providers.KeyVault
             {
                 issues.Add(new RiskyConfigurationItem()
                 {
-                    Score = 1.0,
+                    Score = 100,
                     Risk = $"The specificed Valid Period is zero, so this object will never be allowed to be used",
                     Recommendation = "Specify a reasonable value for Valid Period"
                 });

@@ -4,6 +4,9 @@ using System.Threading.Tasks;
 
 namespace AuthJanitor.Providers.CosmosDb
 {
+    [Provider(Name = "CosmosDB Master Key",
+              IconClass = "fa fa-database",
+              Description = "Rekeys a CosmosDB Master Key")]
     public class CosmosDbRekeyableObjectProvider : RekeyableObjectProvider<CosmosDbKeyConfiguration>
     {
         private const string PRIMARY_READONLY_KEY = "primaryReadOnly";

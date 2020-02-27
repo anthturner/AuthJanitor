@@ -7,6 +7,9 @@ using System.Threading.Tasks;
 
 namespace AuthJanitor.Providers.KeyVault
 {
+    [Provider(Name = "Key Vault Secret",
+              IconClass = "fa fa-low-vision",
+              Description = "Regenerates a Key Vault Secret")]
     public class KeyVaultSecretRekeyableObjectProvider : RekeyableObjectProvider<KeyVaultConfiguration>
     {
         public override async Task<RegeneratedSecret> Rekey(TimeSpan requestedValidPeriod)
@@ -48,7 +51,7 @@ namespace AuthJanitor.Providers.KeyVault
             {
                 issues.Add(new RiskyConfigurationItem()
                 {
-                    Score = 0.8,
+                    Score = 80,
                     Risk = $"The specificed Valid Period is TimeSpan.MaxValue, which is effectively Infinity; it is dangerous to allow infinite periods of validity because it allows an object's prior version to be available after the object has been rotated",
                     Recommendation = "Specify a reasonable value for Valid Period"
                 });
@@ -57,7 +60,7 @@ namespace AuthJanitor.Providers.KeyVault
             {
                 issues.Add(new RiskyConfigurationItem()
                 {
-                    Score = 1.0,
+                    Score = 100,
                     Risk = $"The specificed Valid Period is zero, so this object will never be allowed to be used",
                     Recommendation = "Specify a reasonable value for Valid Period"
                 });

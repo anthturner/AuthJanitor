@@ -7,6 +7,9 @@ using System.Threading.Tasks;
 
 namespace AuthJanitor.Providers.AppServices.Functions
 {
+    [Provider(Name = "Functions App - Connection String",
+              IconClass = "fa fa-gears",
+              Description = "Manages the lifecycle of a Functions app which reads a Connection String")]
     public class ConnectionStringFunctionsApplicationLifecycleProvider : FunctionsApplicationLifecycleProvider<ConnectionStringConfiguration>
     {
         /// <summary>

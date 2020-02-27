@@ -7,6 +7,9 @@ using System.Threading.Tasks;
 
 namespace AuthJanitor.Providers.AppServices.WebApps
 {
+    [Provider(Name = "WebApp - Connection String",
+              IconClass = "fa fa-globe",
+              Description = "Manages the lifecycle of a WebApp which reads a Connection String")]
     public class ConnectionStringWebAppApplicationLifecycleProvider : WebAppApplicationLifecycleProvider<ConnectionStringConfiguration>
     {
         /// <summary>

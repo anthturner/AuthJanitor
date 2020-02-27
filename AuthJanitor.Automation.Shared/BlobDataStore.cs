@@ -9,7 +9,8 @@ namespace AuthJanitor.Automation.Shared
 {
     public class BlobDataStore<TDataType> : IDataStore<TDataType> where TDataType : IDataStoreCompatibleStructure
     {
-        protected CloudBlobDirectory Directory { get; }
+        protected CloudBlockBlob Blob { get; }
+        protected List<TDataType> _data = new List<TDataType>();
 
         protected string ObjectIdToName(Guid id)
         {
@@ -21,66 +22,55 @@ namespace AuthJanitor.Automation.Shared
             return Guid.Parse(name);
         }
 
-        public BlobDataStore(CloudBlobDirectory directory)
+        public BlobDataStore(CloudBlockBlob blob)
         {
-            Directory = directory;
+            Blob = blob;
         }
 
-        public async Task Create(TDataType model)
+        public Task Create(TDataType model)
         {
-            await WriteObject(model.ObjectId, model);
+            _data.Add(model);
+            return Task.FromResult(true);
         }
 
-        public async Task Update(TDataType model)
+        public Task Update(TDataType model)
         {
-            await WriteObject(model.ObjectId, model);
-        }
-
-        public async Task<IList<Guid>> List()
-        {
-            BlobContinuationToken continuationToken = null;
-            List<IListBlobItem> results = new List<IListBlobItem>();
-            do
-            {
-                BlobResultSegment response = await Directory.ListBlobsSegmentedAsync(continuationToken);
-                continuationToken = response.ContinuationToken;
-                results.AddRange(response.Results);
-            }
-            while (continuationToken != null);
-            return results.Select(o => NameToObjectId(o.Uri.LocalPath)).ToList();
+            _data.RemoveAll(d => d.ObjectId == model.ObjectId);
+            _data.Add(model);
+            return Task.FromResult(true);
         }
 
         public Task Delete(Guid id)
         {
-            return Directory.GetBlockBlobReference(ObjectIdToName(id)).DeleteIfExistsAsync();
+            _data.RemoveAll(d => d.ObjectId == id);
+            return Task.FromResult(true);
         }
 
         public Task<TDataType> Get(Guid id)
         {
-            return ReadObject(id);
+            return Task.FromResult(_data.FirstOrDefault(d => d.ObjectId == id));
         }
 
-        public async Task<IList<TDataType>> Get(Func<TDataType, bool> selector)
+        public Task<List<TDataType>> Get(Func<TDataType, bool> selector)
         {
-            IList<Guid> allObjects = await List();
-            List<TDataType> allObjectsRead = allObjects.Select(o => ReadObject(o).Result).ToList();
-            return allObjectsRead.Where(selector).ToList();
+            return Task.FromResult(_data.Where(selector).ToList());
         }
 
-        public async Task<IList<TDataType>> Get()
+        public async Task<IDataStore<TDataType>> Initialize()
         {
-            IList<Guid> allItems = await List();
-            return allItems.Select(i => Get(i).Result).ToList();
+            _data = JsonConvert.DeserializeObject<List<TDataType>>(await Blob.DownloadTextAsync());
+            return this;
         }
 
-        private async Task WriteObject(Guid id, TDataType obj)
+        public async Task<IDataStore<TDataType>> Commit()
         {
-            await Directory.GetBlockBlobReference(ObjectIdToName(id)).UploadTextAsync(JsonConvert.SerializeObject(obj));
+            await Blob.UploadTextAsync(JsonConvert.SerializeObject(_data));
+            return this;
         }
 
-        private async Task<TDataType> ReadObject(Guid id)
+        public Task<List<TDataType>> List()
         {
-            return JsonConvert.DeserializeObject<TDataType>(await Directory.GetBlockBlobReference(ObjectIdToName(id)).DownloadTextAsync());
+            return Task.FromResult(_data);
         }
     }
 }

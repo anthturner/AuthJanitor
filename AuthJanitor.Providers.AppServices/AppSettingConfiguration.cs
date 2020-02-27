@@ -11,6 +11,7 @@ namespace AuthJanitor.Providers.AppServices
         /// <summary>
         /// AppSetting Name
         /// </summary>
+        [DisplayName("AppSetting Name")]
         [Description("AppSetting Name")]
         public string SettingName { get; set; }
 

@@ -21,7 +21,7 @@ namespace AuthJanitor.Automation.AdminApi.Resources
             ObjectId = resource.ObjectId;
             ResourceName = resource.Name;
             Description = resource.Description;
-            ProviderName = resource.ProviderName;
+            ProviderName = resource.ProviderType;
         }
     }
 }

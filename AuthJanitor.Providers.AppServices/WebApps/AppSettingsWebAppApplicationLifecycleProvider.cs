@@ -7,6 +7,9 @@ using System.Threading.Tasks;
 
 namespace AuthJanitor.Providers.AppServices.WebApps
 {
+    [Provider(Name = "WebApp - AppSettings",
+              IconClass = "fa fa-globe",
+              Description = "Manages the lifecycle of a WebApp which reads from AppSettings")]
     public class AppSettingsWebAppApplicationLifecycleProvider : WebAppApplicationLifecycleProvider<AppSettingConfiguration>
     {
         /// <summary>
@@ -42,6 +45,19 @@ namespace AuthJanitor.Providers.AppServices.WebApps
         public override Task AfterRekeying()
         {
             return SwapTemporaryToDestination();
+        }
+
+        public override IList<RiskyConfigurationItem> GetRisks(TimeSpan requestedValidPeriod)
+        {
+            return new List<RiskyConfigurationItem>()
+            {
+                new RiskyConfigurationItem()
+                {
+                    Risk = "Sample Risk",
+                    Recommendation = "This can be safely ignored.",
+                    Score = 80
+                }
+            };
         }
 
         public override string GetDescription()

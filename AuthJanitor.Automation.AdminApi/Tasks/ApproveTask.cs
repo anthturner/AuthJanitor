@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.WindowsAzure.Storage.Blob;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Web.Http;
@@ -18,7 +19,10 @@ namespace AuthJanitor
     {
         [FunctionName("ApproveTask")]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Function, "put", Route = "/tasks/{taskId:guid}/approve")] HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Function, "post", Route = "/tasks/{taskId:guid}/approve")] HttpRequest req,
+            [Blob("authjanitor/resources", FileAccess.Read, Connection = "AzureWebJobsStorage")] CloudBlockBlob resourcesBlob,
+            [Blob("authjanitor/secrets", FileAccess.Read, Connection = "AzureWebJobsStorage")] CloudBlockBlob secretsBlob,
+            [Blob("authjanitor/tasks", FileAccess.ReadWrite, Connection = "AzureWebJobsStorage")] CloudBlockBlob tasksBlob,
             Guid taskId,
             ILogger log)
         {
@@ -26,22 +30,19 @@ namespace AuthJanitor
 
             log.LogInformation("Administrator approved Task ID {0}", taskId);
 
-            CloudBlobDirectory taskStoreDirectory = null;
-            CloudBlobDirectory secretsDirectory = null;
-            CloudBlobDirectory resourcesDirectory = null;
-            IDataStore<RekeyingTask> taskStore = new BlobDataStore<RekeyingTask>(taskStoreDirectory);
-            IDataStore<ManagedSecret> secretStore = new BlobDataStore<ManagedSecret>(secretsDirectory);
-            IDataStore<Resource> resourceStore = new BlobDataStore<Resource>(resourcesDirectory);
+            var resourceStore = await new BlobDataStore<Resource>(resourcesBlob).Initialize();
+            var secretStore = await new BlobDataStore<ManagedSecret>(secretsBlob).Initialize();
+            var taskStore = await new BlobDataStore<RekeyingTask>(tasksBlob).Initialize();
 
             RekeyingTask task = await taskStore.Get(taskId);
             Dictionary<Guid, string> secretResults = new Dictionary<Guid, string>();
 
             if (task.Expiry < DateTime.Now)
             {
-                log.LogError("Drop-dead time has expired; this rekeying operation may be a little bumpy!");
+                log.LogError("Expiry time has passed; this rekeying operation may be a little bumpy!");
             }
 
-            IList<Resource> allResources = await resourceStore.Get();
+            IList<Resource> allResources = await resourceStore.List();
             IEnumerable<Guid> allResourceIds = allResources.Select(r => r.ObjectId);
 
             foreach (Guid managedSecretId in task.ManagedSecretIds)

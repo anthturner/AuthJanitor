@@ -5,6 +5,9 @@ using System.Threading.Tasks;
 
 namespace AuthJanitor.Providers.ServiceBus
 {
+    [Provider(Name = "Service Bus Key",
+              IconClass = "fa fa-key",
+              Description = "Regenerates a Service Bus Key")]
     public class ServiceBusRekeyableObjectProvider : RekeyableObjectProvider<ServiceBusKeyConfiguration>
     {
         public override async Task<RegeneratedSecret> Rekey(TimeSpan requestedValidPeriod)

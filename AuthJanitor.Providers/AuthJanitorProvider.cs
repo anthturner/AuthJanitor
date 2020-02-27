@@ -26,11 +26,6 @@ namespace AuthJanitor.Providers
         string SerializedConfiguration { get; set; }
 
         /// <summary>
-        /// Azure Credentials used for requests
-        /// </summary>
-        AzureCredentials AzureCredentials { get; set; }
-
-        /// <summary>
         /// Test if the current credentials can execute an Extension 
         /// </summary>
         /// <returns></returns>
@@ -61,11 +56,6 @@ namespace AuthJanitor.Providers
     public abstract class AuthJanitorProvider<TConfiguration> : IAuthJanitorProvider where TConfiguration : AuthJanitorProviderConfiguration
     {
         /// <summary>
-        /// Static credentials used to perform all operations (if provided)
-        /// </summary>
-        public static AzureCredentials StaticAzureCredentials { get; set; }
-
-        /// <summary>
         /// Provider Configuration
         /// </summary>
         public TConfiguration Configuration
@@ -90,14 +80,9 @@ namespace AuthJanitor.Providers
         public string SerializedConfiguration { get; set; }
 
         /// <summary>
-        /// Azure Credentials used for requests
-        /// </summary>
-        public AzureCredentials AzureCredentials { get; set; }
-
-        /// <summary>
         /// Logger implementation
         /// </summary>
-        protected ILogger Logger { get; set; }
+        protected ILogger Logger { get; }
 
         protected AuthJanitorProvider()
         {
@@ -131,14 +116,9 @@ namespace AuthJanitor.Providers
 
         protected async Task<Microsoft.Azure.Management.Fluent.IAzure> GetAzure()
         {
-            if (AzureCredentials == null && StaticAzureCredentials != null)
-            {
-                AzureCredentials = StaticAzureCredentials;
-            }
-
             return await Microsoft.Azure.Management.Fluent.Azure
                 .Configure()
-                .Authenticate(AzureCredentials)
+                .Authenticate(HelperMethods.ServiceProvider.GetService(typeof(AzureCredentials)) as AzureCredentials)
                 .WithDefaultSubscriptionAsync();
         }
     }

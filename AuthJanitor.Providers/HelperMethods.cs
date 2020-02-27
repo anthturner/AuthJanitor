@@ -1,10 +1,13 @@
-﻿using McMaster.NETCore.Plugins;
+﻿using Azure.Core;
+using McMaster.NETCore.Plugins;
+using Microsoft.Azure.Management.ResourceManager.Fluent.Authentication;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
@@ -52,18 +55,20 @@ namespace AuthJanitor.Providers
             for (int i = 0; i < length; i++)
             {
                 int randomNumber = BitConverter.ToInt32(data, i * 4);
+                if (randomNumber < 0) randomNumber *= -1;
                 sb.Append(chars[randomNumber % chars.Length]);
             }
             return sb.ToString();
         }
 
-        public static void InitializeServiceProvider(ILoggerFactory loggerFactory)
+        public static void InitializeServiceProvider(ILoggerFactory loggerFactory, TokenCredential tokenCredential = null, AzureCredentials azureCredentials = null)
         {
+            ProviderTypes.Clear();
             ServiceCollection serviceCollection = new ServiceCollection();
             serviceCollection.AddSingleton(loggerFactory);
 
             foreach (string libraryFile in Directory.GetFiles(
-                AppDomain.CurrentDomain.BaseDirectory,
+                Path.GetFullPath(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "..")),
                 PROVIDER_SEARCH_MASK,
                 new EnumerationOptions() { RecurseSubdirectories = true }))
             {
@@ -74,12 +79,17 @@ namespace AuthJanitor.Providers
                 foreach (Type providerType in
                     loader.LoadDefaultAssembly()
                           .GetTypes()
-                          .Where(t => !t.IsAbstract && t.IsSubclassOf(typeof(IAuthJanitorProvider))))
+                          .Where(t => !t.IsAbstract && typeof(IAuthJanitorProvider).IsAssignableFrom(t)))
                 {
                     ProviderTypes.Add(providerType);
                     serviceCollection.AddTransient(providerType);
                 }
             }
+
+            if (tokenCredential != null)
+                serviceCollection.AddSingleton(tokenCredential);
+            if (azureCredentials != null)
+                serviceCollection.AddSingleton(azureCredentials);
 
             ServiceProvider = serviceCollection.BuildServiceProvider();
         }
@@ -153,6 +163,14 @@ namespace AuthJanitor.Providers
         public static IAuthJanitorProvider GetProvider(string name)
         {
             return (ProviderTypes.Any(t => t.Name == name) ? ServiceProvider.GetService(ProviderTypes.First(t => t.Name == name)) : null) as IAuthJanitorProvider;
+        }
+
+        public static T GetEnumValueAttribute<T>(this Enum enumVal) where T : Attribute
+        {
+            var attrib = enumVal.GetType()
+                   .GetMember(enumVal.ToString())[0]
+                   .GetCustomAttributes(typeof(T), false);
+            return (attrib.Length > 0) ? (T)attrib[0] : null;
         }
 
         public static string SHA256HashString(string str)

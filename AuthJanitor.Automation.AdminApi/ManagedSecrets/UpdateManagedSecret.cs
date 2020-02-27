@@ -6,7 +6,7 @@ using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.WindowsAzure.Storage.Blob;
-using Newtonsoft.Json;
+using System;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -14,22 +14,27 @@ using System.Web.Http;
 
 namespace AuthJanitor.Automation.AdminApi
 {
-    public static class CreateManagedSecret
+    public static class UpdateManagedSecret
     {
-        [FunctionName("CreateManagedSecret")]
+        [FunctionName("UpdateManagedSecret")]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "secrets")] ManagedSecret inputSecret,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "secrets/{secretId:guid}")] ManagedSecret inputSecret,
             HttpRequest req,
             [Blob("authjanitor/secrets", FileAccess.ReadWrite, Connection = "AzureWebJobsStorage")] CloudBlockBlob secretsBlob,
             [Blob("authjanitor/resources", FileAccess.Read, Connection = "AzureWebJobsStorage")] CloudBlockBlob resourcesBlob,
+            Guid secretId,
             ILogger log)
         {
-            log.LogInformation("Creating new Managed Secret");
+            log.LogInformation("Updating Managed Secret {0}", secretId);
 
             IDataStore<ManagedSecret> secretStore = 
                 await new BlobDataStore<ManagedSecret>(secretsBlob).Initialize();
             IDataStore<Resource> resourceStore = 
                 await new BlobDataStore<Resource>(resourcesBlob).Initialize();
+
+            var secret = await secretStore.Get(secretId);
+            if (secret == null)
+                return new BadRequestErrorMessageResult("Secret does not exist!");
 
             var allResources = await resourceStore.List();
             var allResourceIds = allResources.Select(r => r.ObjectId);
@@ -48,10 +53,10 @@ namespace AuthJanitor.Automation.AdminApi
                 ResourceIds = inputSecret.ResourceIds
             };
 
-            await secretStore.Create(newManagedSecret);
+            await secretStore.Update(newManagedSecret);
             await secretStore.Commit();
 
-            log.LogInformation("Created new Managed Secret '{0}'", newManagedSecret.Name);
+            log.LogInformation("Updated Managed Secret '{0}'", newManagedSecret.Name);
 
             return new OkObjectResult(ManagedSecretViewModel.FromManagedSecret(newManagedSecret, allResources));
         }

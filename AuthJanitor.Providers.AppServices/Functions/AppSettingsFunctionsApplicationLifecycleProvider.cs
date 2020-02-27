@@ -10,6 +10,9 @@ namespace AuthJanitor.Providers.AppServices.Functions
     /// <summary>
     /// Defines a Functions application which receives key information through an AppConfig setting
     /// </summary>
+    [Provider(Name = "Functions App - AppSettings",
+              IconClass = "fa fa-gears",
+              Description = "Manages the lifecycle of a Functions app which reads from AppSettings")]
     public class AppSettingsFunctionsApplicationLifecycleProvider : FunctionsApplicationLifecycleProvider<AppSettingConfiguration>
     {
         /// <summary>

@@ -1,9 +1,11 @@
 using AuthJanitor.Providers;
+using Azure.Identity;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using System;
 using System.Linq;
 using System.Reflection;
@@ -15,13 +17,17 @@ namespace AuthJanitor.Automation.AdminApi.Providers
     {
         [FunctionName("ListProviders")]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Function, "put", Route = "/providers/list")] HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "providers")] HttpRequest req,
             ILogger log)
         {
             log.LogInformation("C# HTTP trigger function processed a request.");
 
-            return new OkObjectResult(HelperMethods.ProviderTypes.Select(provider =>
-                Tuple.Create(provider.Name, provider.GetType().GetCustomAttribute<ProviderAttribute>())));
+            return new OkObjectResult(
+                HelperMethods.ProviderTypes.Select(p => new
+                {
+                    Name = p.Name,
+                    Description = p.GetCustomAttribute<ProviderAttribute>()
+                }));
         }
     }
 }

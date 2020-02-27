@@ -31,7 +31,7 @@ namespace AuthJanitor.Automation.AdminApi.Resources
             IDataStore<Resource> resourceStore = new BlobDataStore<Resource>(resourceStoreDirectory);
             IDataStore<ManagedSecret> secretStore = new BlobDataStore<ManagedSecret>(secretStoreDirectory);
 
-            IList<Guid> allRegisteredResources = await resourceStore.List();
+            IList<Guid> allRegisteredResources = await resourceStore.ListIds();
 
             RekeyingTask task = await taskStore.Get(taskId);
             List<object> secrets = new List<object>();

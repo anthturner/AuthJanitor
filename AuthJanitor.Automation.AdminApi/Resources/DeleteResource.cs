@@ -6,6 +6,7 @@ using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.WindowsAzure.Storage.Blob;
 using System;
+using System.IO;
 using System.Threading.Tasks;
 using System.Web.Http;
 
@@ -15,16 +16,22 @@ namespace AuthJanitor.Automation.AdminApi.Resources
     {
         [FunctionName("DeleteResource")]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Function, "put", Route = "/resources/{resourceId:guid}/delete")] HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "resources/{resourceId:guid}")] HttpRequest req,
+            [Blob("authjanitor/resources", FileAccess.ReadWrite, Connection = "AzureWebJobsStorage")] CloudBlockBlob resourcesBlob,
             Guid resourceId,
             ILogger log)
         {
-            log.LogInformation("Delete Resource ID {0}.", resourceId);
+            log.LogInformation("Deleting Resource ID {0}.", resourceId);
 
-            CloudBlobDirectory resourceStoreDirectory = null;
-            IDataStore<Resource> resourceStore = new BlobDataStore<Resource>(resourceStoreDirectory);
+            IDataStore<Resource> resourceStore =
+                await new BlobDataStore<Resource>(resourcesBlob).Initialize();
 
-            try { await resourceStore.Delete(resourceId); return new OkResult(); }
+            try
+            { 
+                await resourceStore.Delete(resourceId);
+                await resourceStore.Commit();
+                return new OkResult();
+            }
             catch (Exception) { return new BadRequestErrorMessageResult("Invalid Resource ID"); }
         }
     }

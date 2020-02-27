@@ -9,7 +9,7 @@ namespace AuthJanitor.Automation.Shared
         public string Description { get; set; }
 
         public bool IsRekeyableObjectProvider { get; set; }
-        public string ProviderName { get; set; }
+        public string ProviderType { get; set; }
         public string ProviderConfiguration { get; set; }
 
         public Resource()

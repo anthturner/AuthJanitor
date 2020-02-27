@@ -13,10 +13,12 @@ namespace AuthJanitor.Automation.Shared
     {
         Task Create(TDataType model);
         Task Update(TDataType model);
-        Task<IList<Guid>> List();
+        Task<List<TDataType>> List();
         Task Delete(Guid id);
         Task<TDataType> Get(Guid id);
-        Task<IList<TDataType>> Get(Func<TDataType, bool> predicate);
-        Task<IList<TDataType>> Get();
+        Task<List<TDataType>> Get(Func<TDataType, bool> predicate);
+
+        Task<IDataStore<TDataType>> Initialize();
+        Task<IDataStore<TDataType>> Commit();
     }
 }

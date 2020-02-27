@@ -54,7 +54,7 @@ $"Service Bus Key Type: {KeyType.ToString()} - Authorization Rule: {Authorizatio
             {
                 issues.Add(new RiskyConfigurationItem()
                 {
-                    Score = 0.8,
+                    Score = 80,
                     Risk = $"The other (unused) Service Bus Key is not being scrambled during key rotation",
                     Recommendation = "Unless other services use the alternate key, consider allowing the scrambling of the unused key to 'fully' rekey the Service Bus and maintain a high degree of security."
                 });

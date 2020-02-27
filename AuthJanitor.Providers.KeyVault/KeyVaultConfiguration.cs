@@ -48,7 +48,7 @@ $"Key Vault Name: {VaultName} - Object Name: {KeyOrSecretName} - Secret Length: 
             {
                 issues.Add(new RiskyConfigurationItem()
                 {
-                    Score = 0.8,
+                    Score = 80,
                     Risk = $"The specificed secret length is extremely short ({SecretLength} characters), making it easier to compromise through brute force attacks",
                     Recommendation = "Increase the length of the secret to over 32 characters; prefer 64 or up."
                 });
@@ -57,7 +57,7 @@ $"Key Vault Name: {VaultName} - Object Name: {KeyOrSecretName} - Secret Length: 
             {
                 issues.Add(new RiskyConfigurationItem()
                 {
-                    Score = 0.4,
+                    Score = 40,
                     Risk = $"The specificed secret length is somewhat short ({SecretLength} characters), making it easier to compromise through brute force attacks",
                     Recommendation = "Increase the length of the secret to over 32 characters; prefer 64 or up."
                 });

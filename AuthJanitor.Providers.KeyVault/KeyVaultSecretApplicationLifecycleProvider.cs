@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 
 namespace AuthJanitor.Providers.KeyVault
 {
+    [Provider(Name = "Key Vault Secret",
+              IconClass = "fa fa-low-vision",
+              Description = "Manages the lifecycle of a Key Vault Secret")]
     public class KeyVaultSecretApplicationLifecycleProvider : ApplicationLifecycleProvider<KeyVaultConfiguration>
     {
         /// <summary>

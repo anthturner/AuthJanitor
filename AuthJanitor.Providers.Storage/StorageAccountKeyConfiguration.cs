@@ -47,7 +47,7 @@ $"Storage Account Key Kind: {KeyType.ToString()} - Skipping Scramble of Other Ke
             {
                 issues.Add(new RiskyConfigurationItem()
                 {
-                    Score = 0.8,
+                    Score = 80,
                     Risk = $"The other (unused) Storage Account Key of this type is not being scrambled during key rotation",
                     Recommendation = "Unless other services use the alternate key, consider allowing the scrambling of the unused key to 'fully' rekey the Storage Account and maintain a high degree of security."
                 });

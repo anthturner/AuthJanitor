@@ -32,7 +32,7 @@ namespace AuthJanitor.Providers.AzureAD
             {
                 issues.Add(new RiskyConfigurationItem()
                 {
-                    Score = 0.7,
+                    Score = 70,
                     Risk = $"There are more than 10 ({Scopes.Length}) scopes defined for a single access token",
                     Recommendation = "Reduce the number of scopes per token by segregating access between data security boundaries in the application(s)."
                 });

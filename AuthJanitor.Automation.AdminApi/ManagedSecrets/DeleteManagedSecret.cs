@@ -6,6 +6,7 @@ using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.WindowsAzure.Storage.Blob;
 using System;
+using System.IO;
 using System.Threading.Tasks;
 
 namespace AuthJanitor.Automation.AdminApi
@@ -14,17 +15,20 @@ namespace AuthJanitor.Automation.AdminApi
     {
         [FunctionName("DeleteManagedSecret")]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Function, "put", Route = "/secrets/{secretId:guid}/delete")] HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "secrets/{secretId:guid}")] HttpRequest req,
+            [Blob("authjanitor/secrets", FileAccess.ReadWrite, Connection = "AzureWebJobsStorage")] CloudBlockBlob secretsBlob,
             Guid secretId,
             ILogger log)
         {
-
             log.LogInformation("Deleting Managed Secret {0}", secretId);
 
-            CloudBlobDirectory secretStoreDirectory = null;
-            IDataStore<ManagedSecret> secretStore = new BlobDataStore<ManagedSecret>(secretStoreDirectory);
+            IDataStore<ManagedSecret> secretStore =
+                await new BlobDataStore<ManagedSecret>(secretsBlob).Initialize();
 
             await secretStore.Delete(secretId);
+            await secretStore.Commit();
+
+            log.LogInformation("Deleted Managed Secret {0}", secretId);
 
             return new OkResult();
         }

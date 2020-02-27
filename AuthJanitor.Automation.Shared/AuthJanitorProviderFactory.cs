@@ -7,7 +7,7 @@ namespace AuthJanitor.Automation.Shared
     {
         public static T CreateFromResource<T>(Resource resource) where T : class, IAuthJanitorProvider
         {
-            IAuthJanitorProvider provider = HelperMethods.GetProvider(resource.ProviderName);
+            IAuthJanitorProvider provider = HelperMethods.GetProvider(resource.ProviderType);
             provider.SerializedConfiguration = resource.ProviderConfiguration;
             return provider as T;
         }
@@ -24,21 +24,21 @@ namespace AuthJanitor.Automation.Shared
 
         private static Type GetProviderType(string type)
         {
-            return HelperMethods.GetProvider(type).GetType();
+            return HelperMethods.GetProvider(type)?.GetType();
         }
 
         private static Type GetConfigurationType(Type extensionType)
         {
             if (extensionType == null ||
-                !extensionType.IsSubclassOf(typeof(IAuthJanitorProvider)) ||
-                !extensionType.IsGenericType ||
-                !extensionType.GetGenericArguments()[0].IsSubclassOf(typeof(AuthJanitorProviderConfiguration)))
+                !typeof(IAuthJanitorProvider).IsAssignableFrom(extensionType) ||
+                !extensionType.BaseType.IsGenericType ||
+                !typeof(AuthJanitorProviderConfiguration).IsAssignableFrom(extensionType.BaseType.GetGenericArguments()[0]))
             {
                 throw new Exception("Extension or Extension Configuration Type invalid!");
             }
             else
             {
-                return extensionType.GetGenericArguments()[0];
+                return extensionType.BaseType.GetGenericArguments()[0];
             }
         }
     }

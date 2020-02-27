@@ -47,7 +47,7 @@ $"CosmosDb Key Kind: {KeyKind.ToString()} - Skipping Scramble of Other Key? {Ski
             {
                 issues.Add(new RiskyConfigurationItem()
                 {
-                    Score = 0.8,
+                    Score = 80,
                     Risk = $"The other (unused) CosmosDb Key of this type is not being scrambled during key rotation",
                     Recommendation = "Unless other services use the alternate key, consider allowing the scrambling of the unused key to 'fully' rekey CosmosDb and maintain a high degree of security."
                 });
