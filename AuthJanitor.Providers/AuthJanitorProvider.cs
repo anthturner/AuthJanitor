@@ -1,4 +1,5 @@
 ﻿using Microsoft.Azure.Management.ResourceManager.Fluent.Authentication;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System;
@@ -84,9 +85,11 @@ namespace AuthJanitor.Providers
         /// </summary>
         protected ILogger Logger { get; }
 
-        protected AuthJanitorProvider()
+        protected IServiceProvider _serviceProvider;
+        protected AuthJanitorProvider(ILoggerFactory loggerFactory, IServiceProvider serviceProvider)
         {
-            Logger = (HelperMethods.ServiceProvider.GetService(typeof(ILoggerFactory)) as ILoggerFactory).CreateLogger(GetType().Name);
+            Logger = loggerFactory.CreateLogger(GetType());
+            _serviceProvider = serviceProvider;
         }
 
         /// <summary>
@@ -118,7 +121,7 @@ namespace AuthJanitor.Providers
         {
             return await Microsoft.Azure.Management.Fluent.Azure
                 .Configure()
-                .Authenticate(HelperMethods.ServiceProvider.GetService(typeof(AzureCredentials)) as AzureCredentials)
+                .Authenticate(_serviceProvider.GetService<AzureCredentials>())
                 .WithDefaultSubscriptionAsync();
         }
     }

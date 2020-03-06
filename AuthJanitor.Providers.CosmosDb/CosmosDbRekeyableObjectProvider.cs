@@ -1,4 +1,5 @@
 ﻿using Microsoft.Azure.Management.CosmosDB.Fluent;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Threading.Tasks;
 
@@ -13,6 +14,10 @@ namespace AuthJanitor.Providers.CosmosDb
         private const string SECONDARY_READONLY_KEY = "secondaryReadOnly";
         private const string PRIMARY_KEY = "primary";
         private const string SECONDARY_KEY = "secondary";
+
+        public CosmosDbRekeyableObjectProvider(ILoggerFactory loggerFactory, IServiceProvider serviceProvider) : base(loggerFactory, serviceProvider)
+        {
+        }
 
         public override async Task<RegeneratedSecret> Rekey(TimeSpan requestedValidPeriod)
         {

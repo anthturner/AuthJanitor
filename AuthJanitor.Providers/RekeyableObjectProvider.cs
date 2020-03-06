@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
+using System;
 using System.Threading.Tasks;
 
 namespace AuthJanitor.Providers
@@ -24,6 +25,10 @@ namespace AuthJanitor.Providers
     /// </summary>
     public abstract class RekeyableObjectProvider<TConfiguration> : AuthJanitorProvider<TConfiguration>, IRekeyableObjectProvider where TConfiguration : AuthJanitorProviderConfiguration
     {
+        protected RekeyableObjectProvider(ILoggerFactory loggerFactory, IServiceProvider serviceProvider) : base(loggerFactory, serviceProvider)
+        {
+        }
+
         /// <summary>
         /// Call when ready to rekey a given RekeyableService.
         /// </summary>

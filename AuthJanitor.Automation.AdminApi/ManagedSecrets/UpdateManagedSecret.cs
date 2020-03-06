@@ -1,43 +1,39 @@
-using AuthJanitor.Automation.AdminApi.ManagedSecrets;
 using AuthJanitor.Automation.Shared;
+using AuthJanitor.Automation.Shared.ViewModels;
+using AuthJanitor.Providers;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Logging;
-using Microsoft.WindowsAzure.Storage.Blob;
 using System;
-using System.IO;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Web.Http;
 
 namespace AuthJanitor.Automation.AdminApi
 {
-    public static class UpdateManagedSecret
+    public class UpdateManagedSecret : StorageIntegratedFunction
     {
+        public UpdateManagedSecret(IDataStore<ManagedSecret> managedSecretStore, IDataStore<Resource> resourceStore, IDataStore<RekeyingTask> rekeyingTaskStore, Func<ManagedSecret, ManagedSecretViewModel> managedSecretViewModelDelegate, Func<Resource, ResourceViewModel> resourceViewModelDelegate, Func<RekeyingTask, RekeyingTaskViewModel> rekeyingTaskViewModelDelegate, Func<AuthJanitorProviderConfiguration, IEnumerable<ProviderConfigurationItemViewModel>> configViewModelDelegate, Func<LoadedProviderMetadata, LoadedProviderViewModel> providerViewModelDelegate) : base(managedSecretStore, resourceStore, rekeyingTaskStore, managedSecretViewModelDelegate, resourceViewModelDelegate, rekeyingTaskViewModelDelegate, configViewModelDelegate, providerViewModelDelegate)
+        {
+        }
+
         [FunctionName("UpdateManagedSecret")]
-        public static async Task<IActionResult> Run(
+        public async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "secrets/{secretId:guid}")] ManagedSecret inputSecret,
             HttpRequest req,
-            [Blob("authjanitor/secrets", FileAccess.ReadWrite, Connection = "AzureWebJobsStorage")] CloudBlockBlob secretsBlob,
-            [Blob("authjanitor/resources", FileAccess.Read, Connection = "AzureWebJobsStorage")] CloudBlockBlob resourcesBlob,
             Guid secretId,
             ILogger log)
         {
             log.LogInformation("Updating Managed Secret {0}", secretId);
 
-            IDataStore<ManagedSecret> secretStore = 
-                await new BlobDataStore<ManagedSecret>(secretsBlob).Initialize();
-            IDataStore<Resource> resourceStore = 
-                await new BlobDataStore<Resource>(resourcesBlob).Initialize();
-
-            var secret = await secretStore.Get(secretId);
+            var secret = await ManagedSecrets.Get(secretId);
             if (secret == null)
                 return new BadRequestErrorMessageResult("Secret does not exist!");
 
-            var allResources = await resourceStore.List();
-            var allResourceIds = allResources.Select(r => r.ObjectId);
+            var allResourceIds = (await Resources.List()).Select(r => r.ObjectId);
             if (inputSecret.ResourceIds.Any(r => !allResourceIds.Contains(r)))
             {
                 var invalidIds = inputSecret.ResourceIds.Where(r => !allResourceIds.Contains(r));
@@ -53,12 +49,12 @@ namespace AuthJanitor.Automation.AdminApi
                 ResourceIds = inputSecret.ResourceIds
             };
 
-            await secretStore.Update(newManagedSecret);
-            await secretStore.Commit();
+            await ManagedSecrets.Update(newManagedSecret);
+            await ManagedSecrets.Commit();
 
             log.LogInformation("Updated Managed Secret '{0}'", newManagedSecret.Name);
 
-            return new OkObjectResult(ManagedSecretViewModel.FromManagedSecret(newManagedSecret, allResources));
+            return new OkObjectResult(GetViewModel(newManagedSecret));
         }
     }
 }

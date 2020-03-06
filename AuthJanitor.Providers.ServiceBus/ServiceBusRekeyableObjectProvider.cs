@@ -1,5 +1,6 @@
 ﻿using Microsoft.Azure.Management.ServiceBus.Fluent;
 using Microsoft.Azure.Management.ServiceBus.Fluent.Models;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Threading.Tasks;
 
@@ -10,6 +11,10 @@ namespace AuthJanitor.Providers.ServiceBus
               Description = "Regenerates a Service Bus Key")]
     public class ServiceBusRekeyableObjectProvider : RekeyableObjectProvider<ServiceBusKeyConfiguration>
     {
+        public ServiceBusRekeyableObjectProvider(ILoggerFactory loggerFactory, IServiceProvider serviceProvider) : base(loggerFactory, serviceProvider)
+        {
+        }
+
         public override async Task<RegeneratedSecret> Rekey(TimeSpan requestedValidPeriod)
         {
             IAuthorizationKeys newKeys = await Regenerate(GetPolicyKey());

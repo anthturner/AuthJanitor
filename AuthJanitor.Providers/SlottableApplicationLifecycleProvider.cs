@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
+using System;
 
 namespace AuthJanitor.Providers
 {
@@ -9,6 +10,10 @@ namespace AuthJanitor.Providers
         ApplicationLifecycleProvider<TSlottableProviderConfiguration>
         where TSlottableProviderConfiguration : SlottableProviderConfiguration
     {
+        protected SlottableApplicationLifecycleProvider(ILoggerFactory loggerFactory, IServiceProvider serviceProvider) : base(loggerFactory, serviceProvider)
+        {
+        }
+
         /// <summary>
         /// Source Slot (original application)
         /// </summary>
@@ -24,10 +29,6 @@ namespace AuthJanitor.Providers
         /// </summary>
         public string DestinationSlotName => Configuration.DestinationSlot;
 
-        /// <summary>
-        /// Describes a ConsumingApplication which implements a slot pattern (such as Functions or WebApps)
-        /// </summary>
-        public SlottableApplicationLifecycleProvider() : base() { }
 
         public override string GetDescription()
         {

@@ -1,5 +1,6 @@
 ﻿using Azure.Identity;
 using Azure.Security.KeyVault.Secrets;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -11,6 +12,10 @@ namespace AuthJanitor.Providers.KeyVault
               Description = "Manages the lifecycle of a Key Vault Secret")]
     public class KeyVaultSecretApplicationLifecycleProvider : ApplicationLifecycleProvider<KeyVaultConfiguration>
     {
+        public KeyVaultSecretApplicationLifecycleProvider(ILoggerFactory loggerFactory, IServiceProvider serviceProvider) : base(loggerFactory, serviceProvider)
+        {
+        }
+
         /// <summary>
         /// Call to commit the newly generated secret
         /// </summary>

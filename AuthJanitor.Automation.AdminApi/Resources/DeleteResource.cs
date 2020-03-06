@@ -1,35 +1,36 @@
 using AuthJanitor.Automation.Shared;
+using AuthJanitor.Automation.Shared.ViewModels;
+using AuthJanitor.Providers;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Logging;
-using Microsoft.WindowsAzure.Storage.Blob;
 using System;
-using System.IO;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Web.Http;
 
 namespace AuthJanitor.Automation.AdminApi.Resources
 {
-    public static class DeleteResource
+    public class DeleteResource : StorageIntegratedFunction
     {
+        public DeleteResource(IDataStore<ManagedSecret> managedSecretStore, IDataStore<Resource> resourceStore, IDataStore<RekeyingTask> rekeyingTaskStore, Func<ManagedSecret, ManagedSecretViewModel> managedSecretViewModelDelegate, Func<Resource, ResourceViewModel> resourceViewModelDelegate, Func<RekeyingTask, RekeyingTaskViewModel> rekeyingTaskViewModelDelegate, Func<AuthJanitorProviderConfiguration, IEnumerable<ProviderConfigurationItemViewModel>> configViewModelDelegate, Func<LoadedProviderMetadata, LoadedProviderViewModel> providerViewModelDelegate) : base(managedSecretStore, resourceStore, rekeyingTaskStore, managedSecretViewModelDelegate, resourceViewModelDelegate, rekeyingTaskViewModelDelegate, configViewModelDelegate, providerViewModelDelegate)
+        {
+        }
+
         [FunctionName("DeleteResource")]
-        public static async Task<IActionResult> Run(
+        public async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "resources/{resourceId:guid}")] HttpRequest req,
-            [Blob("authjanitor/resources", FileAccess.ReadWrite, Connection = "AzureWebJobsStorage")] CloudBlockBlob resourcesBlob,
             Guid resourceId,
             ILogger log)
         {
             log.LogInformation("Deleting Resource ID {0}.", resourceId);
 
-            IDataStore<Resource> resourceStore =
-                await new BlobDataStore<Resource>(resourcesBlob).Initialize();
-
             try
             { 
-                await resourceStore.Delete(resourceId);
-                await resourceStore.Commit();
+                await Resources.Delete(resourceId);
+                await Resources.Commit();
                 return new OkResult();
             }
             catch (Exception) { return new BadRequestErrorMessageResult("Invalid Resource ID"); }

@@ -1,0 +1,19 @@
+﻿{
+  "$schema": "http://json.schemastore.org/proxies",
+  "proxies": {
+    "uiIndex": {
+      "matchCondition": {
+        "methods": [ "GET" ],
+        "route": "/aj"
+      },
+      "backendUri": "%STORAGE_WEB_URL%/"
+    },
+    "uiManagedSecrets": {
+      "matchCondition": {
+        "methods": [ "GET", "DELETE", "POST" ],
+        "route": "/aj/{*restOfUrl}"
+      },
+      "backendUri": "%STORAGE_WEB_URL%/{restOfUrl}"
+    }
+  }
+}

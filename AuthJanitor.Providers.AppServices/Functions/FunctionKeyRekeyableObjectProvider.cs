@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
+using System;
 using System.Threading.Tasks;
 
 namespace AuthJanitor.Providers.AppServices.Functions
@@ -8,6 +9,10 @@ namespace AuthJanitor.Providers.AppServices.Functions
               Description = "Rekeys a Function Key for an Azure Functions Application")]
     public class FunctionKeyRekeyableObjectProvider : RekeyableObjectProvider<FunctionKeyConfiguration>
     {
+        public FunctionKeyRekeyableObjectProvider(ILoggerFactory loggerFactory, IServiceProvider serviceProvider) : base(loggerFactory, serviceProvider)
+        {
+        }
+
         public override async Task<RegeneratedSecret> Rekey(TimeSpan requestedValidPeriod)
         {
             RegeneratedSecret newKey = new RegeneratedSecret()

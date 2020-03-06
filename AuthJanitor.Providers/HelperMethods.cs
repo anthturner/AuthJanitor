@@ -1,13 +1,7 @@
-﻿using Azure.Core;
-using McMaster.NETCore.Plugins;
-using Microsoft.Azure.Management.ResourceManager.Fluent.Authentication;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
@@ -16,22 +10,7 @@ namespace AuthJanitor.Providers
 {
     public static class HelperMethods
     {
-        private const string PROVIDER_SEARCH_MASK = "AuthJanitor.Providers.*.dll";
         private const string CHARS_ALPHANUMERIC_ONLY = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-        private static readonly Type[] PROVIDER_SHARED_TYPES = new Type[]
-        {
-            typeof(IAuthJanitorProvider),
-            typeof(AuthJanitorProvider<>),
-            typeof(IApplicationLifecycleProvider),
-            typeof(ApplicationLifecycleProvider<>),
-            typeof(IRekeyableObjectProvider),
-            typeof(RekeyableObjectProvider<>),
-            typeof(IServiceCollection),
-            typeof(ILogger)
-        };
-
-        public static List<Type> ProviderTypes { get; } = new List<Type>();
-        public static IServiceProvider ServiceProvider { get; private set; }
 
         public static string GenerateCryptographicallySecureString(int length, string chars = CHARS_ALPHANUMERIC_ONLY)
         {
@@ -61,40 +40,8 @@ namespace AuthJanitor.Providers
             return sb.ToString();
         }
 
-        public static void InitializeServiceProvider(ILoggerFactory loggerFactory, TokenCredential tokenCredential = null, AzureCredentials azureCredentials = null)
-        {
-            ProviderTypes.Clear();
-            ServiceCollection serviceCollection = new ServiceCollection();
-            serviceCollection.AddSingleton(loggerFactory);
-
-            foreach (string libraryFile in Directory.GetFiles(
-                Path.GetFullPath(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "..")),
-                PROVIDER_SEARCH_MASK,
-                new EnumerationOptions() { RecurseSubdirectories = true }))
-            {
-                PluginLoader loader = PluginLoader.CreateFromAssemblyFile(
-                    assemblyFile: libraryFile,
-                    sharedTypes: PROVIDER_SHARED_TYPES);
-
-                foreach (Type providerType in
-                    loader.LoadDefaultAssembly()
-                          .GetTypes()
-                          .Where(t => !t.IsAbstract && typeof(IAuthJanitorProvider).IsAssignableFrom(t)))
-                {
-                    ProviderTypes.Add(providerType);
-                    serviceCollection.AddTransient(providerType);
-                }
-            }
-
-            if (tokenCredential != null)
-                serviceCollection.AddSingleton(tokenCredential);
-            if (azureCredentials != null)
-                serviceCollection.AddSingleton(azureCredentials);
-
-            ServiceProvider = serviceCollection.BuildServiceProvider();
-        }
-
         public static async Task RunRekeyingWorkflow(
+            ILoggerFactory loggerFactory,
             TimeSpan requestedValidPeriod,
             params IAuthJanitorProvider[] providers)
         {
@@ -108,7 +55,7 @@ namespace AuthJanitor.Providers
                 throw new Exception("Sanity check failed!");
             }
 
-            ILogger log = ServiceProvider.GetService<ILoggerFactory>().CreateLogger("RekeyingWorkflow");
+            ILogger log = loggerFactory.CreateLogger("RekeyingWorkflow");
             log.LogInformation("Preparing {0} Application Lifecycle Providers...", alcProviders.Count);
             try
             {
@@ -158,11 +105,6 @@ namespace AuthJanitor.Providers
                 log.LogError(ex, "Error executing AfterRekeying on Application Lifecycle Provider(s)");
                 throw new Exception("Error executing AfterRekeying on Application Lifecycle Provider(s)");
             }
-        }
-
-        public static IAuthJanitorProvider GetProvider(string name)
-        {
-            return (ProviderTypes.Any(t => t.Name == name) ? ServiceProvider.GetService(ProviderTypes.First(t => t.Name == name)) : null) as IAuthJanitorProvider;
         }
 
         public static T GetEnumValueAttribute<T>(this Enum enumVal) where T : Attribute

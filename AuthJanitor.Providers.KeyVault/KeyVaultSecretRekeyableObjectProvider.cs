@@ -1,5 +1,6 @@
 ﻿using Azure.Identity;
 using Azure.Security.KeyVault.Secrets;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,6 +13,10 @@ namespace AuthJanitor.Providers.KeyVault
               Description = "Regenerates a Key Vault Secret")]
     public class KeyVaultSecretRekeyableObjectProvider : RekeyableObjectProvider<KeyVaultConfiguration>
     {
+        public KeyVaultSecretRekeyableObjectProvider(ILoggerFactory loggerFactory, IServiceProvider serviceProvider) : base(loggerFactory, serviceProvider)
+        {
+        }
+
         public override async Task<RegeneratedSecret> Rekey(TimeSpan requestedValidPeriod)
         {
             // TODO: This doesn't use the other credential set, it tries to execute its own set of fallbacks!

@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using Microsoft.Extensions.Logging;
+using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace AuthJanitor.Providers
@@ -30,10 +32,9 @@ namespace AuthJanitor.Providers
     public abstract class ApplicationLifecycleProvider<TProviderConfiguration> : AuthJanitorProvider<TProviderConfiguration>, IApplicationLifecycleProvider
         where TProviderConfiguration : AuthJanitorProviderConfiguration
     {
-        /// <summary>
-        /// Describes an Application Lifecycle Provider which consumes some piece of information to use a Rekeyable Object
-        /// </summary>
-        protected ApplicationLifecycleProvider() : base() { }
+        protected ApplicationLifecycleProvider(ILoggerFactory loggerFactory, IServiceProvider serviceProvider) : base(loggerFactory, serviceProvider)
+        {
+        }
 
         /// <summary>
         /// Call to prepare the application for a new secret

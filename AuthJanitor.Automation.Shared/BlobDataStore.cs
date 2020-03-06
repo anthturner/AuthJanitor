@@ -58,7 +58,12 @@ namespace AuthJanitor.Automation.Shared
 
         public async Task<IDataStore<TDataType>> Initialize()
         {
-            _data = JsonConvert.DeserializeObject<List<TDataType>>(await Blob.DownloadTextAsync());
+            if (!await Blob.ExistsAsync())
+            {
+                await Blob.UploadTextAsync("[]");
+                _data = new List<TDataType>();
+            }
+            else _data = JsonConvert.DeserializeObject<List<TDataType>>(await Blob.DownloadTextAsync());
             return this;
         }
 

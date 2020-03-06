@@ -1,0 +1,18 @@
+﻿@page "/"
+
+<Container IsFluid="true">
+    <Row>
+        <Column ColumnSize="ColumnSize.Is3">
+            <InfoCardComponent Heading="Expiring Soon" HeadingColor="Color.Warning" Data="4" Icon="fas fa-calendar" />
+        </Column>
+        <Column ColumnSize="ColumnSize.Is3">
+            <InfoCardComponent Heading="Expired" HeadingColor="Color.Danger" Data="4" Icon="fas fa-calendar-times" />
+        </Column>
+        <Column ColumnSize="ColumnSize.Is3">
+            <InfoCardComponent Heading="Pending Approval" HeadingColor="Color.Success" Data="4" Icon="fas fa-user-check" />
+        </Column>
+        <Column ColumnSize="ColumnSize.Is3">
+            <InfoCardComponent Heading="Managed Secrets" HeadingColor="Color.Info" Data="4" Icon="fas fa-unlock-alt" />
+        </Column>
+    </Row>
+</Container>

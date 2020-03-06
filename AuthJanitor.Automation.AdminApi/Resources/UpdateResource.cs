@@ -1,30 +1,41 @@
 using AuthJanitor.Automation.Shared;
+using AuthJanitor.Automation.Shared.ViewModels;
+using AuthJanitor.Providers;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Logging;
-using Microsoft.WindowsAzure.Storage.Blob;
+using Newtonsoft.Json;
 using System;
-using System.IO;
+using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.Web.Http;
 
 namespace AuthJanitor.Automation.AdminApi.Resources
 {
-    public static class UpdateResource
+    public class UpdateResource : ProviderIntegratedFunction
     {
+        public UpdateResource(IDataStore<ManagedSecret> managedSecretStore, IDataStore<Resource> resourceStore, IDataStore<RekeyingTask> rekeyingTaskStore, Func<ManagedSecret, ManagedSecretViewModel> managedSecretViewModelDelegate, Func<Resource, ResourceViewModel> resourceViewModelDelegate, Func<RekeyingTask, RekeyingTaskViewModel> rekeyingTaskViewModelDelegate, Func<AuthJanitorProviderConfiguration, IEnumerable<ProviderConfigurationItemViewModel>> configViewModelDelegate, Func<LoadedProviderMetadata, LoadedProviderViewModel> providerViewModelDelegate, Func<string, IAuthJanitorProvider> providerFactory, Func<string, AuthJanitorProviderConfiguration> providerConfigurationFactory, Func<string, LoadedProviderMetadata> providerDetailsFactory, List<LoadedProviderMetadata> loadedProviders) : base(managedSecretStore, resourceStore, rekeyingTaskStore, managedSecretViewModelDelegate, resourceViewModelDelegate, rekeyingTaskViewModelDelegate, configViewModelDelegate, providerViewModelDelegate, providerFactory, providerConfigurationFactory, providerDetailsFactory, loadedProviders)
+        {
+        }
+
         [FunctionName("UpdateResource")]
-        public static async Task<IActionResult> Run(
+        public async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "resources/{resourceId:guid}")] Resource resource,
             HttpRequest req,
-            [Blob("authjanitor/resources", FileAccess.ReadWrite, Connection = "AzureWebJobsStorage")] CloudBlockBlob resourcesBlob,
             Guid resourceId,
             ILogger log)
         {
             log.LogInformation("Updating Resource ID {0}.", resourceId);
 
-            IDataStore<Resource> resourceStore =
-                await new BlobDataStore<Resource>(resourcesBlob).Initialize();
+            try
+            {
+                // Test deserialization of configuration to make sure it's valid
+                var obj = JsonConvert.DeserializeObject(resource.ProviderConfiguration, GetProviderConfiguration(resource.ProviderType).GetType());
+                if (obj == null) return new BadRequestErrorMessageResult("Invalid Provider configuration");
+            }
+            catch { return new BadRequestErrorMessageResult("Invalid Provider configuration"); }
 
             Resource newResource = new Resource()
             {
@@ -36,10 +47,10 @@ namespace AuthJanitor.Automation.AdminApi.Resources
                 ProviderConfiguration = resource.ProviderConfiguration
             };
 
-            await resourceStore.Update(newResource);
-            await resourceStore.Commit();
+            await Resources.Update(newResource);
+            await Resources.Commit();
 
-            return new OkObjectResult(ResourceViewModel.FromResource(newResource));
+            return new OkObjectResult(GetViewModel(newResource));
         }
     }
 }

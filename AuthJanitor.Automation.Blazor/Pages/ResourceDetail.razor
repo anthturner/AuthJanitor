@@ -1,0 +1,38 @@
+﻿@page "/resources/{ResourceId}"
+
+@if (Resource != null)
+{
+<Card Margin="Margin.Is4.FromBottom">
+    <CardHeader Padding="Padding.Is2.OnY">
+        <Heading Size="HeadingSize.Is5" Class="font-weight-bold" Margin="Margin.Is0">Resource Detail</Heading>
+    </CardHeader>
+    <CardBody>
+        <Heading Size="HeadingSize.Is6" Class="font-weight-bold">ID<span class="float-right text-muted">@Resource.ObjectId</span></Heading>
+        <Heading Size="HeadingSize.Is6" Class="font-weight-bold">Name<span class="float-right text-muted">@Resource.Name</span></Heading>
+        <Heading Size="HeadingSize.Is6" Class="font-weight-bold">Provider<span class="float-right text-muted">@Resource.ProviderDetail.Name</span></Heading>
+        <Heading Size="HeadingSize.Is6" Class="font-weight-bold">Description<span class="float-right text-muted">@Resource.Description</span></Heading>
+    </CardBody>
+</Card>
+
+<Card>
+    <CardHeader Padding="Padding.Is1.OnY">
+        <Heading Size="HeadingSize.Is5" TextColor="TextColor.Info" Margin="Margin.Is0.OnAll" Class="font-weight-bold">Provider Settings</Heading>
+    </CardHeader>
+    <CardBody>
+        <ProviderSettingsComponent Configuration="@Resource.ProviderConfiguration" />
+    </CardBody>
+</Card>
+}
+
+@code {
+    [Parameter]
+    public string ResourceId { get; set; }
+
+    public ResourceViewModel Resource { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Resource = await Http.GetJsonAsync<ResourceViewModel>($"/api/resources/{ResourceId}");
+        await base.OnInitializedAsync();
+    }
+}

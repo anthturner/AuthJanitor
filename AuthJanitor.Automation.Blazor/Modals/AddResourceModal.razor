@@ -1,0 +1,148 @@
+﻿<Modal @ref="modalRef">
+    <ModalBackdrop />
+    <ModalContent IsCentered="true">
+        <ModalHeader>
+            <ModalTitle>Add New Resource</ModalTitle>
+            <CloseButton Clicked="@HideModal" />
+        </ModalHeader>
+        <ModalBody Padding="Padding.Is2.OnAll">
+            <Field IsHorizontal="true">
+                <FieldLabel>Name</FieldLabel>
+                <FieldBody><TextEdit @bind-Text="Name" Placeholder="Resource name..." /></FieldBody>
+            </Field>
+            <Field IsHorizontal="true">
+                <FieldLabel>Description</FieldLabel>
+                <FieldBody><TextEdit @bind-Text="Description" Placeholder="Resource description..." /></FieldBody>
+            </Field>
+            <Field IsHorizontal="true">
+                <FieldLabel>Provider</FieldLabel>
+                <FieldBody>
+                    <SelectEdit SelectedValue="@ProviderType" TValue="string" SelectedValueChanged="@UpdateConfiguration">
+                        @if (Providers != null && Providers.Any())
+                        {
+                            <SelectGroup Label="Application Lifecycle Providers">
+                                @foreach (var provider in Providers.Where(p => !p.IsRekeyableObjectProvider))
+                                {
+                                    <SelectItem Value="@provider.ProviderTypeName">@provider.Details.Name</SelectItem>
+                                }
+                            </SelectGroup>
+                            <SelectGroup Label="Rekeyable Object Providers">
+                                @foreach (var provider in Providers.Where(p => p.IsRekeyableObjectProvider))
+                                {
+                                    <SelectItem Value="@provider.ProviderTypeName">@provider.Details.Name</SelectItem>
+                                }
+                            </SelectGroup>
+                        }
+                    </SelectEdit>
+                </FieldBody>
+            </Field>
+
+            @if (SelectedConfiguration != null && SelectedConfiguration.Any())
+            {
+                <Blazorise.Table IsFullWidth="true" IsBorderless="true" IsStriped="true">
+                    <TableBody>
+                        @foreach (var item in SelectedConfiguration)
+                        {
+                            <Blazorise.TableRow>
+                                <Blazorise.TableRowCell>
+                                    @(string.IsNullOrEmpty(item.DisplayName) ? item.Name : item.DisplayName)
+                                    @if (!string.IsNullOrEmpty(item.HelpText))
+                                    {
+                                        <Icon Float="Float.Right" Name="FontAwesomeIcons.QuestionCircle" title="@item.HelpText" />
+                                    }
+                                </Blazorise.TableRowCell>
+                                <Blazorise.TableRowCell>
+                                    @switch (item.InputType)
+                                    {
+                                        case ProviderConfigurationItemViewModel.InputTypes.TextArray:
+                                        case ProviderConfigurationItemViewModel.InputTypes.Text:
+                                            <TextEdit @bind-Text="item.Value" />
+                                            break;
+                                        case ProviderConfigurationItemViewModel.InputTypes.Integer:
+                                            <NumericEdit @bind-Value="item.IntValue" />
+                                            break;
+                                        case ProviderConfigurationItemViewModel.InputTypes.Boolean:
+                                            <CheckEdit @bind-Checked="item.BoolValue" />
+                                            break;
+                                        case ProviderConfigurationItemViewModel.InputTypes.Enumeration:
+                                            <SelectEdit @bind-SelectedValue="item.Value">
+                                                @foreach (var option in item.Options)
+                                                {
+                                                    <SelectItem Value="@option.Value">@option.DisplayName</SelectItem>
+                                                }
+                                            </SelectEdit>
+                                            break;
+                                    }
+                                </Blazorise.TableRowCell>
+                            </Blazorise.TableRow>
+                        }
+                    </TableBody>
+                </Blazorise.Table>
+            }
+        </ModalBody>
+        <ModalFooter>
+            <Button Color="Color.Secondary" Clicked="@HideModal">Close</Button>
+            <Button Color="Color.Primary" Clicked="@CreateResource">Add</Button>
+        </ModalFooter>
+    </ModalContent>
+</Modal>
+
+@using AuthJanitor.Providers 
+@using AuthJanitor.Automation.Shared.ViewModels
+@using Blazorise
+@code {
+    public IEnumerable<LoadedProviderViewModel> Providers { get; set; } = new List<LoadedProviderViewModel>();
+
+    public Modal modalRef;
+
+    public string Name { get; set; }
+    public string Description { get; set; }
+    public string ProviderType { get; set; }
+    public IEnumerable<ProviderConfigurationItemViewModel> SelectedConfiguration { get; set; }
+
+    [Parameter]
+    public Func<Task> AfterCommitAsync { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Providers = await Http.GetJsonAsync<IEnumerable<LoadedProviderViewModel>>("/api/providers");
+        await UpdateConfiguration(Providers.First().ProviderTypeName);
+    }
+
+    protected async Task UpdateConfiguration(string providerType)
+    {
+        ProviderType = providerType;
+        SelectedConfiguration = await Http.GetJsonAsync<IEnumerable<ProviderConfigurationItemViewModel>>($"/api/providers/{HelperMethods.SHA256HashString(ProviderType)}");
+    }
+
+    protected async Task CreateResource()
+    {
+        var dict = new Dictionary<string, object>();
+        foreach (var item in this.SelectedConfiguration)
+            dict[item.Name] = item.Value;
+
+        await Http.PostJsonAsync($"/api/resources", new AuthJanitor.Automation.Shared.Resource()
+        {
+            Name = this.Name,
+            Description = this.Description,
+            ProviderType = this.ProviderType,
+            ProviderConfiguration = Newtonsoft.Json.JsonConvert.SerializeObject(dict)
+        });
+
+        if (AfterCommitAsync != null)
+            await AfterCommitAsync();
+
+        HideModal();
+    }
+
+    public void ClearForm()
+    {
+        Name = string.Empty;
+        Description = string.Empty;
+        ProviderType = string.Empty;
+        SelectedConfiguration = null;
+    }
+
+    public void ShowModal() => modalRef.Show();
+    public void HideModal() => modalRef.Hide();
+}

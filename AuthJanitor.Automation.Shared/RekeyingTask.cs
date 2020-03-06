@@ -5,16 +5,11 @@ namespace AuthJanitor.Automation.Shared
 {
     public class RekeyingTask : IDataStoreCompatibleStructure
     {
-        public Guid ObjectId { get; set; }
+        public Guid ObjectId { get; set; } = Guid.NewGuid();
 
         public DateTimeOffset Queued { get; set; }
         public DateTimeOffset Expiry { get; set; }
 
         public IList<Guid> ManagedSecretIds { get; set; }
-
-        public RekeyingTask()
-        {
-            ObjectId = Guid.NewGuid();
-        }
     }
 }

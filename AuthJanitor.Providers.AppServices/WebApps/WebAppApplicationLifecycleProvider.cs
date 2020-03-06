@@ -1,4 +1,6 @@
 ﻿using Microsoft.Azure.Management.AppService.Fluent;
+using Microsoft.Extensions.Logging;
+using System;
 using System.Threading.Tasks;
 
 namespace AuthJanitor.Providers.AppServices.WebApps
@@ -6,7 +8,9 @@ namespace AuthJanitor.Providers.AppServices.WebApps
     public abstract class WebAppApplicationLifecycleProvider<TConsumerConfiguration> : SlottableApplicationLifecycleProvider<TConsumerConfiguration>
         where TConsumerConfiguration : SlottableProviderConfiguration
     {
-        protected WebAppApplicationLifecycleProvider() : base() { }
+        protected WebAppApplicationLifecycleProvider(ILoggerFactory loggerFactory, IServiceProvider serviceProvider) : base(loggerFactory, serviceProvider)
+        {
+        }
 
         protected async Task<IWebApp> GetWebApp()
         {

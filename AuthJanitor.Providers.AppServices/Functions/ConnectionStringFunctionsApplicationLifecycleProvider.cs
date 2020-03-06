@@ -1,5 +1,6 @@
 ﻿using Microsoft.Azure.Management.AppService.Fluent;
 using Microsoft.Azure.Management.AppService.Fluent.WebAppBase.Update;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,6 +13,10 @@ namespace AuthJanitor.Providers.AppServices.Functions
               Description = "Manages the lifecycle of a Functions app which reads a Connection String")]
     public class ConnectionStringFunctionsApplicationLifecycleProvider : FunctionsApplicationLifecycleProvider<ConnectionStringConfiguration>
     {
+        public ConnectionStringFunctionsApplicationLifecycleProvider(ILoggerFactory loggerFactory, IServiceProvider serviceProvider) : base(loggerFactory, serviceProvider)
+        {
+        }
+
         /// <summary>
         /// Call to prepare the application for a new secret
         /// </summary>

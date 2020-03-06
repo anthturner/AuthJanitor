@@ -1,33 +1,31 @@
+using AuthJanitor.Automation.Shared;
+using AuthJanitor.Automation.Shared.ViewModels;
 using AuthJanitor.Providers;
-using Azure.Identity;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
-using System.Threading.Tasks;
 
 namespace AuthJanitor.Automation.AdminApi.Providers
 {
-    public static class ListProviders
+    public class ListProviders : ProviderIntegratedFunction
     {
+        public ListProviders(IDataStore<ManagedSecret> managedSecretStore, IDataStore<Resource> resourceStore, IDataStore<RekeyingTask> rekeyingTaskStore, Func<ManagedSecret, ManagedSecretViewModel> managedSecretViewModelDelegate, Func<Resource, ResourceViewModel> resourceViewModelDelegate, Func<RekeyingTask, RekeyingTaskViewModel> rekeyingTaskViewModelDelegate, Func<AuthJanitorProviderConfiguration, IEnumerable<ProviderConfigurationItemViewModel>> configViewModelDelegate, Func<LoadedProviderMetadata, LoadedProviderViewModel> providerViewModelDelegate, Func<string, IAuthJanitorProvider> providerFactory, Func<string, AuthJanitorProviderConfiguration> providerConfigurationFactory, Func<string, LoadedProviderMetadata> providerDetailsFactory, List<LoadedProviderMetadata> loadedProviders) : base(managedSecretStore, resourceStore, rekeyingTaskStore, managedSecretViewModelDelegate, resourceViewModelDelegate, rekeyingTaskViewModelDelegate, configViewModelDelegate, providerViewModelDelegate, providerFactory, providerConfigurationFactory, providerDetailsFactory, loadedProviders)
+        {
+        }
+
         [FunctionName("ListProviders")]
-        public static async Task<IActionResult> Run(
+        public IActionResult Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "providers")] HttpRequest req,
             ILogger log)
         {
-            log.LogInformation("C# HTTP trigger function processed a request.");
+            log.LogInformation("Listing loaded Providers.");
 
-            return new OkObjectResult(
-                HelperMethods.ProviderTypes.Select(p => new
-                {
-                    Name = p.Name,
-                    Description = p.GetCustomAttribute<ProviderAttribute>()
-                }));
+            return new OkObjectResult(LoadedProviders.Select(p => GetViewModel(p)));
         }
     }
 }

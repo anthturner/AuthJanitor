@@ -1,4 +1,6 @@
 ﻿using Microsoft.Azure.Management.AppService.Fluent;
+using Microsoft.Extensions.Logging;
+using System;
 using System.Threading.Tasks;
 
 namespace AuthJanitor.Providers.AppServices.Functions
@@ -6,6 +8,10 @@ namespace AuthJanitor.Providers.AppServices.Functions
     public abstract class FunctionsApplicationLifecycleProvider<TConsumerConfiguration> : SlottableApplicationLifecycleProvider<TConsumerConfiguration>
         where TConsumerConfiguration : SlottableProviderConfiguration
     {
+        protected FunctionsApplicationLifecycleProvider(ILoggerFactory loggerFactory, IServiceProvider serviceProvider) : base(loggerFactory, serviceProvider)
+        {
+        }
+
         protected async Task<IFunctionApp> GetFunctionsApp()
         {
             return await (await GetAzure()).AppServices.FunctionApps.GetByResourceGroupAsync(ResourceGroup, ResourceName);

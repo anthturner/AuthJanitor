@@ -15,10 +15,10 @@ using System.Web.Http;
 
 namespace AuthJanitor
 {
-    public static class ApproveTask
+    public class ApproveTask : ProviderIntegratedFunction
     {
         [FunctionName("ApproveTask")]
-        public static async Task<IActionResult> Run(
+        public async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Function, "post", Route = "/tasks/{taskId:guid}/approve")] HttpRequest req,
             [Blob("authjanitor/resources", FileAccess.Read, Connection = "AzureWebJobsStorage")] CloudBlockBlob resourcesBlob,
             [Blob("authjanitor/secrets", FileAccess.Read, Connection = "AzureWebJobsStorage")] CloudBlockBlob secretsBlob,
