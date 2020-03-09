@@ -22,7 +22,8 @@ namespace AuthJanitor.Automation.Shared.ViewModels
             get => TimeSpan.FromMinutes(ValidPeriodMinutes);
             set => ValidPeriodMinutes = (int)Math.Ceiling(value.TotalMinutes);
         }
-        public DateTimeOffset Expiry => LastChanged + ValidPeriod;
+        //public DateTimeOffset Expiry => LastChanged + ValidPeriod;
+        public DateTime Expiry => (LastChanged + ValidPeriod).DateTime;
 
         public string ProviderSummary => $"{Resources.Count(r => !r.IsRekeyableObjectProvider)} ALCs, " +
                                          $"{Resources.Count(r => r.IsRekeyableObjectProvider)} RKOs";

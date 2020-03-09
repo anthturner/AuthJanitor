@@ -1,0 +1,59 @@
+﻿@page "/rekeyingTasks"
+
+<Card>
+    <CardHeader>
+        <DisplayHeading Size="DisplayHeadingSize.Is4">Rekeying Tasks</DisplayHeading>
+    </CardHeader>
+    <CardBody>
+        <BlazorTable.Table TableItem="RekeyingTaskViewModel" Items="Tasks" TableClass="table table-striped table-bordered">
+            <BlazorTable.Column TableItem="RekeyingTaskViewModel" Title="" Width="1%" Field="@(x => x.ObjectId)" Sortable="false" Filterable="false">
+                <Template>
+                    <Blazorise.Buttons>
+                        <Blazorise.Button Color="Color.Info" Clicked="@(() => View(context))">
+                            <Icon Name="FontAwesomeIcons.Eye" Class="text-light" />
+                        </Blazorise.Button>
+                        <Blazorise.Button Color="Color.Success" Clicked="@(() => Approve(context))">
+                            <Icon Name="FontAwesomeIcons.CheckSquare" Class="text-light" />
+                        </Blazorise.Button>
+                        <Blazorise.Button Color="Color.Danger" Clicked="@(() => ConfirmDelete(context))">
+                            <Icon Name="FontAwesomeIcons.Trash" Class="text-light" />
+                        </Blazorise.Button>
+                    </Blazorise.Buttons>
+                </Template>
+            </BlazorTable.Column>
+            <BlazorTable.Column TableItem="RekeyingTaskViewModel" Title="Queued" Field="@(x => x.Queued)" Sortable="true" Filterable="true" />
+            <BlazorTable.Column TableItem="RekeyingTaskViewModel" Title="Expiry" Field="@(x => x.Expiry)" Sortable="true" Filterable="true" />
+            <BlazorTable.Column TableItem="RekeyingTaskViewModel" Title="Secrets">
+                <Template>
+                    @foreach (var secret in context.ManagedSecrets)
+                    {
+                        <ListGroup Margin="Margin.Is0.OnX.Is1.OnY" Padding="Padding.Is0.OnAll">
+                            @foreach (var resource in secret.Resources)
+                            {
+                                <ListGroupItem>
+                                    <ResourceNameComponent Resource="@resource" Compact="true" ShowRiskScore="false" />
+                                </ListGroupItem>
+                            }
+                        </ListGroup>
+                    }
+                </Template>
+            </BlazorTable.Column>
+            <Pager ShowPageNumber="true" ShowTotalCount="true" />
+        </BlazorTable.Table>
+    </CardBody>
+</Card>
+
+@* TODO: Modal confirmation for approve? *@
+<DeleteConfirmationModal @ref="deleteModal" />
+
+@using BlazorTable
+@code {
+    public IEnumerable<RekeyingTaskViewModel> Tasks { get; set; }
+
+    protected Modals.DeleteConfirmationModal deleteModal;
+
+    protected override async Task OnInitializedAsync() => Tasks = await Http.List<RekeyingTaskViewModel>();
+    protected void ConfirmDelete(RekeyingTaskViewModel task) => deleteModal.ShowModal(task.ObjectId, $"{task.ObjectId}", (id) => Http.Delete<RekeyingTaskViewModel>(id).ContinueWith(t => this.StateHasChanged()));
+    protected void View(RekeyingTaskViewModel task) => NavigationManager.NavigateTo($"/aj/rekeyingTasks/{task.ObjectId}");
+    protected void Approve(RekeyingTaskViewModel task) => Http.GetAJConfiguredClient().PostJsonAsync($"/api/tasks/{task.ObjectId}/approve", new { });
+}

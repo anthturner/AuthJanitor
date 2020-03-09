@@ -41,7 +41,7 @@ namespace AuthJanitor.Providers
         }
 
         public static async Task RunRekeyingWorkflow(
-            ILoggerFactory loggerFactory,
+            ILogger log,
             TimeSpan requestedValidPeriod,
             params IAuthJanitorProvider[] providers)
         {
@@ -55,7 +55,6 @@ namespace AuthJanitor.Providers
                 throw new Exception("Sanity check failed!");
             }
 
-            ILogger log = loggerFactory.CreateLogger("RekeyingWorkflow");
             log.LogInformation("Preparing {0} Application Lifecycle Providers...", alcProviders.Count);
             try
             {

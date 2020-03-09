@@ -6,36 +6,38 @@
             <CloseButton Clicked="@HideModal" />
         </ModalHeader>
         <ModalBody Padding="Padding.Is2.OnAll">
-            <Field IsHorizontal="true">
-                <FieldLabel>Name</FieldLabel>
-                <FieldBody><TextEdit @bind-Text="Name" Placeholder="Resource name..." /></FieldBody>
-            </Field>
-            <Field IsHorizontal="true">
-                <FieldLabel>Description</FieldLabel>
-                <FieldBody><TextEdit @bind-Text="Description" Placeholder="Resource description..." /></FieldBody>
-            </Field>
-            <Field IsHorizontal="true">
-                <FieldLabel>Provider</FieldLabel>
-                <FieldBody>
-                    <SelectEdit SelectedValue="@ProviderType" TValue="string" SelectedValueChanged="@UpdateConfiguration">
-                        @if (Providers != null && Providers.Any())
-                        {
-                            <SelectGroup Label="Application Lifecycle Providers">
-                                @foreach (var provider in Providers.Where(p => !p.IsRekeyableObjectProvider))
-                                {
-                                    <SelectItem Value="@provider.ProviderTypeName">@provider.Details.Name</SelectItem>
-                                }
-                            </SelectGroup>
-                            <SelectGroup Label="Rekeyable Object Providers">
-                                @foreach (var provider in Providers.Where(p => p.IsRekeyableObjectProvider))
-                                {
-                                    <SelectItem Value="@provider.ProviderTypeName">@provider.Details.Name</SelectItem>
-                                }
-                            </SelectGroup>
-                        }
-                    </SelectEdit>
-                </FieldBody>
-            </Field>
+            <Blazorise.Container>
+                <Field IsHorizontal="true" ColumnSize="ColumnSize.Is12">
+                    <FieldLabel ColumnSize="ColumnSize.Is4">Name</FieldLabel>
+                    <FieldBody ColumnSize="ColumnSize.Is8"><TextEdit @bind-Text="Name" Placeholder="Resource name..." /></FieldBody>
+                </Field>
+                <Field IsHorizontal="true" ColumnSize="ColumnSize.Is12">
+                    <FieldLabel ColumnSize="ColumnSize.Is4">Description</FieldLabel>
+                    <FieldBody ColumnSize="ColumnSize.Is8"><TextEdit @bind-Text="Description" Placeholder="Resource description..." /></FieldBody>
+                </Field>
+                <Field IsHorizontal="true" ColumnSize="ColumnSize.Is12">
+                    <FieldLabel ColumnSize="ColumnSize.Is4">Provider</FieldLabel>
+                    <FieldBody ColumnSize="ColumnSize.Is8">
+                        <SelectEdit SelectedValue="@ProviderType" TValue="string" SelectedValueChanged="@OnProviderChanged">
+                            @if (Providers != null && Providers.Any())
+                            {
+                                <SelectGroup Label="Application Lifecycle Providers">
+                                    @foreach (var provider in Providers.Where(p => !p.IsRekeyableObjectProvider))
+                                    {
+                                        <SelectItem Value="@provider.ProviderTypeName">@provider.Details.Name</SelectItem>
+                                    }
+                                </SelectGroup>
+                                <SelectGroup Label="Rekeyable Object Providers">
+                                    @foreach (var provider in Providers.Where(p => p.IsRekeyableObjectProvider))
+                                    {
+                                        <SelectItem Value="@provider.ProviderTypeName">@provider.Details.Name</SelectItem>
+                                    }
+                                </SelectGroup>
+                            }
+                        </SelectEdit>
+                    </FieldBody>
+                </Field>
+            </Blazorise.Container>
 
             @if (SelectedConfiguration != null && SelectedConfiguration.Any())
             {
@@ -100,19 +102,16 @@
     public string ProviderType { get; set; }
     public IEnumerable<ProviderConfigurationItemViewModel> SelectedConfiguration { get; set; }
 
-    [Parameter]
-    public Func<Task> AfterCommitAsync { get; set; }
-
     protected override async Task OnInitializedAsync()
     {
-        Providers = await Http.GetJsonAsync<IEnumerable<LoadedProviderViewModel>>("/api/providers");
-        await UpdateConfiguration(Providers.First().ProviderTypeName);
+        Providers = await Http.List<LoadedProviderViewModel>();
+        await OnProviderChanged(Providers.First().ProviderTypeName);
     }
 
-    protected async Task UpdateConfiguration(string providerType)
+    protected async Task OnProviderChanged(string providerType)
     {
         ProviderType = providerType;
-        SelectedConfiguration = await Http.GetJsonAsync<IEnumerable<ProviderConfigurationItemViewModel>>($"/api/providers/{HelperMethods.SHA256HashString(ProviderType)}");
+        SelectedConfiguration = await Http.GetAJConfiguredClient().GetJsonAsync<IEnumerable<ProviderConfigurationItemViewModel>>($"/api/providers/{HelperMethods.SHA256HashString(ProviderType)}");
     }
 
     protected async Task CreateResource()
@@ -121,28 +120,33 @@
         foreach (var item in this.SelectedConfiguration)
             dict[item.Name] = item.Value;
 
-        await Http.PostJsonAsync($"/api/resources", new AuthJanitor.Automation.Shared.Resource()
+        await Http.Create<ResourceViewModel>(new ResourceViewModel()
         {
             Name = this.Name,
             Description = this.Description,
             ProviderType = this.ProviderType,
-            ProviderConfiguration = Newtonsoft.Json.JsonConvert.SerializeObject(dict)
+            SerializedProviderConfiguration = Newtonsoft.Json.JsonConvert.SerializeObject(dict)
         });
 
-        if (AfterCommitAsync != null)
-            await AfterCommitAsync();
+        await _onSaveAsync();
 
         HideModal();
     }
 
-    public void ClearForm()
+    private Func<Task> _onSaveAsync;
+    public void ShowModal(Func<Task> onSaveAsync)
     {
+        _onSaveAsync = onSaveAsync;
+        modalRef.Show();
+    }
+
+    public void HideModal()
+    {
+        modalRef.Hide();
+        _onSaveAsync = null;
         Name = string.Empty;
         Description = string.Empty;
         ProviderType = string.Empty;
         SelectedConfiguration = null;
     }
-
-    public void ShowModal() => modalRef.Show();
-    public void HideModal() => modalRef.Hide();
 }

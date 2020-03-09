@@ -5,20 +5,6 @@
     <Configurations>Debug;Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Remove="Tasks\ApproveTask.cs" />
-    <Compile Remove="Tasks\CreateTask.cs" />
-    <Compile Remove="Tasks\DeleteTask.cs" />
-    <Compile Remove="Tasks\ListTasks.cs" />
-    <Compile Remove="Tasks\PreviewTaskActions.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Tasks\ApproveTask.cs" />
-    <None Include="Tasks\CreateTask.cs" />
-    <None Include="Tasks\DeleteTask.cs" />
-    <None Include="Tasks\ListTasks.cs" />
-    <None Include="Tasks\PreviewTaskActions.cs" />
-  </ItemGroup>
-  <ItemGroup>
     <PackageReference Include="McMaster.NETCore.Plugins" Version="1.1.0" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.Storage" Version="3.0.10" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="3.1.2" />

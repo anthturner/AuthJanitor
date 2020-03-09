@@ -1,34 +1,40 @@
 using AuthJanitor.Automation.Shared;
+using AuthJanitor.Automation.Shared.ViewModels;
+using AuthJanitor.Providers;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Logging;
-using Microsoft.WindowsAzure.Storage.Blob;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Web.Http;
 
-namespace AuthJanitor.Automation.AdminApi.Resources
+namespace AuthJanitor.Automation.AdminApi.Tasks
 {
-    public static class CreateTask
+    public class CreateTask : StorageIntegratedFunction
     {
+        public CreateTask(IDataStore<ManagedSecret> managedSecretStore, IDataStore<Resource> resourceStore, IDataStore<RekeyingTask> rekeyingTaskStore, Func<ManagedSecret, ManagedSecretViewModel> managedSecretViewModelDelegate, Func<Resource, ResourceViewModel> resourceViewModelDelegate, Func<RekeyingTask, RekeyingTaskViewModel> rekeyingTaskViewModelDelegate, Func<AuthJanitorProviderConfiguration, IEnumerable<ProviderConfigurationItemViewModel>> configViewModelDelegate, Func<LoadedProviderMetadata, LoadedProviderViewModel> providerViewModelDelegate) : base(managedSecretStore, resourceStore, rekeyingTaskStore, managedSecretViewModelDelegate, resourceViewModelDelegate, rekeyingTaskViewModelDelegate, configViewModelDelegate, providerViewModelDelegate)
+        {
+        }
+
         [FunctionName("CreateTask")]
-        public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Function, "post", Route = "/tasks")] HttpRequest req,
+        public async Task<IActionResult> Run(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "tasks")] HttpRequest req,
             [FromBody] RekeyingTask resource,
             ILogger log)
         {
+            if (!PassedHeaderCheck(req)) { log.LogCritical("Attempted to access API without header!"); return new BadRequestResult(); }
+
             log.LogInformation("Creating new Task.");
 
-            CloudBlobDirectory taskStoreDirectory = null;
-            CloudBlobDirectory secretsDirectory = null;
-            IDataStore<RekeyingTask> taskStore = new BlobDataStore<RekeyingTask>(taskStoreDirectory);
-            IDataStore<ManagedSecret> secretStore = new BlobDataStore<ManagedSecret>(secretsDirectory);
-
-            System.Collections.Generic.IList<Guid> secretIds = await secretStore.ListIds();
-            if (resource.ManagedSecretIds.Any(id => !secretIds.Contains(id)))
+            var secrets = await ManagedSecrets.List();
+            if (resource.ManagedSecretIds.Any(id => !secrets.Any(s => s.ObjectId == id)) ||
+                secrets.Where(s => resource.ManagedSecretIds.Contains(s.ObjectId)).Any(s => 
+                    !s.TaskConfirmationStrategies.HasFlag(TaskConfirmationStrategies.AdminCachesSignOff) && 
+                    !s.TaskConfirmationStrategies.HasFlag(TaskConfirmationStrategies.AdminSignsOffJustInTime)))
             {
                 return new BadRequestErrorMessageResult("Invalid Managed Secret ID in set");
             }
@@ -40,7 +46,7 @@ namespace AuthJanitor.Automation.AdminApi.Resources
                 ManagedSecretIds = resource.ManagedSecretIds
             };
 
-            await taskStore.Create(newTask);
+            await RekeyingTasks.Create(newTask);
             return new OkObjectResult(newTask);
         }
     }

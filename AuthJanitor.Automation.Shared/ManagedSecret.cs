@@ -31,7 +31,7 @@ namespace AuthJanitor.Automation.Shared
 
         public string Nonce { get; set; } = HelperMethods.GenerateCryptographicallySecureString(DEFAULT_NONCE_LENGTH);
 
-        public List<Guid> ResourceIds { get; set; } = new List<Guid>();
+        public IEnumerable<Guid> ResourceIds { get; set; } = new List<Guid>();
 
         /// <summary>
         /// If the ManagedSecret is valid

@@ -8,7 +8,7 @@
 
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i" />
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
-    <!--<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.12.0/css/all.css">-->
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.12.1/css/all.css">
 
     <!--<link rel="stylesheet" href="https://cdn.datatables.net/1.10.20/css/dataTables.bootstrap4.min.css" crossorigin="anonymous" />-->
     <link href="_content/Blazorise/blazorise.css" rel="stylesheet" />
@@ -18,119 +18,43 @@
 </head>
 <body id="#page-top">
     <app>
-            <style type="text/css">
-                    html, body {
-                        width: 100%;
-                        height: 100%;
-                        margin: 0;
-                        padding: 0;
-                        background: #305a70;
-                    }
+        <style type="text/css">
+            body {
+                /*background-color: #002a40;*/
+                background-color: #305a70;
+                overflow: hidden;
+            }
 
-                    svg {
-                        position: absolute;
-                        width: 340px;
-                        height: 220px;
-                        top: 110px;
-                        right: 0;
-                        bottom: 0;
-                        left: 0;
-                        margin: 0 auto;
-                    }
-                </style>
-                <div class="fixed-top text-center mt-3">
-                    <svg version="1.1" id="preloader" x="0px" y="0px" width="240px" height="120px" viewBox="0 0 240 120">
-
-                        <style type="text/css">
-                            #key {
-                                fill: #E8C033;
-                                z-index: 5;
-                            }
-
-                            #lock {
-                                fill: #D31717;
-                                z-index: 10;
-                            }
-
-                            #loop-normal {
-                                fill: none;
-                                stroke: rgb(255,255,255,0.2);
-                                /*stroke: #103a50;*/
-                                stroke-width: 8
-                            }
-
-                            #loop-offset {
-                                display: none
-                            }
-                        </style>
-
-                        <path id="loop-normal" class="st1" d="M120.5,60.5L146.48,87.02c14.64,14.64,38.39,14.65,53.03,0s14.64-38.39,0-53.03s-38.39-14.65-53.03,0L120.5,60.5
-        L94.52,87.02c-14.64,14.64-38.39,14.64-53.03,0c-14.64-14.64-14.64-38.39,0-53.03c14.65-14.64,38.39-14.65,53.03,0z">
-                            <animate attributeName="stroke-dasharray" attributeType="XML"
-                                     from="500, 50" to="450 50"
-                                     begin="0s" dur="2s"
-                                     repeatCount="indefinite" />
-                            <animate attributeName="stroke-dashoffset" attributeType="XML"
-                                     from="-40" to="-540"
-                                     begin="0s" dur="2s"
-                                     repeatCount="indefinite" />
-                        </path>
-
-                        <path id="loop-offset" d="M146.48,87.02c14.64,14.64,38.39,14.65,53.03,0s14.64-38.39,0-53.03s-38.39-14.65-53.03,0L120.5,60.5
-        L94.52,87.02c-14.64,14.64-38.39,14.64-53.03,0c-14.64-14.64-14.64-38.39,0-53.03c14.65-14.64,38.39-14.65,53.03,0L120.5,60.5
-        L146.48,87.02z" />
-
-                        <path id="key" d="M12.97,15.904h6.777v32.959h6.047v-6.038l3.266-2.73v-1.629c-1.966-0.329-3.418-1.414-3.418-2.716
-                c0-1.303,1.452-2.389,3.418-2.717v-2.331c-1.966-0.329-3.418-1.414-3.418-2.716c0-1.303,1.452-2.389,3.418-2.717v-2.31
-                c-1.966-0.328-3.418-1.413-3.418-2.715c0-1.304,1.452-2.389,3.418-2.717v-1.625h6.834V0H12.97V15.904z M28.637,2.419v5.563h-9.192
-                V2.419H28.637z" transform="rotate(-90 5 20)" />
-
-                        <path id="lock" d="M65,330h200c8.284,0,15-6.716,15-15V145c0-8.284-6.716-15-15-15h-15V85c0-46.869-38.131-85-85-85
-                S80,38.131,80,85v45H65c-8.284,0-15,6.716-15,15v170C50,323.284,56.716,330,65,330z M180,234.986V255c0,8.284-6.716,15-15,15
-                s-15-6.716-15-15v-20.014c-6.068-4.565-10-11.824-10-19.986c0-13.785,11.215-25,25-25s25,11.215,25,25
-                C190,223.162,186.068,230.421,180,234.986z M110,85c0-30.327,24.673-55,55-55s55,24.673,55,55v45H110V85z"
-                              transform="rotate(90 25 0) scale(0.15)" />
-
-                        <animateMotion xlink:href="#key"
-                                       dur="2s"
-                                       rotate="auto"
-                                       repeatCount="indefinite"
-                                       calcMode="linear"
-                                       keyTimes="0;1"
-                                       keySplines="0.42, 0, 0.58, 1">
-                            <mpath xlink:href="#loop-normal" />
-                        </animateMotion>
-
-                        <animateMotion xlink:href="#lock"
-                                       dur="2s"
-                                       rotate="auto"
-                                       repeatCount="indefinite"
-                                       calcMode="linear"
-                                       keyTimes="0;1"
-                                       keySplines="0.42, 0, 0.58, 1">
-                            <mpath xlink:href="#loop-offset" />
-                        </animateMotion>
-                    </svg>
-
-                    <h1 class="h1" style="
-                font-size: 80px;
-                font-weight: bold;
-                margin: 25px auto;
+            .insetText {
                 background-color: #103a50;
                 color: transparent;
                 text-shadow: 2px 2px 1px rgba(255,255,255,0.3);
                 -webkit-background-clip: text;
                 -moz-background-clip: text;
-                background-clip: text;">
-                        AuthJanitor
-                    </h1>
+                background-clip: text;
+            }
+        </style>
+        <div class="fixed-top text-center mt-3">
+        <h1 class="h1 insetText" style="
+                    font-size: 80px;
+                    font-weight: bold;
+                    margin: 25px auto;">
+            AuthJanitor
+        </h1>
+        <div class="loader">
+            <div style="position: relative; width: 100%; height: 100%;">
+                <div style="position: absolute; top: 0; bottom: 0; left: 0; right: 0; text-align: center; margin-top: calc(50% - 45pt); z-index: 100; color: #ccc; font-size: 40pt;">
+                    <i class="fa fa-2x fas fa-user-lock insetText"></i>
                 </div>
+            </div>
+        </div>
+        </div>
     </app>
 
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
-    <script src="https://use.fontawesome.com/releases/v5.12.1/js/all.js" crossorigin="anonymous"></script>
+    <!--<script src="https://use.fontawesome.com/releases/v5.12.1/js/all.js" crossorigin="anonymous"></script>-->
 
     <script src="_content/Blazorise/blazorise.js"></script>
     <script src="_content/Blazorise.Bootstrap/blazorise.bootstrap.js"></script>

@@ -24,17 +24,14 @@ namespace AuthJanitor.Providers
                         Details = type.GetCustomAttribute<ProviderAttribute>()
                     });
 
-            foreach (var provider in loadedProviders)
-            {
-                serviceCollection.AddTransient(provider.ProviderType);
-                serviceCollection.AddTransient(provider.ProviderConfigurationType);
-            }
-
             serviceCollection.AddTransient<Func<string, IAuthJanitorProvider>>(serviceProvider => key =>
             {
                 var selectedProvider = loadedProviders.FirstOrDefault(p => p.ProviderTypeName == key);
                 if (selectedProvider == null) throw new Exception($"Provider '{key}' not available!");
-                return serviceProvider.GetRequiredService(selectedProvider.ProviderType) as IAuthJanitorProvider;
+                return Activator.CreateInstance(selectedProvider.ProviderType, new object[] {
+                    serviceProvider.GetRequiredService<ILoggerFactory>(),
+                    serviceProvider
+                }) as IAuthJanitorProvider;
             });
 
             serviceCollection.AddTransient<Func<string, AuthJanitorProviderConfiguration>>(serviceProvider => key =>

@@ -19,10 +19,10 @@ namespace AuthJanitor.Automation.AdminApi
 
         protected ProviderIntegratedFunction(
             IDataStore<ManagedSecret> managedSecretStore,
-            IDataStore<Resource> resourceStore,
+            IDataStore<Shared.Resource> resourceStore,
             IDataStore<RekeyingTask> rekeyingTaskStore,
             Func<ManagedSecret, ManagedSecretViewModel> managedSecretViewModelDelegate,
-            Func<Resource, ResourceViewModel> resourceViewModelDelegate,
+            Func<Shared.Resource, Shared.ViewModels.ResourceViewModel> resourceViewModelDelegate,
             Func<RekeyingTask, RekeyingTaskViewModel> rekeyingTaskViewModelDelegate,
             Func<AuthJanitorProviderConfiguration, IEnumerable<ProviderConfigurationItemViewModel>> configViewModelDelegate,
             Func<LoadedProviderMetadata, LoadedProviderViewModel> providerViewModelDelegate,

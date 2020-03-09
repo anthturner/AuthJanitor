@@ -83,8 +83,21 @@ namespace AuthJanitor.Automation.Shared
                     ProviderTypeName = provider.ProviderTypeName
                 };
 
-        private static ManagedSecretViewModel GetViewModel(IServiceProvider serviceProvider, ManagedSecret secret) =>
-            new ManagedSecretViewModel()
+        private static ManagedSecretViewModel GetViewModel(IServiceProvider serviceProvider, ManagedSecret secret)
+        {
+            var resources = secret.ResourceIds
+                                .Select(resourceId => serviceProvider.GetRequiredService<IDataStore<Resource>>()
+                                                                    .Get(resourceId))
+                                .Select(task => task.Result)
+                                .Select(resource => serviceProvider.GetRequiredService<Func<Resource, ResourceViewModel>>()(resource));
+            foreach (var resource in resources)
+            {
+                var provider = serviceProvider.GetRequiredService<Func<string, IAuthJanitorProvider>>()(resource.ProviderType);
+                provider.SerializedConfiguration = resource.SerializedProviderConfiguration;
+                resource.Risks = provider.GetRisks(secret.ValidPeriod);
+                resource.Description = provider.GetDescription();
+            }
+            return new ManagedSecretViewModel()
             {
                 ObjectId = secret.ObjectId,
                 Name = secret.Name,
@@ -93,12 +106,9 @@ namespace AuthJanitor.Automation.Shared
                 LastChanged = secret.LastChanged,
                 ValidPeriod = secret.ValidPeriod,
                 Nonce = secret.Nonce,
-                Resources = secret.ResourceIds
-                                      .Select(resourceId => serviceProvider.GetRequiredService<IDataStore<Resource>>()
-                                                                           .Get(resourceId))
-                                      .Select(task => task.Result)
-                                      .Select(resource => serviceProvider.GetRequiredService<Func<Resource, ResourceViewModel>>()(resource))
+                Resources = resources
             };
+        }
 
         private static RekeyingTaskViewModel GetViewModel(IServiceProvider serviceProvider, RekeyingTask rekeyingTask) =>
             new RekeyingTaskViewModel()
@@ -113,8 +123,8 @@ namespace AuthJanitor.Automation.Shared
                                       .Select(secret => serviceProvider.GetRequiredService<Func<ManagedSecret, ManagedSecretViewModel>>()(secret))
             };
 
-        private static ResourceViewModel GetViewModel(IServiceProvider serviceProvider, Resource resource) =>
-            new ResourceViewModel()
+        private static ViewModels.ResourceViewModel GetViewModel(IServiceProvider serviceProvider, Resource resource) =>
+            new ViewModels.ResourceViewModel()
             {
                 ObjectId = resource.ObjectId,
                 Name = resource.Name,
@@ -127,7 +137,8 @@ namespace AuthJanitor.Automation.Shared
                         ((AuthJanitorProviderConfiguration)JsonConvert.DeserializeObject(
                             resource.ProviderConfiguration,
                             serviceProvider.GetRequiredService<Func<string, AuthJanitorProviderConfiguration>>()(resource.ProviderType).GetType()))
-                    )
+                    ),
+                SerializedProviderConfiguration = resource.ProviderConfiguration
             };
     }
 }

@@ -14,6 +14,7 @@ namespace AuthJanitor.Automation.Shared.ViewModels
         public bool IsRekeyableObjectProvider { get; set; }
         public string ProviderType { get; set; }
         public ProviderAttribute ProviderDetail { get; set; }
+        public string SerializedProviderConfiguration { get; set; }
         public IEnumerable<ProviderConfigurationItemViewModel> ProviderConfiguration { get; set; } = new List<ProviderConfigurationItemViewModel>();
         public IEnumerable<RiskyConfigurationItem> Risks { get; set; } = new List<RiskyConfigurationItem>();
         public string RuntimeDescription { get; set; }

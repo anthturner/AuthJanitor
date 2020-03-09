@@ -1,7 +1,7 @@
 ﻿@layout MainLayout
 @page "/resources"
+@using AuthJanitor.Automation.Blazor.Modals
 @using AuthJanitor.Automation.Shared.ViewModels
-@using AuthJanitor.Providers
 @using BlazorTable
 
 <Card>
@@ -9,58 +9,41 @@
         <DisplayHeading Size="DisplayHeadingSize.Is4">Resources</DisplayHeading>
     </CardHeader>
     <CardBody>
-        <BlazorTable.Table TableItem="ResourceViewModel" Items="ResourceList" TableClass="table table-striped table-bordered">
-            <BlazorTable.Column TableItem="ResourceViewModel" Title="" Width="1%" Field="@(x => x.ObjectId)" Sortable="false" Filterable="false">
+        <BlazorTable.Table TableItem="Automation.Shared.ViewModels.ResourceViewModel" Items="ResourceList" TableClass="table table-striped table-bordered">
+            <BlazorTable.Column TableItem="Automation.Shared.ViewModels.ResourceViewModel" Title="" Width="1%" Field="@(x => x.ObjectId)" Sortable="false" Filterable="false">
                 <Template>
                     <Blazorise.Buttons>
-                        <Blazorise.Button Color="Color.Info" Clicked="@(() => View(context.ObjectId))">
+                        <Blazorise.Button Color="Color.Info" Clicked="@(() => View(context))">
                             <Icon Name="FontAwesomeIcons.Eye" Class="text-light" />
                         </Blazorise.Button>
-                        <Blazorise.Button Color="Color.Danger" Clicked="@(() => Delete(context.ObjectId))">
+                        <Blazorise.Button Color="Color.Danger" Clicked="@(() => ConfirmDelete(context))">
                             <Icon Name="FontAwesomeIcons.Trash" Class="text-light" />
                         </Blazorise.Button>
                     </Blazorise.Buttons>
                 </Template>
             </BlazorTable.Column>
-            <BlazorTable.Column TableItem="ResourceViewModel" Title="Name" Field="@(x => x.Name)" Sortable="true" Filterable="true" />
-            <BlazorTable.Column TableItem="ResourceViewModel" Title="Description" Field="@(x => x.Description)" Sortable="true" Filterable="true" />
-            <BlazorTable.Column TableItem="ResourceViewModel" Title="Provider" Field="@(x => x.ProviderDetail.Name)" Sortable="true" Filterable="true" />
+            <BlazorTable.Column TableItem="Automation.Shared.ViewModels.ResourceViewModel" Title="Name" Field="@(x => x.Name)" Sortable="true" Filterable="true" />
+            <BlazorTable.Column TableItem="Automation.Shared.ViewModels.ResourceViewModel" Title="Description" Field="@(x => x.Description)" Sortable="true" Filterable="true" />
+            <BlazorTable.Column TableItem="Automation.Shared.ViewModels.ResourceViewModel" Title="Provider" Field="@(x => x.ProviderDetail.Name)" Sortable="true" Filterable="true" />
 
             <Pager ShowPageNumber="true" ShowTotalCount="true" />
         </BlazorTable.Table>
-        <Blazorise.Button Color="Color.Primary" Clicked="@addResourceModal.ShowModal">
+        <Blazorise.Button Color="Color.Primary" Clicked="@(() => addResourceModal.ShowModal(() => { StateHasChanged(); return Task.FromResult(0); }))">
             <Icon Name="FontAwesomeIcons.Plus" /> Add Resource
         </Blazorise.Button>
     </CardBody>
 </Card>
 
-<AddResourceModal @ref="addResourceModal" AfterCommitAsync="@LoadData" />
+<AddResourceModal @ref="addResourceModal" />
+<DeleteConfirmationModal @ref="deleteModal" />
 
-@using AuthJanitor.Automation.Blazor.Modals 
 @code {
-    public IEnumerable<ResourceViewModel> ResourceList { get; set; } = new List<ResourceViewModel>();
+    public IEnumerable<Automation.Shared.ViewModels.ResourceViewModel> ResourceList { get; set; } = new List<Automation.Shared.ViewModels.ResourceViewModel>();
 
     protected Modals.AddResourceModal addResourceModal;
+    protected Modals.DeleteConfirmationModal deleteModal;
 
-    protected override async Task OnInitializedAsync()
-    {
-        await LoadData();
-        await base.OnInitializedAsync();
-    }
-
-    protected async Task LoadData()
-    {
-        if (addResourceModal != null) addResourceModal.ClearForm();
-        ResourceList = await Http.GetJsonAsync<IEnumerable<ResourceViewModel>>("/api/resources");
-    }
-
-    protected async Task Delete(Guid objectId)
-    {
-
-    }
-
-    protected async Task View(Guid objectId)
-    {
-        NavigationManager.NavigateTo($"/aj/resources/{objectId}");
-    }
+    protected override async Task OnInitializedAsync() => ResourceList = await Http.List<ResourceViewModel>();
+    protected void ConfirmDelete(ResourceViewModel resource) => deleteModal.ShowModal(resource.ObjectId, resource.Name, (id) => Http.Delete<ResourceViewModel>(id).ContinueWith(t => this.StateHasChanged()));
+    protected void View(ResourceViewModel resource) => NavigationManager.NavigateTo($"/aj/resources/{resource.ObjectId}");
 }
