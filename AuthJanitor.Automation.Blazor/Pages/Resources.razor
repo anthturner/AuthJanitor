@@ -9,7 +9,7 @@
         <DisplayHeading Size="DisplayHeadingSize.Is4">Resources</DisplayHeading>
     </CardHeader>
     <CardBody>
-        <BlazorTable.Table TableItem="Automation.Shared.ViewModels.ResourceViewModel" Items="ResourceList" TableClass="table table-striped table-bordered">
+        <BlazorTable.Table @ref="table" TableItem="Automation.Shared.ViewModels.ResourceViewModel" Items="@ResourceList" TableClass="table table-striped table-bordered">
             <BlazorTable.Column TableItem="Automation.Shared.ViewModels.ResourceViewModel" Title="" Width="1%" Field="@(x => x.ObjectId)" Sortable="false" Filterable="false">
                 <Template>
                     <Blazorise.Buttons>
@@ -25,10 +25,11 @@
             <BlazorTable.Column TableItem="Automation.Shared.ViewModels.ResourceViewModel" Title="Name" Field="@(x => x.Name)" Sortable="true" Filterable="true" />
             <BlazorTable.Column TableItem="Automation.Shared.ViewModels.ResourceViewModel" Title="Description" Field="@(x => x.Description)" Sortable="true" Filterable="true" />
             <BlazorTable.Column TableItem="Automation.Shared.ViewModels.ResourceViewModel" Title="Provider" Field="@(x => x.ProviderDetail.Name)" Sortable="true" Filterable="true" />
+            <BlazorTable.Column TableItem="Automation.Shared.ViewModels.ResourceViewModel" Title="Risk Score" Field="@(x => x.RiskScore)" Sortable="true" Filterable="true" />
 
             <Pager ShowPageNumber="true" ShowTotalCount="true" />
         </BlazorTable.Table>
-        <Blazorise.Button Color="Color.Primary" Clicked="@(() => addResourceModal.ShowModal(() => { StateHasChanged(); return Task.FromResult(0); }))">
+        <Blazorise.Button Color="Color.Primary" Clicked="@(() => addResourceModal.ShowModal(() => LoadData()))">
             <Icon Name="FontAwesomeIcons.Plus" /> Add Resource
         </Blazorise.Button>
     </CardBody>
@@ -40,10 +41,18 @@
 @code {
     public IEnumerable<Automation.Shared.ViewModels.ResourceViewModel> ResourceList { get; set; } = new List<Automation.Shared.ViewModels.ResourceViewModel>();
 
+    protected BlazorTable.Table<ResourceViewModel> table;
     protected Modals.AddResourceModal addResourceModal;
     protected Modals.DeleteConfirmationModal deleteModal;
 
-    protected override async Task OnInitializedAsync() => ResourceList = await Http.List<ResourceViewModel>();
-    protected void ConfirmDelete(ResourceViewModel resource) => deleteModal.ShowModal(resource.ObjectId, resource.Name, (id) => Http.Delete<ResourceViewModel>(id).ContinueWith(t => this.StateHasChanged()));
+    protected override async Task OnInitializedAsync() => await LoadData();
+    protected async Task LoadData()
+    {
+        ResourceList = await Http.List<ResourceViewModel>();
+        this.StateHasChanged();
+    }
+    protected void ConfirmDelete(ResourceViewModel resource) =>
+        deleteModal.ShowModal(resource.ObjectId, resource.Name,
+            (id) => Http.Delete<ResourceViewModel>(id).ContinueWith(async t => await LoadData()));
     protected void View(ResourceViewModel resource) => NavigationManager.NavigateTo($"/aj/resources/{resource.ObjectId}");
 }

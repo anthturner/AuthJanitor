@@ -43,7 +43,9 @@ namespace AuthJanitor.Providers
 
             serviceCollection.AddTransient<Func<string, LoadedProviderMetadata>>(serviceProvider => key =>
                 loadedProviders.FirstOrDefault(p => p.ProviderTypeName == key));
-            serviceCollection.AddSingleton<List<LoadedProviderMetadata>>(loadedProviders.ToList()); ;
+            serviceCollection.AddSingleton<List<LoadedProviderMetadata>>(loadedProviders.ToList());
+
+            serviceCollection.AddScoped<MultiCredentialProvider>();
         }
     }
 }

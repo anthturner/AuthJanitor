@@ -38,8 +38,8 @@
 @using AuthJanitor.Automation.Shared
 @using Blazorise
 @code {
-    [Parameter]
-    public TaskConfirmationStrategies RotationConfirmations { get; set; }
+    [Parameter] public TaskConfirmationStrategies Value { get; set; }
+    [Parameter] public EventCallback<TaskConfirmationStrategies> ValueChanged { get; set; }
 
     [Parameter]
     public string SelectedColor { get; set; } = "text-success";
@@ -51,14 +51,15 @@
     public bool Editable { get; set; } = false;
 
     protected string GetColor(TaskConfirmationStrategies strategy) =>
-        $" {(RotationConfirmations.HasFlag(strategy) ? "iconLit " + SelectedColor : NotSelectedColor)}";
+        $" {(Value.HasFlag(strategy) ? "iconLit " + SelectedColor : NotSelectedColor)}";
 
     protected void UpdateFlag(TaskConfirmationStrategies strategy)
     {
-        if (RotationConfirmations.HasFlag(strategy))
-            RotationConfirmations &= ~strategy;
+        if (Value.HasFlag(strategy))
+            Value &= ~strategy;
         else
-            RotationConfirmations |= strategy;
+            Value |= strategy;
+        ValueChanged.InvokeAsync(Value);
         StateHasChanged();
     }
 }

@@ -5,6 +5,7 @@ using System.Collections.Generic;
 
 namespace AuthJanitor.Automation.Shared
 {
+    [Serializable]
     [Flags]
     public enum TaskConfirmationStrategies : int
     {
@@ -24,7 +25,7 @@ namespace AuthJanitor.Automation.Shared
         public string Name { get; set; }
         public string Description { get; set; }
 
-        public TaskConfirmationStrategies TaskConfirmationStrategies { get; set; }
+        public TaskConfirmationStrategies TaskConfirmationStrategies { get; set; } = TaskConfirmationStrategies.None;
 
         public DateTimeOffset LastChanged { get; set; } = DateTimeOffset.MinValue;
         public TimeSpan ValidPeriod { get; set; }

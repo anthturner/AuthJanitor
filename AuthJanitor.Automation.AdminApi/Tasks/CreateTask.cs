@@ -22,8 +22,8 @@ namespace AuthJanitor.Automation.AdminApi.Tasks
 
         [FunctionName("CreateTask")]
         public async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "tasks")] HttpRequest req,
-            [FromBody] RekeyingTask resource,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "tasks")] string[] secretIds,
+            HttpRequest req,
             ILogger log)
         {
             if (!PassedHeaderCheck(req)) { log.LogCritical("Attempted to access API without header!"); return new BadRequestResult(); }
@@ -31,22 +31,27 @@ namespace AuthJanitor.Automation.AdminApi.Tasks
             log.LogInformation("Creating new Task.");
 
             var secrets = await ManagedSecrets.List();
-            if (resource.ManagedSecretIds.Any(id => !secrets.Any(s => s.ObjectId == id)) ||
-                secrets.Where(s => resource.ManagedSecretIds.Contains(s.ObjectId)).Any(s => 
+            if (secretIds.Any(id => !secrets.Any(s => s.ObjectId == Guid.Parse(id))) ||
+                secrets.Where(s => secretIds.Contains(s.ObjectId.ToString())).Any(s => 
                     !s.TaskConfirmationStrategies.HasFlag(TaskConfirmationStrategies.AdminCachesSignOff) && 
                     !s.TaskConfirmationStrategies.HasFlag(TaskConfirmationStrategies.AdminSignsOffJustInTime)))
             {
                 return new BadRequestErrorMessageResult("Invalid Managed Secret ID in set");
             }
 
+            var earliestExpiry = secrets.Where(s => secretIds.Contains(s.ObjectId.ToString()))
+                .Min(s => s.LastChanged + s.ValidPeriod);
+
             RekeyingTask newTask = new RekeyingTask()
             {
                 Queued = DateTimeOffset.Now,
-                Expiry = resource.Expiry,
-                ManagedSecretIds = resource.ManagedSecretIds
+                Expiry = earliestExpiry,
+                ManagedSecretIds = secretIds.Select(s => Guid.Parse(s)).ToList()
             };
 
             await RekeyingTasks.Create(newTask);
+            await RekeyingTasks.Commit();
+
             return new OkObjectResult(newTask);
         }
     }

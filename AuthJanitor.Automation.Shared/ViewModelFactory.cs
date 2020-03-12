@@ -24,7 +24,7 @@ namespace AuthJanitor.Automation.Shared
         private static IDictionary<Type, Func<object, PropertyInfo, string>> ValueReaders { get; } = new Dictionary<Type, Func<object, PropertyInfo, string>>()
         {
             { typeof(string), (instance, property) => property.GetValue(instance) as string },
-            { typeof(string[]), (instance, property) => string.Join(",", property.GetValue(instance) as string[]) },
+            { typeof(string[]), (instance, property) => property.GetValue(instance) == null ? string.Empty : string.Join(",", property.GetValue(instance) as string[]) },
             { typeof(int), (instance, property) => (property.GetValue(instance) as int?).GetValueOrDefault(0).ToString() },
             { typeof(bool), (instance, property) => (property.GetValue(instance) as bool?).GetValueOrDefault(false).ToString() },
             { typeof(Enum), (instance, property) => (property.GetValue(instance) as Enum).ToString() }
@@ -123,8 +123,12 @@ namespace AuthJanitor.Automation.Shared
                                       .Select(secret => serviceProvider.GetRequiredService<Func<ManagedSecret, ManagedSecretViewModel>>()(secret))
             };
 
-        private static ViewModels.ResourceViewModel GetViewModel(IServiceProvider serviceProvider, Resource resource) =>
-            new ViewModels.ResourceViewModel()
+        private static ViewModels.ResourceViewModel GetViewModel(IServiceProvider serviceProvider, Resource resource)
+        {
+            var provider = serviceProvider.GetRequiredService<Func<string, IAuthJanitorProvider>>()(resource.ProviderType);
+            provider.SerializedConfiguration = resource.ProviderConfiguration;
+
+            return new ViewModels.ResourceViewModel()
             {
                 ObjectId = resource.ObjectId,
                 Name = resource.Name,
@@ -138,7 +142,10 @@ namespace AuthJanitor.Automation.Shared
                             resource.ProviderConfiguration,
                             serviceProvider.GetRequiredService<Func<string, AuthJanitorProviderConfiguration>>()(resource.ProviderType).GetType()))
                     ),
-                SerializedProviderConfiguration = resource.ProviderConfiguration
+                SerializedProviderConfiguration = resource.ProviderConfiguration,
+                RuntimeDescription = provider.GetDescription(),
+                Risks = provider.GetRisks()
             };
+        }
     }
 }

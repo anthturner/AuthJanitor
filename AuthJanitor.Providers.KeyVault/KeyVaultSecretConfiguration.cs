@@ -5,7 +5,7 @@ using System.Linq;
 
 namespace AuthJanitor.Providers.KeyVault
 {
-    public class KeyVaultConfiguration : AuthJanitorProviderConfiguration
+    public class KeyVaultSecretConfiguration : AuthJanitorProviderConfiguration
     {
         public const int DEFAULT_SECRET_LENGTH = 64;
 
@@ -16,13 +16,13 @@ namespace AuthJanitor.Providers.KeyVault
         public string VaultName { get; set; }
 
         /// <summary>
-        /// Name of Key or Secret being operated upon
+        /// Name Secret being operated upon
         /// </summary>
-        [Description("Key or Secret Name")]
-        public string KeyOrSecretName { get; set; }
+        [Description("Secret Name")]
+        public string SecretName { get; set; }
 
         /// <summary>
-        /// Length of secret to regenerate, if appropriate
+        /// Length of secret to regenerate
         /// </summary>
         [Description("New Secret Length")]
         public int SecretLength { get; set; } = DEFAULT_SECRET_LENGTH;
@@ -34,7 +34,7 @@ namespace AuthJanitor.Providers.KeyVault
         public override string GetDescriptiveString()
         {
             return base.GetDescriptiveString() + Environment.NewLine +
-$"Key Vault Name: {VaultName} - Object Name: {KeyOrSecretName} - Secret Length: {SecretLength}";
+$"Key Vault Name: {VaultName} - Object Name: {SecretName} - Secret Length: {SecretLength}";
         }
 
         /// <summary>

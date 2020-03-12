@@ -11,7 +11,7 @@ namespace AuthJanitor.Providers.KeyVault
     [Provider(Name = "Key Vault Secret",
               IconClass = "fa fa-low-vision",
               Description = "Regenerates a Key Vault Secret")]
-    public class KeyVaultSecretRekeyableObjectProvider : RekeyableObjectProvider<KeyVaultConfiguration>
+    public class KeyVaultSecretRekeyableObjectProvider : RekeyableObjectProvider<KeyVaultSecretConfiguration>
     {
         public KeyVaultSecretRekeyableObjectProvider(ILoggerFactory loggerFactory, IServiceProvider serviceProvider) : base(loggerFactory, serviceProvider)
         {
@@ -21,10 +21,10 @@ namespace AuthJanitor.Providers.KeyVault
         {
             // TODO: This doesn't use the other credential set, it tries to execute its own set of fallbacks!
             SecretClient client = new SecretClient(new Uri($"https://{Configuration.VaultName}.vault.azure.net/"), new DefaultAzureCredential(true));
-            Azure.Response<KeyVaultSecret> currentSecret = await client.GetSecretAsync(Configuration.KeyOrSecretName);
+            Azure.Response<KeyVaultSecret> currentSecret = await client.GetSecretAsync(Configuration.SecretName);
 
             // Create a new version of the Secret
-            KeyVaultSecret newSecret = new KeyVaultSecret(Configuration.KeyOrSecretName, HelperMethods.GenerateCryptographicallySecureString(Configuration.SecretLength));
+            KeyVaultSecret newSecret = new KeyVaultSecret(Configuration.SecretName, HelperMethods.GenerateCryptographicallySecureString(Configuration.SecretLength));
 
             // Copy in metadata from the old Secret if it existed
             if (currentSecret != null && currentSecret.Value != null)

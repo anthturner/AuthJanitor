@@ -1,5 +1,6 @@
 ﻿using AuthJanitor.Automation.Shared.ViewModels;
 using Microsoft.AspNetCore.Components;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
@@ -37,6 +38,10 @@ namespace AuthJanitor.Automation.Blazor
         public static async Task<T> Create<T>(this HttpClient http, T obj) =>
             await ConfigureApiHttpRequest<T>(http)
                  .PostJsonAsync<T>($"{API_BASE}{ApiFormatStrings[typeof(T)]}", obj);
+
+        public static async Task CreateWithAlternateSerializer<T>(this HttpClient http, T obj) =>
+            await ConfigureApiHttpRequest<T>(http)
+                 .PostAsync($"{API_BASE}{ApiFormatStrings[typeof(T)]}", new StringContent(JsonConvert.SerializeObject(obj)));
 
         public static async Task<T> Update<T>(this HttpClient http, Guid objectId, T obj) =>
             await ConfigureApiHttpRequest<T>(http)

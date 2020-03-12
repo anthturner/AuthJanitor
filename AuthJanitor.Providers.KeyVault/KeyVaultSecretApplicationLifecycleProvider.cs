@@ -10,7 +10,7 @@ namespace AuthJanitor.Providers.KeyVault
     [Provider(Name = "Key Vault Secret",
               IconClass = "fa fa-low-vision",
               Description = "Manages the lifecycle of a Key Vault Secret")]
-    public class KeyVaultSecretApplicationLifecycleProvider : ApplicationLifecycleProvider<KeyVaultConfiguration>
+    public class KeyVaultSecretApplicationLifecycleProvider : ApplicationLifecycleProvider<KeyVaultSecretConfiguration>
     {
         public KeyVaultSecretApplicationLifecycleProvider(ILoggerFactory loggerFactory, IServiceProvider serviceProvider) : base(loggerFactory, serviceProvider)
         {
@@ -26,10 +26,10 @@ namespace AuthJanitor.Providers.KeyVault
 
             foreach (RegeneratedSecret secret in newSecrets)
             {
-                Azure.Response<KeyVaultSecret> currentSecret = await client.GetSecretAsync(Configuration.KeyOrSecretName);
+                Azure.Response<KeyVaultSecret> currentSecret = await client.GetSecretAsync(Configuration.SecretName);
 
                 // Create a new version of the Secret
-                string secretName = string.IsNullOrEmpty(secret.UserHint) ? Configuration.KeyOrSecretName : $"{Configuration.KeyOrSecretName}-{secret.UserHint}";
+                string secretName = string.IsNullOrEmpty(secret.UserHint) ? Configuration.SecretName : $"{Configuration.SecretName}-{secret.UserHint}";
                 KeyVaultSecret newKvSecret = new KeyVaultSecret(secretName, secret.NewSecretValue);
 
                 // Copy in metadata from the old Secret if it existed

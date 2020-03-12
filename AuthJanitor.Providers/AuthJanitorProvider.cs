@@ -39,11 +39,17 @@ namespace AuthJanitor.Providers
         string GetDescription();
 
         /// <summary>
-        /// Get a list of risky items for the Extension
+        /// Get a list of risky items for the Extension based on the Secret validity period
         /// </summary>
         /// <param name="requestedValidPeriod">Requested period of validity</param>
         /// <returns></returns>
         IList<RiskyConfigurationItem> GetRisks(TimeSpan requestedValidPeriod);
+
+        /// <summary>
+        /// Get a list of risky items for the Extension independent of Secret validity period
+        /// </summary>
+        /// <returns></returns>
+        IList<RiskyConfigurationItem> GetRisks();
 
         /// <summary>
         /// Get the Provider's metadata
@@ -108,20 +114,23 @@ namespace AuthJanitor.Providers
         public abstract string GetDescription();
 
         /// <summary>
-        /// Get a list of risky items for the Provider (base returns Configuration's risks)
+        /// Get a list of risky items for the Provider based on Secret validity period
         /// </summary>
         /// <param name="requestedValidPeriod">Requested period of validity</param>
         /// <returns></returns>
-        public virtual IList<RiskyConfigurationItem> GetRisks(TimeSpan requestedValidPeriod)
-        {
-            return Configuration.GetRiskyConfigurations();
-        }
+        public virtual IList<RiskyConfigurationItem> GetRisks(TimeSpan requestedValidPeriod) => GetRisks();
 
-        protected async Task<Microsoft.Azure.Management.Fluent.IAzure> GetAzure()
+        /// <summary>
+        /// Get a list of risky items for the Provider independent of Secret validity period
+        /// </summary>
+        /// <returns></returns>
+        public virtual IList<RiskyConfigurationItem> GetRisks() => Configuration.GetRiskyConfigurations();
+
+        protected async Task<Microsoft.Azure.Management.Fluent.IAzure> GetAzure(MultiCredentialProvider.CredentialType type = MultiCredentialProvider.CredentialType.AgentServicePrincipal)
         {
             return await Microsoft.Azure.Management.Fluent.Azure
                 .Configure()
-                .Authenticate(_serviceProvider.GetService<AzureCredentials>())
+                .Authenticate(_serviceProvider.GetService<MultiCredentialProvider>().Get(type)?.AzureCredentials)
                 .WithDefaultSubscriptionAsync();
         }
     }

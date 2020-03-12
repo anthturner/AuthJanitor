@@ -5,14 +5,14 @@
         <DisplayHeading Size="DisplayHeadingSize.Is4">Rekeying Tasks</DisplayHeading>
     </CardHeader>
     <CardBody>
-        <BlazorTable.Table TableItem="RekeyingTaskViewModel" Items="Tasks" TableClass="table table-striped table-bordered">
+        <BlazorTable.Table TableItem="RekeyingTaskViewModel" Items="@Tasks" TableClass="table table-striped table-bordered">
             <BlazorTable.Column TableItem="RekeyingTaskViewModel" Title="" Width="1%" Field="@(x => x.ObjectId)" Sortable="false" Filterable="false">
                 <Template>
                     <Blazorise.Buttons>
                         <Blazorise.Button Color="Color.Info" Clicked="@(() => View(context))">
                             <Icon Name="FontAwesomeIcons.Eye" Class="text-light" />
                         </Blazorise.Button>
-                        <Blazorise.Button Color="Color.Success" Clicked="@(() => Approve(context))">
+                        <Blazorise.Button Color="Color.Success" Clicked="@(() => ConfirmApprove(context))">
                             <Icon Name="FontAwesomeIcons.CheckSquare" Class="text-light" />
                         </Blazorise.Button>
                         <Blazorise.Button Color="Color.Danger" Clicked="@(() => ConfirmDelete(context))">
@@ -43,17 +43,29 @@
     </CardBody>
 </Card>
 
-@* TODO: Modal confirmation for approve? *@
+<ApproveConfirmationModal @ref="approveModal" />
 <DeleteConfirmationModal @ref="deleteModal" />
 
 @using BlazorTable
 @code {
     public IEnumerable<RekeyingTaskViewModel> Tasks { get; set; }
 
+    protected Modals.ApproveConfirmationModal approveModal;
     protected Modals.DeleteConfirmationModal deleteModal;
 
-    protected override async Task OnInitializedAsync() => Tasks = await Http.List<RekeyingTaskViewModel>();
-    protected void ConfirmDelete(RekeyingTaskViewModel task) => deleteModal.ShowModal(task.ObjectId, $"{task.ObjectId}", (id) => Http.Delete<RekeyingTaskViewModel>(id).ContinueWith(t => this.StateHasChanged()));
+    protected override async Task OnInitializedAsync() => await LoadData();
+    protected async Task LoadData()
+    {
+        Tasks = await Http.List<RekeyingTaskViewModel>();
+        this.StateHasChanged();
+    }
+    protected void ConfirmDelete(RekeyingTaskViewModel task) =>
+        deleteModal.ShowModal(task.ObjectId, $"{task.ObjectId}",
+            (id) => Http.Delete<ManagedSecretViewModel>(id).ContinueWith(async t => await LoadData()));
+    protected void ConfirmApprove(RekeyingTaskViewModel task) =>
+        approveModal.ShowModal(task, 
+            (id) => Http.GetAJConfiguredClient().PostJsonAsync<int>($"/api/tasks/{task.ObjectId}/approve", 0).ContinueWith(async t => await LoadData()));
+
     protected void View(RekeyingTaskViewModel task) => NavigationManager.NavigateTo($"/aj/rekeyingTasks/{task.ObjectId}");
-    protected void Approve(RekeyingTaskViewModel task) => Http.GetAJConfiguredClient().PostJsonAsync($"/api/tasks/{task.ObjectId}/approve", new { });
+   
 }

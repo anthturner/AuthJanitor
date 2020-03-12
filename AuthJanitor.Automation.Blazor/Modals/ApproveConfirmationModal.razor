@@ -1,0 +1,56 @@
+﻿<Modal @ref="modalRef">
+    <ModalBackdrop />
+    <ModalContent IsCentered="true">
+        <ModalHeader>
+            <ModalTitle>Confirm Approval</ModalTitle>
+            <CloseButton Clicked="@HideModal" />
+        </ModalHeader>
+        <ModalBody Padding="Padding.Is3.OnAll">
+            <Heading Size="HeadingSize.Is5">The following resources are affected by this approval:</Heading>
+            <ListGroup>
+                @foreach (var resource in Task.ManagedSecrets.SelectMany(s => s.Resources))
+                {
+                    <ListGroupItem>
+                        <ResourceNameComponent Resource="@resource" ShowRiskScore="true" />
+                    </ListGroupItem>
+                }
+            </ListGroup>
+            @if (Task.ManagedSecrets.All(s => s.Resources.All(r => r.RiskScore == 0)))
+            {
+                <Heading Size="HeadingSize.Is5">There are <strong>no generated risks</strong> as a part of this rekeying.</Heading>
+            }
+            else
+            {
+                <Heading Size="HeadingSize.Is5">Approving this acknowledges a total risk score of <strong>@Task.ManagedSecrets.Sum(s => s.Resources.Sum(r => r.RiskScore))</strong>.</Heading>
+            }
+        </ModalBody>
+        <ModalFooter>
+            <Button Color="Color.Secondary" Clicked="@HideModal">Close</Button>
+            <Button Color="Color.Success" Clicked="@ApproveButtonClicked">Approve</Button>
+        </ModalFooter>
+    </ModalContent>
+</Modal>
+
+@using Blazorise
+@code {
+    public Modal modalRef;
+
+    private Func<Guid, Task> _onApproveConfirmedEvent;
+
+    protected async Task ApproveButtonClicked() =>
+        await _onApproveConfirmedEvent(Task.ObjectId)
+               .ContinueWith(((t) => HideModal()));
+
+    protected RekeyingTaskViewModel Task { get; set; }
+
+    public void ShowModal(RekeyingTaskViewModel task, Func<Guid, Task> onApproveConfirmedEvent)
+    {
+        Task = task;
+        _onApproveConfirmedEvent = onApproveConfirmedEvent;
+        modalRef.Show();
+    }
+    public void HideModal()
+    {
+        modalRef.Hide();
+    }
+}

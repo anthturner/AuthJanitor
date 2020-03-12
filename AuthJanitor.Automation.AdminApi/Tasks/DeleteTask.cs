@@ -29,6 +29,7 @@ namespace AuthJanitor.Automation.AdminApi.Tasks
             log.LogInformation("Deleting Task ID {0}.", taskId);
 
             await RekeyingTasks.Delete(taskId);
+            await RekeyingTasks.Commit();
             return new OkResult();
         }
     }

@@ -21,7 +21,7 @@
             <Column ColumnSize="ColumnSize.Is12">
                 <Card>
                     <CardHeader>Expiring Soon</CardHeader>
-                    <CardBody>
+                    <CardBody Padding="Padding.Is0">
                         <BlazorTable.Table TableItem="ManagedSecretViewModel" Items="@Metrics.ExpiringSoon" TableClass="table table-striped table-bordered">
                             <BlazorTable.Column TableItem="ManagedSecretViewModel" Title="Name" Field="@(x => x.Name)" Sortable="true" Filterable="true" />
                             <BlazorTable.Column TableItem="ManagedSecretViewModel" Title="Valid For" Field="@(x => x.ValidPeriod)" Sortable="true" />
@@ -32,7 +32,7 @@
                 </Card>
             </Column>
         </Row>
-        <Row Padding="Padding.Is3.OnY">
+        @*<Row Padding="Padding.Is3.OnY">
             <Column ColumnSize="ColumnSize.Is6">
                 <Card>
                     <CardHeader>Risks</CardHeader>
@@ -49,7 +49,7 @@
                     </CardBody>
                 </Card>
             </Column>
-        </Row>
+        </Row>*@
     </Container>
 }
 

@@ -1,5 +1,4 @@
-﻿using Newtonsoft.Json;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -10,19 +9,26 @@ namespace AuthJanitor.Automation.Shared.ViewModels
         public Guid ObjectId { get; set; }
         public string Name { get; set; }
         public string Description { get; set; }
+        
+        [System.Text.Json.Serialization.JsonIgnore]
+        public TaskConfirmationStrategies TaskConfirmationStrategies
+        {
+            get => (TaskConfirmationStrategies)StrategyInt;
+            set => StrategyInt = (int)value;
+        }
 
-        public TaskConfirmationStrategies TaskConfirmationStrategies { get; set; }
+        public int StrategyInt { get; set; }
 
         public DateTimeOffset LastChanged { get; set; }
         public int ValidPeriodMinutes { get; set; }
 
-        [JsonIgnore]
+        [System.Text.Json.Serialization.JsonIgnore]
         public TimeSpan ValidPeriod
         {
             get => TimeSpan.FromMinutes(ValidPeriodMinutes);
             set => ValidPeriodMinutes = (int)Math.Ceiling(value.TotalMinutes);
         }
-        //public DateTimeOffset Expiry => LastChanged + ValidPeriod;
+
         public DateTime Expiry => (LastChanged + ValidPeriod).DateTime;
 
         public string ProviderSummary => $"{Resources.Count(r => !r.IsRekeyableObjectProvider)} ALCs, " +

@@ -39,8 +39,6 @@ namespace AuthJanitor.Automation.AdminApi
         /* The following dependencies are injected:
          * Core Logging & Identity 
          * - ILoggerFactory
-         * - TokenCredential (MSI)
-         * - AzureCredentials (MSI)
          * 
          * Data Storage/Persistence
          * - IDataStore<ManagedSecret>
@@ -65,12 +63,8 @@ namespace AuthJanitor.Automation.AdminApi
         {
             var logger = new LoggerFactory().CreateLogger(nameof(Startup));
 
-            logger.LogDebug("Registering LoggerFactory and application MSI credentials");
-            builder.Services.AddSingleton(new LoggerFactory());
-            builder.Services.AddSingleton(new DefaultAzureCredential(false));
-            builder.Services.AddSingleton(SdkContext.AzureCredentialsFactory.FromMSI(
-                new MSILoginInformation(MSIResourceType.AppService),
-                AzureEnvironment.AzureGlobalCloud));
+            logger.LogDebug("Registering LoggerFactory");
+            builder.Services.AddSingleton<ILoggerFactory>(new LoggerFactory());
 
             logger.LogDebug("Registering DataStores");
             ConfigureStorage(builder.Services).Wait();
@@ -87,6 +81,7 @@ namespace AuthJanitor.Automation.AdminApi
                                                                             .Where(type => !type.IsAbstract && typeof(IAuthJanitorProvider).IsAssignableFrom(type)));
 
             logger.LogInformation("Found {0} providers: {1}", providerTypes.Count(), string.Join("  ", providerTypes.Select(t => t.Name)));
+            logger.LogInformation("Registering providers and service principal default credentials");
             ProviderFactory.ConfigureProviderServices(builder.Services, providerTypes);
             
             ServiceProvider = builder.Services.BuildServiceProvider();

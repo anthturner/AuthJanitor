@@ -22,7 +22,7 @@ namespace AuthJanitor.Automation.AdminApi.Resources
 
         [FunctionName("CreateResource")]
         public async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "resources")] Shared.Resource resource,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "resources")] ResourceViewModel resource,
             HttpRequest req,
             ILogger log)
         {
@@ -37,7 +37,7 @@ namespace AuthJanitor.Automation.AdminApi.Resources
             try
             {
                 // Test deserialization of configuration to make sure it's valid
-                var obj = JsonConvert.DeserializeObject(resource.ProviderConfiguration, provider.ProviderConfigurationType);
+                var obj = JsonConvert.DeserializeObject(resource.SerializedProviderConfiguration, provider.ProviderConfigurationType);
                 if (obj == null) return new BadRequestErrorMessageResult("Invalid Provider configuration");
             } catch { return new BadRequestErrorMessageResult("Invalid Provider configuration"); }
 
@@ -47,7 +47,7 @@ namespace AuthJanitor.Automation.AdminApi.Resources
                 Description = resource.Description,
                 IsRekeyableObjectProvider = provider.IsRekeyableObjectProvider,
                 ProviderType = provider.ProviderTypeName,
-                ProviderConfiguration = resource.ProviderConfiguration
+                ProviderConfiguration = resource.SerializedProviderConfiguration
             };
 
             await Resources.Create(newResource);
