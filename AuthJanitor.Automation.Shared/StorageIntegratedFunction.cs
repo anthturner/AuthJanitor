@@ -1,12 +1,10 @@
-﻿using AuthJanitor.Automation.Shared;
+﻿using AuthJanitor.Automation.Shared.NotificationProviders;
 using AuthJanitor.Automation.Shared.ViewModels;
 using AuthJanitor.Providers;
-using Microsoft.AspNetCore.Http;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
-namespace AuthJanitor.Automation.AdminApi
+namespace AuthJanitor.Automation.Shared
 {
     public abstract class StorageIntegratedFunction
     {
@@ -20,15 +18,16 @@ namespace AuthJanitor.Automation.AdminApi
         protected IDataStore<Shared.Resource> Resources { get; }
         protected IDataStore<RekeyingTask> RekeyingTasks { get; }
 
+        protected INotificationProvider NotificationProvider { get; }
+
         protected ManagedSecretViewModel GetViewModel(ManagedSecret secret) => _managedSecretViewModelDelegate(secret);
         protected Shared.ViewModels.ResourceViewModel GetViewModel(Shared.Resource resource) => _resourceViewModelDelegate(resource);
         protected RekeyingTaskViewModel GetViewModel(RekeyingTask rekeyingTask) => _rekeyingTaskViewModelDelegate(rekeyingTask);
         protected IEnumerable<ProviderConfigurationItemViewModel> GetViewModel(AuthJanitorProviderConfiguration config) => _configViewModelDelegate(config);
         protected LoadedProviderViewModel GetViewModel(LoadedProviderMetadata provider) => _providerViewModelDelegate(provider);
 
-        protected bool PassedHeaderCheck(HttpRequest req) => req.Headers.ContainsKey("AuthJanitor") && req.Headers["AuthJanitor"].First() == "administrator";
-
         protected StorageIntegratedFunction(
+            INotificationProvider notificationProvider,
             IDataStore<ManagedSecret> managedSecretStore,
             IDataStore<Shared.Resource> resourceStore,
             IDataStore<RekeyingTask> rekeyingTaskStore,
@@ -38,6 +37,8 @@ namespace AuthJanitor.Automation.AdminApi
             Func<AuthJanitorProviderConfiguration, IEnumerable<ProviderConfigurationItemViewModel>> configViewModelDelegate,
             Func<LoadedProviderMetadata, LoadedProviderViewModel> providerViewModelDelegate)
         {
+            NotificationProvider = notificationProvider;
+
             ManagedSecrets = managedSecretStore;
             Resources = resourceStore;
             RekeyingTasks = rekeyingTaskStore;

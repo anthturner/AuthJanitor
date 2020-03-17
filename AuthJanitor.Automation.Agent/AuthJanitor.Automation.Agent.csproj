@@ -5,14 +5,6 @@
     <Configurations>Debug;Release;Web+Functions Debug</Configurations>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Remove="CheckAppSecretExpiryFunction.cs" />
-    <Compile Remove="QueueTasksForRekeying.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="CheckAppSecretExpiryFunction.cs" />
-    <None Include="QueueTasksForRekeying.cs" />
-  </ItemGroup>
-  <ItemGroup>
     <PackageReference Include="McMaster.NETCore.Plugins" Version="1.1.0" />
     <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="3.0.3" />
   </ItemGroup>

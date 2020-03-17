@@ -1,9 +1,7 @@
 ﻿using AuthJanitor.Automation.Shared;
+using AuthJanitor.Automation.Shared.NotificationProviders;
 using AuthJanitor.Providers;
-using Azure.Identity;
 using McMaster.NETCore.Plugins;
-using Microsoft.Azure.Management.ResourceManager.Fluent;
-using Microsoft.Azure.Management.ResourceManager.Fluent.Authentication;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Hosting;
 using Microsoft.Extensions.DependencyInjection;
@@ -36,35 +34,18 @@ namespace AuthJanitor.Automation.AdminApi
 
         public static IServiceProvider ServiceProvider { get; set; }
 
-        /* The following dependencies are injected:
-         * Core Logging & Identity 
-         * - ILoggerFactory
-         * 
-         * Data Storage/Persistence
-         * - IDataStore<ManagedSecret>
-         * - IDataStore<RekeyingTask>
-         * - IDataStore<Resource>
-         * 
-         * View Model Generation
-         * - Func<AuthJanitorProviderConfiguration, IEnumerable<ProviderConfigurationItemViewModel>>
-         * - Func<ManagedSecret, ManagedSecretViewModel>
-         * - Func<RekeyingTask, RekeyingTaskViewModel>
-         * - Func<Resource, ResourceViewModel>
-         * - Func<LoadedProvider, LoadedProviderViewModel>
-         * 
-         * Provider Support
-         * - Func<string, IAuthJanitorProvider>
-         * - Func<string, AuthJanitorProviderConfiguration>
-         * - Func<string, LoadedProvider>
-         * - List<LoadedProvider>
-         */
-
         public void Configure(IWebJobsBuilder builder)
         {
             var logger = new LoggerFactory().CreateLogger(nameof(Startup));
 
             logger.LogDebug("Registering LoggerFactory");
             builder.Services.AddSingleton<ILoggerFactory>(new LoggerFactory());
+
+            logger.LogDebug("Registering Notification Provider");
+            builder.Services.AddSingleton<INotificationProvider>(new EmailNotificationProvider(
+                "sendGridApiKey",
+                "uiNotificationUrlBase",
+                "authjanitor@bitoblivion.com"));
 
             logger.LogDebug("Registering DataStores");
             ConfigureStorage(builder.Services).Wait();
