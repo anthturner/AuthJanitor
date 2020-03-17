@@ -48,13 +48,6 @@ namespace AuthJanitor.Providers
             List<IApplicationLifecycleProvider> alcProviders = providers.Where(p => p is IApplicationLifecycleProvider).Cast<IApplicationLifecycleProvider>().ToList();
             List<IRekeyableObjectProvider> rkoProviders = providers.Where(p => p is IRekeyableObjectProvider).Cast<IRekeyableObjectProvider>().ToList();
 
-            bool testFailed = false;
-            await Task.WhenAll(providers.Select(p => p.Test().ContinueWith(task => { if (!task.Result) { testFailed = true; } })));
-            if (testFailed)
-            {
-                throw new Exception("Sanity check failed!");
-            }
-
             log.LogInformation("Preparing {0} Application Lifecycle Providers...", alcProviders.Count);
             try
             {
@@ -65,7 +58,6 @@ namespace AuthJanitor.Providers
                 log.LogError(ex, "Error executing BeforeRekeying on Application Lifecycle Provider(s)");
                 throw new Exception("Error executing BeforeRekeying on Application Lifecycle Provider(s)");
             }
-
 
             log.LogInformation("Rekeying {0} Rekeyable Object Providers...", rkoProviders.Count);
             List<RegeneratedSecret> generatedSecrets = new List<RegeneratedSecret>();

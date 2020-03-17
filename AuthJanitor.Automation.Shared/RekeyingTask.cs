@@ -10,6 +10,8 @@ namespace AuthJanitor.Automation.Shared
         public DateTimeOffset Queued { get; set; }
         public DateTimeOffset Expiry { get; set; }
 
+        public bool RekeyingInProgress { get; set; } = false;
+
         public IList<Guid> ManagedSecretIds { get; set; }
     }
 }

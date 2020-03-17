@@ -27,6 +27,11 @@ namespace AuthJanitor.Providers
         string SerializedConfiguration { get; set; }
 
         /// <summary>
+        /// Type of Credential to request from MultiCredentialProvider service when using this Provider
+        /// </summary>
+        MultiCredentialProvider.CredentialType CredentialType { get; set; }
+
+        /// <summary>
         /// Test if the current credentials can execute an Extension 
         /// </summary>
         /// <returns></returns>
@@ -87,6 +92,11 @@ namespace AuthJanitor.Providers
         public string SerializedConfiguration { get; set; }
 
         /// <summary>
+        /// Type of Credential to request from MultiCredentialProvider service when using this Provider
+        /// </summary>
+        public MultiCredentialProvider.CredentialType CredentialType { get; set; }
+
+        /// <summary>
         /// Logger implementation
         /// </summary>
         protected ILogger Logger { get; }
@@ -126,11 +136,11 @@ namespace AuthJanitor.Providers
         /// <returns></returns>
         public virtual IList<RiskyConfigurationItem> GetRisks() => Configuration.GetRiskyConfigurations();
 
-        protected async Task<Microsoft.Azure.Management.Fluent.IAzure> GetAzure(MultiCredentialProvider.CredentialType type = MultiCredentialProvider.CredentialType.AgentServicePrincipal)
+        protected async Task<Microsoft.Azure.Management.Fluent.IAzure> GetAzure()
         {
             return await Microsoft.Azure.Management.Fluent.Azure
                 .Configure()
-                .Authenticate(_serviceProvider.GetService<MultiCredentialProvider>().Get(type)?.AzureCredentials)
+                .Authenticate(_serviceProvider.GetService<MultiCredentialProvider>().Get(CredentialType)?.AzureCredentials)
                 .WithDefaultSubscriptionAsync();
         }
     }
