@@ -1,4 +1,4 @@
-﻿using Azure.Identity;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Threading.Tasks;
@@ -17,7 +17,12 @@ namespace AuthJanitor.Providers.AzureAD
         public override async Task<RegeneratedSecret> Rekey(TimeSpan requestedValidPeriod)
         {
             // requestedValidPeriod is ignored here, AAD sets token expiry!
-            Azure.Core.AccessToken token = await new DefaultAzureCredential(true).GetTokenAsync(new Azure.Core.TokenRequestContext(Configuration.Scopes), System.Threading.CancellationToken.None);
+
+            var token = await _serviceProvider.GetRequiredService<MultiCredentialProvider>()
+                .Get(CredentialType)
+                .DefaultAzureCredential
+                .GetTokenAsync(new Azure.Core.TokenRequestContext(Configuration.Scopes));
+            
             return new RegeneratedSecret()
             {
                 UserHint = Configuration.UserHint,
