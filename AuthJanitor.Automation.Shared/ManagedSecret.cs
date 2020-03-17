@@ -1,4 +1,4 @@
-﻿using AuthJanitor.Providers;
+using AuthJanitor.Providers;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -15,6 +15,17 @@ namespace AuthJanitor.Automation.Shared
         AutomaticRekeyingAsNeeded = 4, // fa fa-rotate-left
         AutomaticRekeyingScheduled = 8, // fa fa-clock-o
         ExternalSignal = 16 // fa fa-flag
+    }
+
+    public static class TaskConfirmationStrategiesExtensions
+    {
+        public static bool UsesOBOTokens(this TaskConfirmationStrategies confirmationStrategies) =>
+            confirmationStrategies.HasFlag(TaskConfirmationStrategies.AdminCachesSignOff) ||
+            confirmationStrategies.HasFlag(TaskConfirmationStrategies.AdminSignsOffJustInTime);
+        public static bool UsesServicePrincipal(this TaskConfirmationStrategies confirmationStrategies) =>
+            confirmationStrategies.HasFlag(TaskConfirmationStrategies.AutomaticRekeyingAsNeeded) ||
+            confirmationStrategies.HasFlag(TaskConfirmationStrategies.AutomaticRekeyingScheduled) ||
+            confirmationStrategies.HasFlag(TaskConfirmationStrategies.ExternalSignal);
     }
 
     public class ManagedSecret : IDataStoreCompatibleStructure
@@ -39,5 +50,17 @@ namespace AuthJanitor.Automation.Shared
         /// </summary>
         [JsonIgnore]
         public bool IsValid => LastChanged + ValidPeriod < DateTime.Now;
+
+        /// <summary>
+        /// Date/Time of expiry
+        /// </summary>
+        [JsonIgnore]
+        public DateTimeOffset Expiry => LastChanged + ValidPeriod;
+
+        /// <summary>
+        /// Time remaining until Expiry (if expired, TimeSpan.Zero)
+        /// </summary>
+        [JsonIgnore]
+        public TimeSpan TimeRemaining => IsValid ? Expiry - DateTimeOffset.Now : TimeSpan.Zero;
     }
 }
