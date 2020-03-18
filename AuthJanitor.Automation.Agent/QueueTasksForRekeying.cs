@@ -25,10 +25,9 @@ namespace AuthJanitor
         {
             log.LogInformation("Checking for necessary rekeyings... (lead time: {0})", LeadTime);
 
-            var existingTasks = await RekeyingTasks.List();
-            var allSecretsToBeChecked = (await ManagedSecrets.List())
-                .Where(s => s.TimeRemaining <= LeadTime)
-                .Where(s => !existingTasks.Any(t => t.ManagedSecretIds.Contains(s.ObjectId)));
+            var existingTasks = RekeyingTasks.List();
+            var allSecretsToBeChecked = ManagedSecrets.Get(s => s.TimeRemaining <= LeadTime)
+                                                      .Where(s => !existingTasks.Any(t => t.ManagedSecretIds.Contains(s.ObjectId)));
 
             if (!allSecretsToBeChecked.Any())
             {
@@ -68,9 +67,9 @@ namespace AuthJanitor
                     RekeyingInProgress = false
                 };
                 newTasks.Add(newTask);
-                await RekeyingTasks.Create(newTask);
+                RekeyingTasks.Create(newTask);
             }
-            await RekeyingTasks.Commit();
+            await RekeyingTasks.CommitAsync();
 
             await Task.WhenAll(newTasks.Select(t => NotificationProvider.DispatchNotification_AdminApprovalRequiredTaskCreated(AdminEmails, t)));
         }
@@ -83,7 +82,6 @@ namespace AuthJanitor
                 return;
             }
 
-            var resources = await Resources.List();
             log.LogInformation("Rekeying {0} ManagedSecrets with Service Principal/MSI.", secrets.Count());
             foreach (var secret in secrets)
             {
@@ -93,7 +91,7 @@ namespace AuthJanitor
                 var testResults = new Dictionary<Guid, bool>();
 
                 // Run all tests in parallel to save time!
-                await Task.WhenAll(resources.Where(r => secret.ResourceIds.Contains(r.ObjectId))
+                await Task.WhenAll(Resources.Get(r => secret.ResourceIds.Contains(r.ObjectId))
                                             .Select(r =>
                                                 GetProvider(
                                                     r.ProviderType,
@@ -112,7 +110,7 @@ namespace AuthJanitor
                 }
 
                 await HelperMethods.RunRekeyingWorkflow(log, secret.ValidPeriod,
-                    resources.Where(r => secret.ResourceIds.Contains(r.ObjectId))
+                    Resources.Get(r => secret.ResourceIds.Contains(r.ObjectId))
                              .Select(r => GetProvider(r.ProviderType, r.ProviderConfiguration, MultiCredentialProvider.CredentialType.AgentServicePrincipal))
                              .ToArray());
 

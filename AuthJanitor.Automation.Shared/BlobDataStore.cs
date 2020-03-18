@@ -7,56 +7,65 @@ using System.Threading.Tasks;
 
 namespace AuthJanitor.Automation.Shared
 {
-    public class BlobDataStore<TDataType> : IDataStore<TDataType> where TDataType : IDataStoreCompatibleStructure
+    public class AzureBlobDataStore<TDataType> : IDataStore<TDataType> where TDataType : IDataStoreCompatibleStructure
     {
         protected CloudBlockBlob Blob { get; }
         protected List<TDataType> _data = new List<TDataType>();
 
-        protected string ObjectIdToName(Guid id)
-        {
-            return id.ToString();
-        }
-
-        protected Guid NameToObjectId(string name)
-        {
-            return Guid.Parse(name);
-        }
-
-        public BlobDataStore(CloudBlockBlob blob)
+        public AzureBlobDataStore(CloudBlockBlob blob)
         {
             Blob = blob;
         }
 
-        public Task Create(TDataType model)
+        public async Task<IDataStore<TDataType>> CommitAsync()
         {
-            _data.Add(model);
-            return Task.FromResult(true);
+            await Blob.UploadTextAsync(JsonConvert.SerializeObject(_data));
+            return this;
         }
 
-        public Task Update(TDataType model)
+        public bool ContainsId(Guid id) => _data.Any(d => d.ObjectId == id);
+
+        public Task<bool> ContainsIdAsync(Guid id) => Task.FromResult(ContainsId(id));
+
+        public void Create(TDataType model)
         {
-            _data.RemoveAll(d => d.ObjectId == model.ObjectId);
+            if (ContainsId(model.ObjectId))
+                throw new InvalidOperationException("ID already exists!");
             _data.Add(model);
-            return Task.FromResult(true);
         }
 
-        public Task Delete(Guid id)
+        public Task CreateAsync(TDataType model) => Task.Run(() => Create(model));
+
+        public void Delete(Guid id)
         {
+            if (!ContainsId(id))
+                throw new InvalidOperationException("ID does not exist!");
             _data.RemoveAll(d => d.ObjectId == id);
-            return Task.FromResult(true);
         }
 
-        public Task<TDataType> Get(Guid id)
+        public Task DeleteAsync(Guid id) => Task.Run(() => Delete(id));
+
+        public TDataType Get(Guid id)
         {
-            return Task.FromResult(_data.FirstOrDefault(d => d.ObjectId == id));
+            if (!ContainsId(id))
+                throw new InvalidOperationException("ID does not exist!");
+            return _data.FirstOrDefault(d => d.ObjectId == id);
         }
 
-        public Task<List<TDataType>> Get(Func<TDataType, bool> selector)
+        public List<TDataType> Get(Func<TDataType, bool> predicate)
         {
-            return Task.FromResult(_data.Where(selector).ToList());
+            return _data.Where(predicate).ToList();
         }
 
-        public async Task<IDataStore<TDataType>> Initialize()
+        public Task<TDataType> GetAsync(Guid id) => Task.FromResult(Get(id));
+
+        public Task<List<TDataType>> GetAsync(Func<TDataType, bool> predicate) => Task.FromResult(Get(predicate));
+
+        public TDataType GetOne(Func<TDataType, bool> predicate) => Get(predicate).FirstOrDefault();
+
+        public Task<TDataType> GetOneAsync(Func<TDataType, bool> predicate) => Task.FromResult(GetOne(predicate));
+
+        public async Task<IDataStore<TDataType>> InitializeAsync()
         {
             if (!await Blob.ExistsAsync())
             {
@@ -67,15 +76,18 @@ namespace AuthJanitor.Automation.Shared
             return this;
         }
 
-        public async Task<IDataStore<TDataType>> Commit()
+        public List<TDataType> List() => new List<TDataType>(_data);
+
+        public Task<List<TDataType>> ListAsync() => Task.FromResult(List());
+
+        public void Update(TDataType model)
         {
-            await Blob.UploadTextAsync(JsonConvert.SerializeObject(_data));
-            return this;
+            if (!ContainsId(model.ObjectId))
+                throw new InvalidOperationException("ID does not exist!");
+            Delete(model.ObjectId);
+            Create(model);
         }
 
-        public Task<List<TDataType>> List()
-        {
-            return Task.FromResult(_data);
-        }
+        public Task UpdateAsync(TDataType model) => Task.Run(() => Update(model));
     }
 }

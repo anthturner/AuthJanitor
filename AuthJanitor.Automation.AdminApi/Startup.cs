@@ -70,18 +70,18 @@ namespace AuthJanitor.Automation.AdminApi
 
         public static async Task ConfigureStorage(IServiceCollection serviceCollection)
         {
-            var secretStore = await GetDataStore<ManagedSecret>("secrets").Initialize();
-            var taskStore = await GetDataStore<RekeyingTask>("tasks").Initialize();
-            var resourceStore = await GetDataStore<Shared.Resource>("resources").Initialize();
+            var secretStore = await GetDataStore<ManagedSecret>("secrets").InitializeAsync();
+            var taskStore = await GetDataStore<RekeyingTask>("tasks").InitializeAsync();
+            var resourceStore = await GetDataStore<Shared.Resource>("resources").InitializeAsync();
 
             serviceCollection.AddScoped<IDataStore<ManagedSecret>>((s) => secretStore);
             serviceCollection.AddScoped<IDataStore<RekeyingTask>>((s) => taskStore);
             serviceCollection.AddScoped<IDataStore<Shared.Resource>>((s) => resourceStore);
         }
 
-        private static BlobDataStore<T> GetDataStore<T>(string name) where T : IDataStoreCompatibleStructure
+        private static AzureBlobDataStore<T> GetDataStore<T>(string name) where T : IDataStoreCompatibleStructure
         {
-            return new BlobDataStore<T>(CloudStorageAccount.Parse(Environment.GetEnvironmentVariable("AzureWebJobsStorage", EnvironmentVariableTarget.Process))
+            return new AzureBlobDataStore<T>(CloudStorageAccount.Parse(Environment.GetEnvironmentVariable("AzureWebJobsStorage", EnvironmentVariableTarget.Process))
                 .CreateCloudBlobClient()
                 .GetContainerReference(Environment.GetEnvironmentVariable("AuthJanitorContainer", EnvironmentVariableTarget.Process))
                 .GetBlockBlobReference(name));

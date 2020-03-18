@@ -41,15 +41,14 @@ namespace AuthJanitor.Automation.Agent
         {
             log.LogInformation("External signal called to check ManagedSecret ID {0} against nonce {1}", managedSecretId,  nonce);
 
-            var secret = await ManagedSecrets.Get(managedSecretId);
+            var secret = ManagedSecrets.Get(managedSecretId);
             if (secret == null)
                 return new BadRequestErrorMessageResult("Invalid ManagedSecret ID");
             if (!secret.TaskConfirmationStrategies.HasFlag(TaskConfirmationStrategies.ExternalSignal))
                 return new BadRequestErrorMessageResult("This ManagedSecret cannot be used with External Signals");
 
-            if ((await RekeyingTasks.List())
-                                    .Where(t => t.ManagedSecretIds.Contains(secret.ObjectId))
-                                    .Any(t => t.RekeyingInProgress))
+            if (RekeyingTasks.Get(t => t.ManagedSecretIds.Contains(secret.ObjectId))
+                             .Any(t => t.RekeyingInProgress))
             {
                 return new OkObjectResult(RETURN_RETRY_SHORTLY);
             }
@@ -63,20 +62,18 @@ namespace AuthJanitor.Automation.Agent
                     Queued = DateTimeOffset.Now,
                     RekeyingInProgress = true
                 };
-                await RekeyingTasks.Create(temporaryTask);
-                await RekeyingTasks.Commit();
+                RekeyingTasks.Create(temporaryTask);
+                await RekeyingTasks.CommitAsync();
 
                 try
                 {
                     log.LogInformation("Rekeying ManagedSecret '{0}' (ID {1}) - {2} remaining", secret.Name, secret.ObjectId, secret.TimeRemaining);
 
-                    var resources = await Resources.List();
-
                     log.LogDebug("Running access sanity check on {0} Resources associated with ManagedSecret", secret.ResourceIds.Count());
                     var testResults = new Dictionary<Guid, bool>();
 
                     // Run all tests in parallel to save time!
-                    await Task.WhenAll(resources.Where(r => secret.ResourceIds.Contains(r.ObjectId))
+                    await Task.WhenAll(Resources.Get(r => secret.ResourceIds.Contains(r.ObjectId))
                                                 .Select(r =>
                                                     GetProvider(
                                                         r.ProviderType,
@@ -97,11 +94,11 @@ namespace AuthJanitor.Automation.Agent
                     var rekeyingTask = new Task(async () =>
                         {
                             await HelperMethods.RunRekeyingWorkflow(log, secret.ValidPeriod,
-                                  resources.Where(r => secret.ResourceIds.Contains(r.ObjectId))
+                                  Resources.Get(r => secret.ResourceIds.Contains(r.ObjectId))
                                            .Select(r => GetProvider(r.ProviderType, r.ProviderConfiguration, MultiCredentialProvider.CredentialType.AgentServicePrincipal))
                                            .ToArray());
-                            await RekeyingTasks.Delete(temporaryTask.ObjectId);
-                            await RekeyingTasks.Commit();
+                            RekeyingTasks.Delete(temporaryTask.ObjectId);
+                            await RekeyingTasks.CommitAsync();
                         },
                         TaskCreationOptions.LongRunning);
                     rekeyingTask.Start();

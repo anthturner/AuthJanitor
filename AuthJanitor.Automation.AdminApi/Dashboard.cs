@@ -20,21 +20,20 @@ namespace AuthJanitor.Automation.AdminApi
         {
         }
 
+        [ProtectedApiEndpoint]
         [FunctionName("Dashboard")]
         public async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "dashboard")] HttpRequest req,
             ILogger log)
         {
-            if (!req.PassedHeaderCheck()) { log.LogCritical("Attempted to access API without header!"); return new BadRequestResult(); }
-
             log.LogInformation("Requested Dashboard metrics");
 
-            var allSecrets = await ManagedSecrets.List();
-            var expiringInNextWeek = allSecrets.Where(s => DateTimeOffset.Now.AddDays(7) < (s.LastChanged + s.ValidPeriod));
-            var expired = allSecrets.Where(s => !s.IsValid);
+            var expiringInNextWeek = ManagedSecrets.Get(s => DateTimeOffset.Now.AddDays(7) < (s.LastChanged + s.ValidPeriod));
+            var expired = ManagedSecrets.Get(s => !s.IsValid);
 
-            var allResources = await Resources.List();
-            var allTasks = await RekeyingTasks.List();
+            var allSecrets = ManagedSecrets.List();
+            var allResources = Resources.List();
+            var allTasks = RekeyingTasks.List();
 
             var metrics = new DashboardMetrics()
             {
@@ -52,7 +51,7 @@ namespace AuthJanitor.Automation.AdminApi
                 var riskScore = 0;
                 foreach (var resourceId in secret.ResourceIds)
                 {
-                    var resource = await Resources.Get(resourceId);
+                    var resource = Resources.Get(resourceId);
                     var provider = GetProvider(resource.ProviderType);
                     provider.SerializedConfiguration = resource.ProviderConfiguration;
                     riskScore += provider.GetRisks(secret.ValidPeriod).Sum(r => r.Score);

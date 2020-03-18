@@ -88,7 +88,6 @@ namespace AuthJanitor.Automation.Shared
             var resources = secret.ResourceIds
                                 .Select(resourceId => serviceProvider.GetRequiredService<IDataStore<Resource>>()
                                                                     .Get(resourceId))
-                                .Select(task => task.Result)
                                 .Select(resource => serviceProvider.GetRequiredService<Func<Resource, ResourceViewModel>>()(resource));
             foreach (var resource in resources)
             {
@@ -119,7 +118,6 @@ namespace AuthJanitor.Automation.Shared
                 ManagedSecrets = rekeyingTask.ManagedSecretIds
                                       .Select(secretId => serviceProvider.GetRequiredService<IDataStore<ManagedSecret>>()
                                                                          .Get(secretId))
-                                      .Select(task => task.Result)
                                       .Select(secret => serviceProvider.GetRequiredService<Func<ManagedSecret, ManagedSecretViewModel>>()(secret))
             };
 
