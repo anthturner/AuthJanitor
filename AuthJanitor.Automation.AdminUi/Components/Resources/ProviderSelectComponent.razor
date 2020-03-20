@@ -1,0 +1,39 @@
+﻿<SelectEdit SelectedValue="@Value" SelectedValueChanged="SelectedValueChanged" TValue="string">
+    @if (Providers != null && Providers.Any())
+    {
+        <SelectGroup Label="Application Lifecycle Providers">
+            @foreach (var provider in Providers.Where(p => !p.IsRekeyableObjectProvider))
+            {
+                <SelectItem Value="@provider.ProviderTypeName">@provider.Details.Name</SelectItem>
+            }
+        </SelectGroup>
+        <SelectGroup Label="Rekeyable Object Providers">
+            @foreach (var provider in Providers.Where(p => p.IsRekeyableObjectProvider))
+            {
+                <SelectItem Value="@provider.ProviderTypeName">@provider.Details.Name</SelectItem>
+            }
+        </SelectGroup>
+    }
+</SelectEdit>
+
+@using AuthJanitor.Automation.Shared.ViewModels 
+@using Blazorise 
+@code {
+    [Parameter]
+    public string Value { get; set; }
+
+    [Parameter]
+    public EventCallback<string> ValueChanged { get; set; }
+
+    public IEnumerable<LoadedProviderViewModel> Providers { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Providers = await Http.AJList<LoadedProviderViewModel>();
+    }
+
+    protected Task SelectedValueChanged(string value)
+    {
+        return ValueChanged.InvokeAsync(value);
+    }
+}

@@ -2,7 +2,7 @@
 
 namespace AuthJanitor.Automation.Shared.ViewModels
 {
-    public class LoadedProviderViewModel
+    public class LoadedProviderViewModel : IAuthJanitorViewModel
     {
         public string OriginatingFile { get; set; }
         public string AssemblyFullName { get; set; }

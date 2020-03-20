@@ -21,7 +21,7 @@ namespace AuthJanitor.Automation.AdminApi
     /// </summary>
     public class ManagedSecrets : StorageIntegratedFunction
     {
-        public ManagedSecrets(INotificationProvider notificationProvider, IDataStore<ManagedSecret> managedSecretStore, IDataStore<Resource> resourceStore, IDataStore<RekeyingTask> rekeyingTaskStore, Func<ManagedSecret, ManagedSecretViewModel> managedSecretViewModelDelegate, Func<Resource, ResourceViewModel> resourceViewModelDelegate, Func<RekeyingTask, RekeyingTaskViewModel> rekeyingTaskViewModelDelegate, Func<AuthJanitorProviderConfiguration, IEnumerable<ProviderConfigurationItemViewModel>> configViewModelDelegate, Func<LoadedProviderMetadata, LoadedProviderViewModel> providerViewModelDelegate) : base(notificationProvider, managedSecretStore, resourceStore, rekeyingTaskStore, managedSecretViewModelDelegate, resourceViewModelDelegate, rekeyingTaskViewModelDelegate, configViewModelDelegate, providerViewModelDelegate)
+        public ManagedSecrets(INotificationProvider notificationProvider, IDataStore<ManagedSecret> managedSecretStore, IDataStore<Resource> resourceStore, IDataStore<RekeyingTask> rekeyingTaskStore, Func<ManagedSecret, ManagedSecretViewModel> managedSecretViewModelDelegate, Func<Resource, ResourceViewModel> resourceViewModelDelegate, Func<RekeyingTask, RekeyingTaskViewModel> rekeyingTaskViewModelDelegate, Func<AuthJanitorProviderConfiguration, ProviderConfigurationViewModel> configViewModelDelegate, Func<LoadedProviderMetadata, LoadedProviderViewModel> providerViewModelDelegate) : base(notificationProvider, managedSecretStore, resourceStore, rekeyingTaskStore, managedSecretViewModelDelegate, resourceViewModelDelegate, rekeyingTaskViewModelDelegate, configViewModelDelegate, providerViewModelDelegate)
         {
         }
 
@@ -34,9 +34,10 @@ namespace AuthJanitor.Automation.AdminApi
         {
             log.LogInformation("Creating new Managed Secret");
 
-            if (inputSecret.ResourceIds.Any(r => !Resources.ContainsId(r)))
+            var resourceIds = inputSecret.ResourceIds.Split(';').Select(r => Guid.Parse(r)).ToList();
+            if (resourceIds.Any(r => !Resources.ContainsId(r)))
             {
-                var invalidIds = inputSecret.ResourceIds.Where(r => !Resources.ContainsId(r));
+                var invalidIds = resourceIds.Where(r => !Resources.ContainsId(r));
                 log.LogError("New Managed Secret attempted to link one or more invalid Resource IDs: {0}", invalidIds);
                 return new BadRequestErrorMessageResult("One or more ResourceIds not found!");
             }
@@ -47,7 +48,8 @@ namespace AuthJanitor.Automation.AdminApi
                 Description = inputSecret.Description,
                 ValidPeriod = inputSecret.ValidPeriod,
                 LastChanged = DateTimeOffset.Now - inputSecret.ValidPeriod,
-                ResourceIds = inputSecret.ResourceIds.ToList()
+                TaskConfirmationStrategies = inputSecret.TaskConfirmationStrategies,
+                ResourceIds = resourceIds
             };
 
             await ManagedSecrets.InitializeAsync(); // reload before committing
@@ -117,9 +119,10 @@ namespace AuthJanitor.Automation.AdminApi
             if (!ManagedSecrets.ContainsId(secretId))
                 return new BadRequestErrorMessageResult("Secret not found!");
 
-            if (inputSecret.ResourceIds.Any(r => !Resources.ContainsId(r)))
+            var resourceIds = inputSecret.ResourceIds.Split(';').Select(r => Guid.Parse(r)).ToList();
+            if (resourceIds.Any(r => !Resources.ContainsId(r)))
             {
-                var invalidIds = inputSecret.ResourceIds.Where(r => !Resources.ContainsId(r));
+                var invalidIds = resourceIds.Where(r => !Resources.ContainsId(r));
                 log.LogError("New Managed Secret attempted to link one or more invalid Resource IDs: {0}", invalidIds);
                 return new BadRequestErrorMessageResult("One or more ResourceIds not found!");
             }
@@ -130,7 +133,8 @@ namespace AuthJanitor.Automation.AdminApi
                 Name = inputSecret.Name,
                 Description = inputSecret.Description,
                 ValidPeriod = inputSecret.ValidPeriod,
-                ResourceIds = inputSecret.ResourceIds
+                TaskConfirmationStrategies = inputSecret.TaskConfirmationStrategies,
+                ResourceIds = resourceIds
             };
 
             await ManagedSecrets.InitializeAsync(); // reload before committing

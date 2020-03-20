@@ -1,0 +1,60 @@
+﻿@inherits LayoutComponentBase
+
+<div class="app-main">
+    <Bar Class="app-bar" ThemeContrast="ThemeContrast.Dark" Background="Background.Dark">
+        <BarBrand>
+            <img style="height: 5vh" src="css/logo.png" alt="AuthJanitor Logo" />
+        </BarBrand>
+        <BarToggler Float="Float.Right">
+        </BarToggler>
+        <BarMenu>
+            <BarStart>
+                <BarItem>
+                    <BarLink To="/aj/dashboard">
+                        <Icon Name="FontAwesomeIcons.TachometerAlt" Margin="Margin.Is1.FromRight" />
+                        Dashboard
+                    </BarLink>
+                </BarItem>
+                <BarItem>
+                    <BarLink To="/aj/resources">
+                        <Icon Name="FontAwesomeIcons.Database" Margin="Margin.Is1.FromRight" />
+                        Resources
+                    </BarLink>
+                </BarItem>
+                <BarItem>
+                    <BarLink To="/aj/managedSecrets">
+                        <Icon Name="FontAwesomeIcons.Key" Margin="Margin.Is1.FromRight" />
+                        Managed Secrets
+                    </BarLink>
+                </BarItem>
+                <BarItem>
+                    <BarLink To="/aj/rekeyingTasks">
+                        <Icon Name="FontAwesomeIcons.Tasks" Margin="Margin.Is1.FromRight" />
+                        Rekeying Tasks
+                    </BarLink>
+                </BarItem>
+            </BarStart>
+            <BarEnd Padding="Padding.Is2.FromTop" Margin="Margin.Is2.FromTop" Class="border-top">
+                <BarItem>
+                    <Row>
+                        <Column ColumnSize="ColumnSize.Is1" Class="text-danger text-nowrap" title="Expired">
+                            <Icon Name="FontAwesomeIcons.ExclamationTriangle" Padding="Padding.Is1.FromTop" Margin="Margin.Is1.FromRight" Float="Float.Left" />
+                            <Paragraph>
+                                <strong>1</strong>
+                            </Paragraph>
+                        </Column>
+                        <Column ColumnSize="ColumnSize.Is1" Class="text-warning text-nowrap" title="Expiring Soon">
+                            <Icon Name="FontAwesomeIcons.ExclamationTriangle" Padding="Padding.Is1.FromTop" Margin="Margin.Is1.FromRight" Float="Float.Left" />
+                            <Paragraph>
+                                <strong>6</strong>
+                            </Paragraph>
+                        </Column>
+                    </Row>
+                </BarItem>
+            </BarEnd>
+        </BarMenu>
+    </Bar>
+    <div class="app-content">
+        @Body
+    </div>
+</div>

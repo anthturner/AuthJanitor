@@ -36,11 +36,13 @@ namespace AuthJanitor.Automation.Shared
             serviceCollection.AddTransient<Func<ManagedSecret, ManagedSecretViewModel>>(serviceProvider => secret => GetViewModel(serviceProvider, secret));
             serviceCollection.AddTransient<Func<Resource, ResourceViewModel>>(serviceProvider => resource => GetViewModel(serviceProvider, resource));
             serviceCollection.AddTransient<Func<RekeyingTask, RekeyingTaskViewModel>>(serviceProvider => rekeyingTask => GetViewModel(serviceProvider, rekeyingTask));
-            serviceCollection.AddTransient<Func<AuthJanitorProviderConfiguration, IEnumerable<ProviderConfigurationItemViewModel>>>(serviceProvider => config => GetViewModel(serviceProvider, config));
+            serviceCollection.AddTransient<Func<AuthJanitorProviderConfiguration, ProviderConfigurationViewModel>>(serviceProvider => config => GetViewModel(serviceProvider, config));
         }
 
-        private static IEnumerable<ProviderConfigurationItemViewModel> GetViewModel(IServiceProvider serviceProvider, AuthJanitorProviderConfiguration config) =>
-            config.GetType().GetProperties()
+        private static ProviderConfigurationViewModel GetViewModel(IServiceProvider serviceProvider, AuthJanitorProviderConfiguration config) =>
+            new ProviderConfigurationViewModel()
+            {
+                ConfigurationItems = config.GetType().GetProperties()
                     .Select(property =>
                     {
                         if (!InputTypes.Any(t => t.Key.IsAssignableFrom(property.PropertyType)) ||
@@ -71,7 +73,8 @@ namespace AuthJanitor.Automation.Shared
                                       new List<ProviderConfigurationItemViewModel.SelectOption>(),
                             Value = valueReader(config, property)
                         };
-                    });
+                    })
+            };
 
         private static LoadedProviderViewModel GetViewModel(IServiceProvider serviceProvider, LoadedProviderMetadata provider) =>
                 new LoadedProviderViewModel()
@@ -134,7 +137,7 @@ namespace AuthJanitor.Automation.Shared
                 IsRekeyableObjectProvider = resource.IsRekeyableObjectProvider,
                 ProviderType = resource.ProviderType,
                 ProviderDetail = serviceProvider.GetRequiredService<Func<string, LoadedProviderMetadata>>()(resource.ProviderType).Details,
-                ProviderConfiguration = serviceProvider.GetRequiredService<Func<AuthJanitorProviderConfiguration, IEnumerable<ProviderConfigurationItemViewModel>>>()
+                ProviderConfiguration = serviceProvider.GetRequiredService<Func<AuthJanitorProviderConfiguration, ProviderConfigurationViewModel>>()
                     (
                         ((AuthJanitorProviderConfiguration)JsonConvert.DeserializeObject(
                             resource.ProviderConfiguration,

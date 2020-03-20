@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace AuthJanitor.Automation.Shared.ViewModels
 {
-    public class RekeyingTaskViewModel
+    public class RekeyingTaskViewModel : IAuthJanitorViewModel
     {
         public Guid ObjectId { get; set; }
 

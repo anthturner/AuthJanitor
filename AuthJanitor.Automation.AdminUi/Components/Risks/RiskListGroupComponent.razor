@@ -1,0 +1,35 @@
+﻿<ListGroup>
+    @if (Value == null || !Value.Any())
+    {
+        <Heading Size="HeadingSize.Is6" TextColor="TextColor.Success" Margin="Margin.Is0.OnAll" Class="font-weight-bold">
+            No Risks Identified! 👍
+        </Heading>
+    } else {
+        @foreach (var risk in Value)
+        {
+            <ListGroupItem Padding="Padding.Is1.OnY">
+                <Row>
+                    <Column Margin="Margin.Is2.FromRight">
+                        <Heading Size="HeadingSize.Is6" Margin="Margin.Is0.FromBottom">
+                            <strong>@risk.Risk</strong>
+                        </Heading>
+                        <span class="text-xs">@risk.Recommendation</span>
+                    </Column>
+                    <Column ColumnSize="ColumnSize.IsAuto">
+                        <RiskScorePillComponent @bind-Value="@risk.Score" />
+                    </Column>
+                </Row>
+            </ListGroupItem>
+        }
+    }
+</ListGroup>
+
+@using AuthJanitor.Providers 
+@using Blazorise
+@code {
+    [Parameter]
+    public IEnumerable<RiskyConfigurationItem> Value { get; set; }
+
+    [Parameter]
+    public EventCallback<IEnumerable<RiskyConfigurationItem>> ValueChanged { get; set; }
+}

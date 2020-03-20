@@ -40,7 +40,7 @@ namespace AuthJanitor.Automation.Shared
             Func<ManagedSecret, ManagedSecretViewModel> managedSecretViewModelDelegate,
             Func<Shared.Resource, Shared.ViewModels.ResourceViewModel> resourceViewModelDelegate,
             Func<RekeyingTask, RekeyingTaskViewModel> rekeyingTaskViewModelDelegate,
-            Func<AuthJanitorProviderConfiguration, IEnumerable<ProviderConfigurationItemViewModel>> configViewModelDelegate,
+            Func<AuthJanitorProviderConfiguration, ProviderConfigurationViewModel> configViewModelDelegate,
             Func<LoadedProviderMetadata, LoadedProviderViewModel> providerViewModelDelegate,
             Func<string, IAuthJanitorProvider> providerFactory,
             Func<string, AuthJanitorProviderConfiguration> providerConfigurationFactory,

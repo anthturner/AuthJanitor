@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace AuthJanitor.Automation.Shared.ViewModels
 {
-    public class ProviderConfigurationItemViewModel
+    public class ProviderConfigurationItemViewModel : IAuthJanitorViewModel
     {
         public enum InputTypes
         {

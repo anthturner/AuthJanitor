@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace AuthJanitor.Automation.Shared
 {
-    public class DashboardMetrics
+    public class DashboardMetrics : IAuthJanitorViewModel
     {
         public int TotalSecrets { get; set; }
         public int TotalResources { get; set; }

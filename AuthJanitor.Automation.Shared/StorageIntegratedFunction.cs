@@ -11,7 +11,7 @@ namespace AuthJanitor.Automation.Shared
         private Func<ManagedSecret, ManagedSecretViewModel> _managedSecretViewModelDelegate;
         private Func<Shared.Resource, Shared.ViewModels.ResourceViewModel> _resourceViewModelDelegate;
         private Func<RekeyingTask, RekeyingTaskViewModel> _rekeyingTaskViewModelDelegate;
-        private Func<AuthJanitorProviderConfiguration, IEnumerable<ProviderConfigurationItemViewModel>> _configViewModelDelegate;
+        private Func<AuthJanitorProviderConfiguration, ProviderConfigurationViewModel> _configViewModelDelegate;
         private Func<LoadedProviderMetadata, LoadedProviderViewModel> _providerViewModelDelegate;
 
         protected IDataStore<ManagedSecret> ManagedSecrets { get; }
@@ -23,7 +23,7 @@ namespace AuthJanitor.Automation.Shared
         protected ManagedSecretViewModel GetViewModel(ManagedSecret secret) => _managedSecretViewModelDelegate(secret);
         protected Shared.ViewModels.ResourceViewModel GetViewModel(Shared.Resource resource) => _resourceViewModelDelegate(resource);
         protected RekeyingTaskViewModel GetViewModel(RekeyingTask rekeyingTask) => _rekeyingTaskViewModelDelegate(rekeyingTask);
-        protected IEnumerable<ProviderConfigurationItemViewModel> GetViewModel(AuthJanitorProviderConfiguration config) => _configViewModelDelegate(config);
+        protected ProviderConfigurationViewModel GetViewModel(AuthJanitorProviderConfiguration config) => _configViewModelDelegate(config);
         protected LoadedProviderViewModel GetViewModel(LoadedProviderMetadata provider) => _providerViewModelDelegate(provider);
 
         protected StorageIntegratedFunction(
@@ -34,7 +34,7 @@ namespace AuthJanitor.Automation.Shared
             Func<ManagedSecret, ManagedSecretViewModel> managedSecretViewModelDelegate,
             Func<Shared.Resource, Shared.ViewModels.ResourceViewModel> resourceViewModelDelegate,
             Func<RekeyingTask, RekeyingTaskViewModel> rekeyingTaskViewModelDelegate,
-            Func<AuthJanitorProviderConfiguration, IEnumerable<ProviderConfigurationItemViewModel>> configViewModelDelegate,
+            Func<AuthJanitorProviderConfiguration, ProviderConfigurationViewModel> configViewModelDelegate,
             Func<LoadedProviderMetadata, LoadedProviderViewModel> providerViewModelDelegate)
         {
             NotificationProvider = notificationProvider;

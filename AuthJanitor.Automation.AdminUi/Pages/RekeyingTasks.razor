@@ -1,0 +1,104 @@
+﻿@page "/rekeyingTasks"
+
+<DisplayHeading Size="DisplayHeadingSize.Is4">Rekeying Tasks</DisplayHeading>
+
+<BlazorTable.Table TableItem="RekeyingTaskViewModel"
+                   TableClass="table table-striped table-bordered"
+                   @bind-Items="@Tasks">
+
+    <!-- Controls/ID -->
+    <BlazorTable.Column TableItem="RekeyingTaskViewModel"
+                        Title="" Field="@(x => x.ObjectId)"
+                        Width="1%"
+                        Sortable="false" Filterable="false">
+        <Template>
+            <Blazorise.Buttons Role="ButtonsRole.Toolbar">
+                <Blazorise.Button Color="Color.Info"
+                                  Clicked="@(() => NavigationManager.NavigateTo($"/aj/rekeyingTasks/{context.ObjectId}"))">
+                    <Icon Name="FontAwesomeIcons.Eye" Class="text-light" />
+                </Blazorise.Button>
+                <Blazorise.Button Color="Color.Success" Clicked="@(() => { SelectedValue = context; ApproveModalShowing = true; })">
+                    <Icon Name="FontAwesomeIcons.CheckSquare" Class="text-light" />
+                </Blazorise.Button>
+                <Blazorise.Button Color="Color.Danger" Clicked="@(() => { SelectedValue = context; DeleteModalShowing = true; })">
+                    <Icon Name="FontAwesomeIcons.Trash" Class="text-light" />
+                </Blazorise.Button>
+            </Blazorise.Buttons>
+        </Template>
+    </BlazorTable.Column>
+
+    <!-- Queued Date -->
+    <BlazorTable.Column TableItem="RekeyingTaskViewModel" 
+                        Title="Queued" Field="@(x => x.Queued)" 
+                        Sortable="true" Filterable="true" />
+
+    <!-- Expiry Date -->
+    <BlazorTable.Column TableItem="RekeyingTaskViewModel" 
+                        Title="Expiry" Field="@(x => x.Expiry)" 
+                        Sortable="true" Filterable="true" />
+
+    <!-- Participating Secrets -->
+    <BlazorTable.Column TableItem="RekeyingTaskViewModel" Title="Secrets">
+        <Template>
+            @foreach (var secret in context.ManagedSecrets)
+            {
+                <ListGroup Margin="Margin.Is0.OnX.Is1.OnY" Padding="Padding.Is0.OnAll">
+                    @foreach (var resource in secret.Resources)
+                    {
+                    <ListGroupItem Padding="Padding.Is2.OnAll">
+                        <ResourceNameComponent Value="@resource" />
+                    </ListGroupItem>
+                    }
+                </ListGroup>
+            }
+        </Template>
+    </BlazorTable.Column>
+
+    <!-- Pager -->
+    <BlazorTable.Pager ShowPageNumber="true" ShowTotalCount="true" />
+</BlazorTable.Table>
+
+<DataModal @bind-Visible="@ApproveModalShowing"
+           Title="Approve Task"
+           YesButton="Approve"
+           NoButton="Cancel"
+           ResultClicked="@ApproveCallback">
+    Approval Modal
+</DataModal>
+<DeleteConfirmationModal @bind-Visible="@DeleteModalShowing"
+                         ObjectId="@SelectedValue.ObjectId"
+                         ObjectName="@SelectedValue.ObjectId.ToString()"
+                         ResultClicked="@DeleteConfirmCallback" />
+
+@using AuthJanitor.Automation.AdminUi.Components
+@using AuthJanitor.Automation.AdminUi.Components.Resources
+@using AuthJanitor.Automation.Shared.ViewModels
+@code {
+    protected IEnumerable<RekeyingTaskViewModel> Tasks { get; set; } = new List<RekeyingTaskViewModel>();
+
+    protected bool ApproveModalShowing { get; set; }
+    protected bool DeleteModalShowing { get; set; }
+
+    [Parameter]
+    public RekeyingTaskViewModel SelectedValue { get; set; } = new RekeyingTaskViewModel();
+
+    [Parameter]
+    public EventCallback<RekeyingTaskViewModel> SelectedValueChanged { get; set; }
+
+    protected override Task OnInitializedAsync() => LoadData();
+
+    protected async Task LoadData() => Tasks = await Http.AJList<RekeyingTaskViewModel>();
+
+    protected async Task ApproveCallback()
+    {
+        // Approval code goes here
+        await LoadData();
+    }
+
+    protected async Task DeleteConfirmCallback(bool result)
+    {
+        if (!result) return;
+        await Http.AJDelete<RekeyingTaskViewModel>(SelectedValue.ObjectId);
+        await LoadData();
+    }
+}

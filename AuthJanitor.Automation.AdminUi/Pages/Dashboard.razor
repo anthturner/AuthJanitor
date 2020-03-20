@@ -1,0 +1,69 @@
+﻿@page "/"
+@page "/dashboard"
+
+<Container IsFluid="true">
+    <Row Padding="Padding.Is3.OnY">
+        <Column ColumnSize="ColumnSize.Is3">
+            <InfoCardComponent Heading="Expiring Soon" HeadingColor="Color.Warning" Data="@($"{Metrics.TotalExpiringSoon}")" Icon="fas fa-calendar" />
+        </Column>
+        <Column ColumnSize="ColumnSize.Is3">
+            <InfoCardComponent Heading="Expired" HeadingColor="Color.Danger" Data="@($"{Metrics.TotalExpired}")" Icon="fas fa-calendar-times" />
+        </Column>
+        <Column ColumnSize="ColumnSize.Is3">
+            <InfoCardComponent Heading="Pending Approval" HeadingColor="Color.Success" Data="@($"{Metrics.TotalPendingApproval}")" Icon="fas fa-user-check" />
+        </Column>
+        <Column ColumnSize="ColumnSize.Is3">
+            <InfoCardComponent Heading="Managed Secrets" HeadingColor="Color.Info" Data="@($"{Metrics.TotalSecrets}")" Icon="fas fa-unlock-alt" />
+        </Column>
+    </Row>
+    <Row Padding="Padding.Is3.OnY">
+        <Column ColumnSize="ColumnSize.Is12">
+            <Card>
+                <CardHeader>Expiring Soon</CardHeader>
+                @if (Metrics.ExpiringSoon.Any())
+                {
+                    <CardBody Padding="Padding.Is0"> 
+                        <BlazorTable.Table TableItem="ManagedSecretViewModel" Items="@Metrics.ExpiringSoon" TableClass="table table-striped table-bordered">
+                            <BlazorTable.Column TableItem="ManagedSecretViewModel" Title="Name" Field="@(x => x.Name)" Sortable="true" Filterable="true" />
+                            <BlazorTable.Column TableItem="ManagedSecretViewModel" Title="Valid For" Field="@(x => x.ValidPeriod)" Sortable="true" />
+                            <BlazorTable.Column TableItem="ManagedSecretViewModel" Title="Expiry" Field="@(x => x.Expiry)" Sortable="true" Filterable="true" />
+                            <BlazorTable.Pager ShowPageNumber="true" ShowTotalCount="true" />
+                        </BlazorTable.Table>
+                    </CardBody>
+                } else
+                {
+                    <Paragraph Class="text-center text-success" Padding="Padding.Is0" Margin="Margin.Is2">No Managed Secrets Expiring Soon!</Paragraph>
+                }
+            </Card>
+        </Column>
+    </Row>
+    @*<Row Padding="Padding.Is3.OnY">
+        <Column ColumnSize="ColumnSize.Is6">
+            <Card>
+                <CardHeader>Risks</CardHeader>
+                <CardBody>
+                    <Blazorise.Charts.DoughnutChart @ref="riskChart" TItem="int" />
+                </CardBody>
+            </Card>
+        </Column>
+        <Column ColumnSize="ColumnSize.Is6">
+            <Card>
+                <CardHeader>Expiry</CardHeader>
+                <CardBody>
+                    <Blazorise.Charts.LineChart @ref="lineChart" TItem="double" />
+                </CardBody>
+            </Card>
+        </Column>
+    </Row>*@
+</Container>
+
+@using AuthJanitor.Automation.AdminUi.Components 
+@using AuthJanitor.Automation.Shared.ViewModels 
+@code {
+    protected DashboardMetrics Metrics { get; set; } = new DashboardMetrics();
+
+    protected override async Task OnInitializedAsync()
+    {
+        Metrics = await Http.AJGet<DashboardMetrics>();
+    }
+}

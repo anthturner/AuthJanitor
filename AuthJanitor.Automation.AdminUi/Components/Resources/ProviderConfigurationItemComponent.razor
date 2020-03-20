@@ -1,0 +1,37 @@
+﻿<TableRow>
+    <TableRowCell>
+        @(string.IsNullOrEmpty(Value.DisplayName) ? Value.Name : Value.DisplayName)
+        @if (!string.IsNullOrEmpty(Value.HelpText))
+        {
+            <Icon Float="Float.Right" Name="FontAwesomeIcons.QuestionCircle" title="@Value.HelpText" />
+        }
+    </TableRowCell>
+    <TableRowCell>
+        @if (ShowEditControls)
+        {
+            <ProviderConfigurationItemComponent @bind-Value="@Value" @bind-ShowEditControls="@ShowEditControls" />
+        }
+        else
+        {
+            <Paragraph Alignment="TextAlignment.Center">
+                @Value.Value
+            </Paragraph>
+        }
+    </TableRowCell>
+</TableRow>
+
+@using AuthJanitor.Automation.Shared.ViewModels 
+@using Blazorise
+@code {
+    [Parameter]
+    public ProviderConfigurationItemViewModel Value { get; set; }
+
+    [Parameter]
+    public EventCallback<ProviderConfigurationItemViewModel> ValueChanged { get; set; }
+
+    [Parameter]
+    public bool ShowEditControls { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> ShowEditControlsChanged { get; set; }
+}
