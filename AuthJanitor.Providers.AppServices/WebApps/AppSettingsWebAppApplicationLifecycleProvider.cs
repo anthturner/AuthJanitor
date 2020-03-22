@@ -10,7 +10,8 @@ namespace AuthJanitor.Providers.AppServices.WebApps
 {
     [Provider(Name = "WebApp - AppSettings",
               IconClass = "fa fa-globe",
-              Description = "Manages the lifecycle of a WebApp which reads from AppSettings")]
+              Description = "Manages the lifecycle of an Azure Web App which reads a Managed Secret from its Application Settings")]
+    [ProviderImage(ProviderImages.WEBAPPS_SVG)]
     public class AppSettingsWebAppApplicationLifecycleProvider : WebAppApplicationLifecycleProvider<AppSettingConfiguration>
     {
         public AppSettingsWebAppApplicationLifecycleProvider(ILoggerFactory loggerFactory, IServiceProvider serviceProvider) : base(loggerFactory, serviceProvider)

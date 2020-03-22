@@ -16,6 +16,12 @@
                     </BarLink>
                 </BarItem>
                 <BarItem>
+                    <BarLink To="/aj/providers">
+                        <Icon Name="FontAwesomeIcons.Plug" Margin="Margin.Is1.FromRight" />
+                        Providers
+                    </BarLink>
+                </BarItem>
+                <BarItem>
                     <BarLink To="/aj/resources">
                         <Icon Name="FontAwesomeIcons.Database" Margin="Margin.Is1.FromRight" />
                         Resources
@@ -38,16 +44,27 @@
                 <BarItem>
                     <Row>
                         <Column ColumnSize="ColumnSize.Is1" Class="text-danger text-nowrap" title="Expired">
-                            <Icon Name="FontAwesomeIcons.ExclamationTriangle" Padding="Padding.Is1.FromTop" Margin="Margin.Is1.FromRight" Float="Float.Left" />
-                            <Paragraph>
-                                <strong>1</strong>
+                            <Icon Class="fa-2x" Name="FontAwesomeIcons.ExclamationTriangle" Padding="Padding.Is1.FromTop" Margin="Margin.Is1.FromRight" Float="Float.Left" />
+                            <Paragraph Class="h2" Margin="Margin.Is0" Padding="Padding.Is0" Style="font-size:2em;">
+                                1
                             </Paragraph>
                         </Column>
                         <Column ColumnSize="ColumnSize.Is1" Class="text-warning text-nowrap" title="Expiring Soon">
-                            <Icon Name="FontAwesomeIcons.ExclamationTriangle" Padding="Padding.Is1.FromTop" Margin="Margin.Is1.FromRight" Float="Float.Left" />
-                            <Paragraph>
-                                <strong>6</strong>
+                            <Icon Class="fa-2x" Name="FontAwesomeIcons.ExclamationTriangle" Padding="Padding.Is1.FromTop" Margin="Margin.Is1.FromRight" Float="Float.Left" />
+                            <Paragraph Class="h2" Margin="Margin.Is0" Padding="Padding.Is0" Style="font-size:2em;">
+                                6
                             </Paragraph>
+                        </Column>
+                        <Column></Column>
+                        <Column ColumnSize="ColumnSize.IsAuto">
+                            <div style="padding: 6px 3px 4px 7px; border: 2px solid #656565; border-radius: 5px;">
+                                <a class="text-light text-decoration-none" href="https://github.com/anthturner/AuthJanitor/wiki" target="_blank" title="Documentation">
+                                    <Icon Class="fa-2x" Name="FontAwesomeIcons.BookOpen" />
+                                </a>
+                                <a class="text-light text-decoration-none" href="https://github.com/anthturner/AuthJanitor" target="_blank" title="GitHub Repository">
+                                    <Icon Class="fa-2x" Name="FontAwesomeIcons.Github" />
+                                </a>
+                            </div>
                         </Column>
                     </Row>
                 </BarItem>

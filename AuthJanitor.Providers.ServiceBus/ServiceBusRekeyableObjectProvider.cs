@@ -8,7 +8,8 @@ namespace AuthJanitor.Providers.ServiceBus
 {
     [Provider(Name = "Service Bus Key",
               IconClass = "fa fa-key",
-              Description = "Regenerates a Service Bus Key")]
+              Description = "Regenerates an Azure Service Bus Key")]
+    [ProviderImage(ProviderImages.SERVICE_BUS_SVG)]
     public class ServiceBusRekeyableObjectProvider : RekeyableObjectProvider<ServiceBusKeyConfiguration>
     {
         public ServiceBusRekeyableObjectProvider(ILoggerFactory loggerFactory, IServiceProvider serviceProvider) : base(loggerFactory, serviceProvider)

@@ -17,11 +17,12 @@ namespace AuthJanitor.Providers
                     .Select(type => new LoadedProviderMetadata()
                     {
                         OriginatingFile = Path.GetFileName(type.Assembly.Location),
-                        AssemblyFullName = type.Assembly.FullName,
+                        AssemblyName = type.Assembly.GetName(),
                         ProviderTypeName = type.AssemblyQualifiedName,
                         ProviderType = type,
                         ProviderConfigurationType = type.BaseType.GetGenericArguments()[0],
-                        Details = type.GetCustomAttribute<ProviderAttribute>()
+                        Details = type.GetCustomAttribute<ProviderAttribute>(),
+                        SvgImage = type.GetCustomAttribute<ProviderImageAttribute>()?.SvgImage
                     });
 
             serviceCollection.AddTransient<Func<string, IAuthJanitorProvider>>(serviceProvider => key =>

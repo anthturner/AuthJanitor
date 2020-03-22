@@ -10,7 +10,8 @@ namespace AuthJanitor.Providers.AppServices.Functions
 {
     [Provider(Name = "Functions App - Connection String",
               IconClass = "fa fa-gears",
-              Description = "Manages the lifecycle of a Functions app which reads a Connection String")]
+              Description = "Manages the lifecycle of an Azure Functions app which reads from a Connection String")]
+    [ProviderImage(ProviderImages.FUNCTIONS_SVG)]
     public class ConnectionStringFunctionsApplicationLifecycleProvider : FunctionsApplicationLifecycleProvider<ConnectionStringConfiguration>
     {
         public ConnectionStringFunctionsApplicationLifecycleProvider(ILoggerFactory loggerFactory, IServiceProvider serviceProvider) : base(loggerFactory, serviceProvider)

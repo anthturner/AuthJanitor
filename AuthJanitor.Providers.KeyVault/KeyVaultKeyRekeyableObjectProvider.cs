@@ -10,7 +10,8 @@ namespace AuthJanitor.Providers.KeyVault
 {
     [Provider(Name = "Key Vault Key",
               IconClass = "fa fa-key",
-              Description = "Regenerates a Key Vault Key")]
+              Description = "Regenerates an Azure Key Vault Key with the same parameters as the previous version")]
+    [ProviderImage(ProviderImages.KEY_VAULT_SVG)]
     public class KeyVaultKeyRekeyableObjectProvider : RekeyableObjectProvider<KeyVaultKeyConfiguration>
     {
         public KeyVaultKeyRekeyableObjectProvider(ILoggerFactory loggerFactory, IServiceProvider serviceProvider) : base(loggerFactory, serviceProvider)

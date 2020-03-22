@@ -9,7 +9,8 @@ namespace AuthJanitor.Providers.KeyVault
 {
     [Provider(Name = "Key Vault Secret",
               IconClass = "fa fa-low-vision",
-              Description = "Manages the lifecycle of a Key Vault Secret")]
+              Description = "Manages the lifecycle of a Key Vault Secret where a Managed Secret's value is stored")]
+    [ProviderImage(ProviderImages.KEY_VAULT_SVG)]
     public class KeyVaultSecretApplicationLifecycleProvider : ApplicationLifecycleProvider<KeyVaultSecretConfiguration>
     {
         public KeyVaultSecretApplicationLifecycleProvider(ILoggerFactory loggerFactory, IServiceProvider serviceProvider) : base(loggerFactory, serviceProvider)

@@ -6,9 +6,9 @@
             {
                 var setting = Value.ConfigurationItems.ToArray()[i];
                 <TableRow>
-                    <TableRowCell>
+                    <TableRowCell Class="align-middle" Padding="Padding.Is0.OnY.Is3.OnX">
                         <Heading Size="HeadingSize.Is6" Float="Float.Left" Margin="Margin.Is0.FromBottom">
-                            <strong>@setting.DisplayName</strong>
+                            @setting.DisplayName
                         </Heading>
                         @if (!string.IsNullOrEmpty(setting.HelpText))
                         {
@@ -17,14 +17,14 @@
                             </span>
                         }
                     </TableRowCell>
-                    <TableRowCell>
+                    <TableRowCell Class="align-middle" Padding="Padding.Is1.OnAll">
                         @if (ShowEditControls)
                         {
                             <ProviderConfigurationItemEditorComponent @bind-Value="@setting" />
                         }
                         else
                         {
-                            <p>@setting.Value</p>
+                            <code>@setting.Value</code>
                         }
                     </TableRowCell>
                 </TableRow>

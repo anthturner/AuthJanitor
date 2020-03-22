@@ -8,7 +8,8 @@ namespace AuthJanitor.Providers.Storage
 {
     [Provider(Name = "Storage Account Key",
               IconClass = "fas fa-file-alt",
-              Description = "Regenerates the Key for a Storage Account")]
+              Description = "Regenerates a key of a specified type for an Azure Storage Account")]
+    [ProviderImage(ProviderImages.STORAGE_ACCOUNT_SVG)]
     public class StorageAccountRekeyableObjectProvider : RekeyableObjectProvider<StorageAccountKeyConfiguration>
     {
         private const string KEY1 = "key1";

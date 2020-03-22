@@ -6,7 +6,8 @@ namespace AuthJanitor.Providers.AppServices.Functions
 {
     [Provider(Name = "Functions App Key",
               IconClass = "fa fa-key",
-              Description = "Rekeys a Function Key for an Azure Functions Application")]
+              Description = "Regenerates a Function Key for an Azure Functions application")]
+    [ProviderImage(ProviderImages.FUNCTIONS_SVG)]
     public class FunctionKeyRekeyableObjectProvider : RekeyableObjectProvider<FunctionKeyConfiguration>
     {
         public FunctionKeyRekeyableObjectProvider(ILoggerFactory loggerFactory, IServiceProvider serviceProvider) : base(loggerFactory, serviceProvider)

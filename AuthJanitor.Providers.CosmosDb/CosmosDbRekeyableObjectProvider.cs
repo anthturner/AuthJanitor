@@ -7,7 +7,8 @@ namespace AuthJanitor.Providers.CosmosDb
 {
     [Provider(Name = "CosmosDB Master Key",
               IconClass = "fa fa-database",
-              Description = "Rekeys a CosmosDB Master Key")]
+              Description = "Regenerates a Master Key for an Azure CosmosDB instance")]
+    [ProviderImage(ProviderImages.COSMOS_DB_SVG)]
     public class CosmosDbRekeyableObjectProvider : RekeyableObjectProvider<CosmosDbKeyConfiguration>
     {
         private const string PRIMARY_READONLY_KEY = "primaryReadOnly";

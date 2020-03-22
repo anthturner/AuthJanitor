@@ -10,7 +10,8 @@ namespace AuthJanitor.Providers.KeyVault
 {
     [Provider(Name = "Key Vault Secret",
               IconClass = "fa fa-low-vision",
-              Description = "Regenerates a Key Vault Secret")]
+              Description = "Regenerates a Key Vault Secret with a given length")]
+    [ProviderImage(ProviderImages.KEY_VAULT_SVG)]
     public class KeyVaultSecretRekeyableObjectProvider : RekeyableObjectProvider<KeyVaultSecretConfiguration>
     {
         public KeyVaultSecretRekeyableObjectProvider(ILoggerFactory loggerFactory, IServiceProvider serviceProvider) : base(loggerFactory, serviceProvider)

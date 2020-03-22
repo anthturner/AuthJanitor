@@ -79,11 +79,14 @@ namespace AuthJanitor.Automation.Shared
         private static LoadedProviderViewModel GetViewModel(IServiceProvider serviceProvider, LoadedProviderMetadata provider) =>
                 new LoadedProviderViewModel()
                 {
-                    AssemblyFullName = provider.AssemblyFullName,
+                    AssemblyVersion = provider.AssemblyName.Version.ToString(),
+                    AssemblyPublicKey = provider.AssemblyName.GetPublicKey(),
+                    AssemblyPublicKeyToken = provider.AssemblyName.GetPublicKeyToken(),
                     Details = provider.Details,
                     IsRekeyableObjectProvider = provider.IsRekeyableObjectProvider,
                     OriginatingFile = Path.GetFileName(provider.OriginatingFile),
-                    ProviderTypeName = provider.ProviderTypeName
+                    ProviderTypeName = provider.ProviderTypeName,
+                    SvgImage = provider.SvgImage
                 };
 
         private static ManagedSecretViewModel GetViewModel(IServiceProvider serviceProvider, ManagedSecret secret)

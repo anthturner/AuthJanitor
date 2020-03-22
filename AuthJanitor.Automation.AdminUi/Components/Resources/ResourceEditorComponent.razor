@@ -24,12 +24,18 @@
         </Field>
     </Row>
 </Container>
-<Container>
+@if (Value.ProviderConfiguration != null && 
+     Value.ProviderConfiguration.ConfigurationItems != null &&
+     Value.ProviderConfiguration.ConfigurationItems.Any())
+{
+<Container Class="hasSectionHeader">
+    <span class="sectionHeader">Provider Settings</span>
     <Row>
-        <ProviderSettingsComponent @bind-Value="@Value.ProviderConfiguration" 
-                                    ShowEditControls="true" />
+        <ProviderSettingsComponent @bind-Value="@Value.ProviderConfiguration"
+                                   ShowEditControls="true" />
     </Row>
 </Container>
+}
 
 @using Blazorise
 @using AuthJanitor.Automation.Shared.ViewModels 

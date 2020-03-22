@@ -13,7 +13,8 @@ namespace AuthJanitor.Providers.AppServices.Functions
     /// </summary>
     [Provider(Name = "Functions App - AppSettings",
               IconClass = "fa fa-gears",
-              Description = "Manages the lifecycle of a Functions app which reads from AppSettings")]
+              Description = "Manages the lifecycle of an Azure Functions app which reads a Managed Secret from its Application Settings")]
+    [ProviderImage(ProviderImages.FUNCTIONS_SVG)]
     public class AppSettingsFunctionsApplicationLifecycleProvider : FunctionsApplicationLifecycleProvider<AppSettingConfiguration>
     {
         public AppSettingsFunctionsApplicationLifecycleProvider(ILoggerFactory loggerFactory, IServiceProvider serviceProvider) : base(loggerFactory, serviceProvider)

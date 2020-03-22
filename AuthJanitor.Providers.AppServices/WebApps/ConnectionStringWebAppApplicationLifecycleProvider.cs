@@ -10,7 +10,8 @@ namespace AuthJanitor.Providers.AppServices.WebApps
 {
     [Provider(Name = "WebApp - Connection String",
               IconClass = "fa fa-globe",
-              Description = "Manages the lifecycle of a WebApp which reads a Connection String")]
+              Description = "Manages the lifecycle of an Azure Web App which reads from a Connection String")]
+    [ProviderImage(ProviderImages.WEBAPPS_SVG)]
     public class ConnectionStringWebAppApplicationLifecycleProvider : WebAppApplicationLifecycleProvider<ConnectionStringConfiguration>
     {
         public ConnectionStringWebAppApplicationLifecycleProvider(ILoggerFactory loggerFactory, IServiceProvider serviceProvider) : base(loggerFactory, serviceProvider)
