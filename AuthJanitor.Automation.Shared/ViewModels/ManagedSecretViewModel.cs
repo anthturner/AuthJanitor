@@ -23,22 +23,33 @@ namespace AuthJanitor.Automation.Shared.ViewModels
         public DateTimeOffset? LastChanged { get; set; }
         public int ValidPeriodMinutes { get; set; }
 
-        [JsonIgnore]
-        public TimeSpan ValidPeriod
-        {
-            get => TimeSpan.FromMinutes(ValidPeriodMinutes);
-            set => ValidPeriodMinutes = (int)Math.Ceiling(value.TotalMinutes);
-        }
+        public IEnumerable<string> AdminEmails { get; set; }
 
+        /// <summary>
+        /// If the ManagedSecret is valid
+        /// </summary>
         [JsonIgnore]
-        public DateTime Expiry => (LastChanged.GetValueOrDefault() + ValidPeriod).DateTime;
+        public bool IsValid => Expiry < DateTimeOffset.UtcNow;
+
+        /// <summary>
+        /// Date/Time of expiry
+        /// </summary>
+        [JsonIgnore]
+        public DateTimeOffset Expiry => LastChanged.GetValueOrDefault() + TimeSpan.FromMinutes(ValidPeriodMinutes);
+
+        /// <summary>
+        /// Time remaining until Expiry (if expired, TimeSpan.Zero)
+        /// </summary>
+        [JsonIgnore]
+        public TimeSpan TimeRemaining => IsValid ? Expiry - DateTimeOffset.UtcNow : TimeSpan.Zero;
 
         [JsonIgnore]
         public string ProviderSummary => $"{Resources.Count(r => !r.IsRekeyableObjectProvider)} ALCs, " +
                                          $"{Resources.Count(r => r.IsRekeyableObjectProvider)} RKOs";
 
         [JsonIgnore]
-        public int ExpiryPercent => Expiry > DateTime.Now ? 100 : (int)(((double)(DateTime.Now - LastChanged.GetValueOrDefault()).TotalSeconds) / ValidPeriod.TotalSeconds) * 100;
+        public int ExpiryPercent => Expiry < DateTimeOffset.UtcNow ? 100 :
+            (int)Math.Round((TimeRemaining.TotalMinutes / ValidPeriodMinutes) * 100, 0);
 
         public string Nonce { get; set; }
 

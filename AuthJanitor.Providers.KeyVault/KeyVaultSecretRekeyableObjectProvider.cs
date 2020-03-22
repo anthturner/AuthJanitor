@@ -41,8 +41,8 @@ namespace AuthJanitor.Providers.KeyVault
                 }
             }
 
-            newSecret.Properties.NotBefore = DateTimeOffset.Now;
-            newSecret.Properties.ExpiresOn = DateTimeOffset.Now + requestedValidPeriod;
+            newSecret.Properties.NotBefore = DateTimeOffset.UtcNow;
+            newSecret.Properties.ExpiresOn = DateTimeOffset.UtcNow + requestedValidPeriod;
 
             Azure.Response<KeyVaultSecret> secretResponse = await client.SetSecretAsync(newSecret);
 

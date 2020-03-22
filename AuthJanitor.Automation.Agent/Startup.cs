@@ -15,8 +15,8 @@ using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 
-[assembly: WebJobsStartup(typeof(AuthJanitor.Automation.AdminApi.Startup))]
-namespace AuthJanitor.Automation.AdminApi
+[assembly: WebJobsStartup(typeof(AuthJanitor.Automation.Agent.Startup))]
+namespace AuthJanitor.Automation.Agent
 {
     public class Startup : IWebJobsStartup
     {
@@ -86,7 +86,7 @@ namespace AuthJanitor.Automation.AdminApi
             ViewModelFactory.ConfigureServices(builder.Services);
 
             logger.LogDebug("Scanning for Provider modules at {0}\\{1} recursively", PROVIDER_SEARCH_PATH, PROVIDER_SEARCH_MASK);
-            
+
             var providerTypes = Directory.GetFiles(PROVIDER_SEARCH_PATH, PROVIDER_SEARCH_MASK, new EnumerationOptions() { RecurseSubdirectories = true })
                                          .SelectMany(libraryFile => PluginLoader.CreateFromAssemblyFile(libraryFile, PROVIDER_SHARED_TYPES)
                                                                             .LoadDefaultAssembly()
@@ -96,7 +96,7 @@ namespace AuthJanitor.Automation.AdminApi
             logger.LogInformation("Found {0} providers: {1}", providerTypes.Count(), string.Join("  ", providerTypes.Select(t => t.Name)));
             logger.LogInformation("Registering providers and service principal default credentials");
             ProviderFactory.ConfigureProviderServices(builder.Services, providerTypes);
-            
+
             ServiceProvider = builder.Services.BuildServiceProvider();
         }
 
@@ -104,13 +104,13 @@ namespace AuthJanitor.Automation.AdminApi
                                                   AuthJanitorServiceConfiguration serviceConfiguration)
         {
             var secretStore = await GetDataStore<ManagedSecret>(
-                serviceConfiguration.MetadataStorageContainerName, 
+                serviceConfiguration.MetadataStorageContainerName,
                 MANAGED_SECRETS_BLOB_NAME).InitializeAsync();
             var taskStore = await GetDataStore<RekeyingTask>(
-                serviceConfiguration.MetadataStorageContainerName, 
+                serviceConfiguration.MetadataStorageContainerName,
                 REKEYING_TASKS_BLOB_NAME).InitializeAsync();
             var resourceStore = await GetDataStore<Resource>(
-                serviceConfiguration.MetadataStorageContainerName, 
+                serviceConfiguration.MetadataStorageContainerName,
                 RESOURCES_BLOB_NAME).InitializeAsync();
 
             serviceCollection.AddScoped<IDataStore<ManagedSecret>>((s) => secretStore);

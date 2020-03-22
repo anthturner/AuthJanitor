@@ -48,7 +48,7 @@ namespace AuthJanitor.Providers.KeyVault
                     newKvSecret.Properties.Tags.Add("UserHint", secret.UserHint);
                 }
 
-                newKvSecret.Properties.NotBefore = DateTimeOffset.Now;
+                newKvSecret.Properties.NotBefore = DateTimeOffset.UtcNow;
                 newKvSecret.Properties.ExpiresOn = secret.Expiry;
 
                 await client.SetSecretAsync(newKvSecret);

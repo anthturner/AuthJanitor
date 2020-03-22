@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using System.Web.Http;
 using System.Linq;
 using AuthJanitor.Automation.Shared.NotificationProviders;
+using AuthJanitor.Automation.Shared.SecureStorageProviders;
 
 namespace AuthJanitor.Automation.Agent
 {
@@ -23,14 +24,9 @@ namespace AuthJanitor.Automation.Agent
 
         private const int MAX_EXECUTION_SECONDS_BEFORE_RETRY = 30;
 
-        public ExternalSignal(INotificationProvider notificationProvider, IDataStore<ManagedSecret> managedSecretStore, IDataStore<Resource> resourceStore, IDataStore<RekeyingTask> rekeyingTaskStore, Func<ManagedSecret, ManagedSecretViewModel> managedSecretViewModelDelegate, Func<Resource, ResourceViewModel> resourceViewModelDelegate, Func<RekeyingTask, RekeyingTaskViewModel> rekeyingTaskViewModelDelegate, Func<AuthJanitorProviderConfiguration, ProviderConfigurationViewModel> configViewModelDelegate, Func<LoadedProviderMetadata, LoadedProviderViewModel> providerViewModelDelegate, Func<string, IAuthJanitorProvider> providerFactory, Func<string, AuthJanitorProviderConfiguration> providerConfigurationFactory, Func<string, LoadedProviderMetadata> providerDetailsFactory, List<LoadedProviderMetadata> loadedProviders) : base(notificationProvider, managedSecretStore, resourceStore, rekeyingTaskStore, managedSecretViewModelDelegate, resourceViewModelDelegate, rekeyingTaskViewModelDelegate, configViewModelDelegate, providerViewModelDelegate, providerFactory, providerConfigurationFactory, providerDetailsFactory, loadedProviders)
+        public ExternalSignal(AuthJanitorServiceConfiguration serviceConfiguration, MultiCredentialProvider credentialProvider, INotificationProvider notificationProvider, ISecureStorageProvider secureStorageProvider, IDataStore<ManagedSecret> managedSecretStore, IDataStore<Resource> resourceStore, IDataStore<RekeyingTask> rekeyingTaskStore, Func<ManagedSecret, ManagedSecretViewModel> managedSecretViewModelDelegate, Func<Resource, ResourceViewModel> resourceViewModelDelegate, Func<RekeyingTask, RekeyingTaskViewModel> rekeyingTaskViewModelDelegate, Func<AuthJanitorProviderConfiguration, ProviderConfigurationViewModel> configViewModelDelegate, Func<LoadedProviderMetadata, LoadedProviderViewModel> providerViewModelDelegate, Func<string, IAuthJanitorProvider> providerFactory, Func<string, AuthJanitorProviderConfiguration> providerConfigurationFactory, Func<string, LoadedProviderMetadata> providerDetailsFactory, List<LoadedProviderMetadata> loadedProviders) : base(serviceConfiguration, credentialProvider, notificationProvider, secureStorageProvider, managedSecretStore, resourceStore, rekeyingTaskStore, managedSecretViewModelDelegate, resourceViewModelDelegate, rekeyingTaskViewModelDelegate, configViewModelDelegate, providerViewModelDelegate, providerFactory, providerConfigurationFactory, providerDetailsFactory, loadedProviders)
         {
         }
-
-        /// <summary>
-        /// The amount of time before the secret expires when it will be automatically changed if signalled
-        /// </summary>
-        protected TimeSpan SignalledChangeWindow => TimeSpan.FromHours(double.Parse(Environment.GetEnvironmentVariable("SignalledChangeWindow", EnvironmentVariableTarget.Process)));
 
         [FunctionName("ExternalSignal")]
         public async Task<IActionResult> Run(
@@ -53,13 +49,13 @@ namespace AuthJanitor.Automation.Agent
                 return new OkObjectResult(RETURN_RETRY_SHORTLY);
             }
 
-            if ((secret.IsValid && secret.TimeRemaining <= SignalledChangeWindow) || !secret.IsValid)
+            if ((secret.IsValid && secret.TimeRemaining <= TimeSpan.FromHours(ServiceConfiguration.ExternalSignalRekeyableLeadTimeHours)) || !secret.IsValid)
             {
                 var temporaryTask = new RekeyingTask()
                 {
                     ManagedSecretIds = new List<Guid>() { secret.ObjectId },
                     Expiry = secret.Expiry,
-                    Queued = DateTimeOffset.Now,
+                    Queued = DateTimeOffset.UtcNow,
                     RekeyingInProgress = true
                 };
                 RekeyingTasks.Create(temporaryTask);

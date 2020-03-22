@@ -28,14 +28,40 @@
     </BlazorTable.Column>
 
     <!-- Queued Date -->
-    <BlazorTable.Column TableItem="RekeyingTaskViewModel" 
-                        Title="Queued" Field="@(x => x.Queued)" 
+    <BlazorTable.Column TableItem="RekeyingTaskViewModel"
+                        Title="Queued" Field="@(x => x.Queued)"
                         Sortable="true" Filterable="true" />
 
     <!-- Expiry Date -->
-    <BlazorTable.Column TableItem="RekeyingTaskViewModel" 
-                        Title="Expiry" Field="@(x => x.Expiry)" 
+    <BlazorTable.Column TableItem="RekeyingTaskViewModel"
+                        Title="Expiry" Field="@(x => x.Expiry)"
                         Sortable="true" Filterable="true" />
+
+    <!-- Status -->
+    <BlazorTable.Column TableItem="RekeyingTaskViewModel"
+                        Title="Status" Field="@(x => x.RekeyingCompleted)">
+        <Template>
+            @if (context.RekeyingCompleted)
+            {
+                <Badge Color="Color.Success">Complete</Badge>
+            }
+            else if (!string.IsNullOrEmpty(context.RekeyingErrorMessage))
+            {
+                <Alert Color="Color.Danger" IsDismisable="false" IsShow="true" Class="col-4">
+                    <strong>Error Rekeying! </strong>
+                    @context.RekeyingErrorMessage
+                </Alert>
+            }
+            else if (context.RekeyingInProgress)
+            {
+                <Badge Color="Color.Primary">In Progress</Badge>
+            }
+            else
+            {
+                <Badge Color="Color.Secondary">Scheduled</Badge>
+            }
+        </Template>
+    </BlazorTable.Column>
 
     <!-- Participating Secrets -->
     <BlazorTable.Column TableItem="RekeyingTaskViewModel" Title="Secrets">
@@ -45,9 +71,9 @@
                 <ListGroup Margin="Margin.Is0.OnX.Is1.OnY" Padding="Padding.Is0.OnAll">
                     @foreach (var resource in secret.Resources)
                     {
-                    <ListGroupItem Padding="Padding.Is2.OnAll">
-                        <ResourceNameComponent Value="@resource" />
-                    </ListGroupItem>
+                        <ListGroupItem Padding="Padding.Is2.OnAll">
+                            <ResourceNameComponent Value="@resource" />
+                        </ListGroupItem>
                     }
                 </ListGroup>
             }

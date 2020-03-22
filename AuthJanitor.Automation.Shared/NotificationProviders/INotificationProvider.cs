@@ -8,6 +8,10 @@ namespace AuthJanitor.Automation.Shared.NotificationProviders
             string[] toAddresses,
             RekeyingTask task);
 
+        Task DispatchNotification_AutoRekeyingTaskCreated(
+            string[] toAddresses,
+            RekeyingTask task);
+
         Task DispatchNotification_SanityTestFailed(
             string[] toAddresses,
             Resource resource);

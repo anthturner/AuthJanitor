@@ -1,43 +1,52 @@
 ﻿using AuthJanitor.Automation.Shared.NotificationProviders;
+using AuthJanitor.Automation.Shared.SecureStorageProviders;
 using AuthJanitor.Automation.Shared.ViewModels;
 using AuthJanitor.Providers;
 using System;
-using System.Collections.Generic;
 
 namespace AuthJanitor.Automation.Shared
 {
     public abstract class StorageIntegratedFunction
     {
-        private Func<ManagedSecret, ManagedSecretViewModel> _managedSecretViewModelDelegate;
-        private Func<Shared.Resource, Shared.ViewModels.ResourceViewModel> _resourceViewModelDelegate;
-        private Func<RekeyingTask, RekeyingTaskViewModel> _rekeyingTaskViewModelDelegate;
-        private Func<AuthJanitorProviderConfiguration, ProviderConfigurationViewModel> _configViewModelDelegate;
-        private Func<LoadedProviderMetadata, LoadedProviderViewModel> _providerViewModelDelegate;
+        private readonly Func<ManagedSecret, ManagedSecretViewModel> _managedSecretViewModelDelegate;
+        private readonly Func<Resource, ResourceViewModel> _resourceViewModelDelegate;
+        private readonly Func<RekeyingTask, RekeyingTaskViewModel> _rekeyingTaskViewModelDelegate;
+        private readonly Func<AuthJanitorProviderConfiguration, ProviderConfigurationViewModel> _configViewModelDelegate;
+        private readonly Func<LoadedProviderMetadata, LoadedProviderViewModel> _providerViewModelDelegate;
 
         protected IDataStore<ManagedSecret> ManagedSecrets { get; }
         protected IDataStore<Shared.Resource> Resources { get; }
         protected IDataStore<RekeyingTask> RekeyingTasks { get; }
 
+        protected AuthJanitorServiceConfiguration ServiceConfiguration { get; }
         protected INotificationProvider NotificationProvider { get; }
+        protected MultiCredentialProvider CredentialProvider { get; }
+        protected ISecureStorageProvider SecureStorageProvider { get; }
 
         protected ManagedSecretViewModel GetViewModel(ManagedSecret secret) => _managedSecretViewModelDelegate(secret);
-        protected Shared.ViewModels.ResourceViewModel GetViewModel(Shared.Resource resource) => _resourceViewModelDelegate(resource);
+        protected ResourceViewModel GetViewModel(Resource resource) => _resourceViewModelDelegate(resource);
         protected RekeyingTaskViewModel GetViewModel(RekeyingTask rekeyingTask) => _rekeyingTaskViewModelDelegate(rekeyingTask);
         protected ProviderConfigurationViewModel GetViewModel(AuthJanitorProviderConfiguration config) => _configViewModelDelegate(config);
         protected LoadedProviderViewModel GetViewModel(LoadedProviderMetadata provider) => _providerViewModelDelegate(provider);
 
         protected StorageIntegratedFunction(
+            AuthJanitorServiceConfiguration serviceConfiguration,
+            MultiCredentialProvider credentialProvider,
             INotificationProvider notificationProvider,
+            ISecureStorageProvider secureStorageProvider,
             IDataStore<ManagedSecret> managedSecretStore,
-            IDataStore<Shared.Resource> resourceStore,
+            IDataStore<Resource> resourceStore,
             IDataStore<RekeyingTask> rekeyingTaskStore,
             Func<ManagedSecret, ManagedSecretViewModel> managedSecretViewModelDelegate,
-            Func<Shared.Resource, Shared.ViewModels.ResourceViewModel> resourceViewModelDelegate,
+            Func<Resource, ResourceViewModel> resourceViewModelDelegate,
             Func<RekeyingTask, RekeyingTaskViewModel> rekeyingTaskViewModelDelegate,
             Func<AuthJanitorProviderConfiguration, ProviderConfigurationViewModel> configViewModelDelegate,
             Func<LoadedProviderMetadata, LoadedProviderViewModel> providerViewModelDelegate)
         {
+            ServiceConfiguration = serviceConfiguration;
+            CredentialProvider = credentialProvider;
             NotificationProvider = notificationProvider;
+            SecureStorageProvider = secureStorageProvider;
 
             ManagedSecrets = managedSecretStore;
             Resources = resourceStore;

@@ -4,7 +4,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace AuthJanitor.Automation.Shared.SecureStorageProviders
+namespace AuthJanitor.Automation.Shared.PersistenceEncryption
 {
     public class Rfc2898AesPersistenceEncryption : IPersistenceEncryption
     {

@@ -31,8 +31,8 @@ namespace AuthJanitor.Providers.KeyVault
             CreateKeyOptions creationOptions = new CreateKeyOptions()
             {
                 Enabled = true,
-                ExpiresOn = DateTimeOffset.Now + requestedValidPeriod,
-                NotBefore = DateTimeOffset.Now
+                ExpiresOn = DateTimeOffset.UtcNow + requestedValidPeriod,
+                NotBefore = DateTimeOffset.UtcNow
             };
             foreach (KeyOperation op in currentKey.Value.KeyOperations)
             {

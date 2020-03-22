@@ -29,7 +29,7 @@ namespace AuthJanitor.Providers.CosmosDb
             IDatabaseAccountListKeysResult keys = await cosmosDbAccount.ListKeysAsync();
             return new RegeneratedSecret()
             {
-                Expiry = DateTimeOffset.Now + requestedValidPeriod,
+                Expiry = DateTimeOffset.UtcNow + requestedValidPeriod,
                 UserHint = Configuration.UserHint,
                 NewSecretValue = GetKeyValue(keys)
             };

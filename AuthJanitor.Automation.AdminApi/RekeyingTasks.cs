@@ -1,5 +1,6 @@
 ﻿using AuthJanitor.Automation.Shared;
 using AuthJanitor.Automation.Shared.NotificationProviders;
+using AuthJanitor.Automation.Shared.SecureStorageProviders;
 using AuthJanitor.Automation.Shared.ViewModels;
 using AuthJanitor.Providers;
 using Microsoft.AspNetCore.Http;
@@ -21,7 +22,7 @@ namespace AuthJanitor.Automation.AdminApi
     /// </summary>
     public class RekeyingTasks : ProviderIntegratedFunction
     {
-        public RekeyingTasks(INotificationProvider notificationProvider, IDataStore<ManagedSecret> managedSecretStore, IDataStore<Resource> resourceStore, IDataStore<RekeyingTask> rekeyingTaskStore, Func<ManagedSecret, ManagedSecretViewModel> managedSecretViewModelDelegate, Func<Resource, ResourceViewModel> resourceViewModelDelegate, Func<RekeyingTask, RekeyingTaskViewModel> rekeyingTaskViewModelDelegate, Func<AuthJanitorProviderConfiguration, ProviderConfigurationViewModel> configViewModelDelegate, Func<LoadedProviderMetadata, LoadedProviderViewModel> providerViewModelDelegate, Func<string, IAuthJanitorProvider> providerFactory, Func<string, AuthJanitorProviderConfiguration> providerConfigurationFactory, Func<string, LoadedProviderMetadata> providerDetailsFactory, List<LoadedProviderMetadata> loadedProviders) : base(notificationProvider, managedSecretStore, resourceStore, rekeyingTaskStore, managedSecretViewModelDelegate, resourceViewModelDelegate, rekeyingTaskViewModelDelegate, configViewModelDelegate, providerViewModelDelegate, providerFactory, providerConfigurationFactory, providerDetailsFactory, loadedProviders)
+        public RekeyingTasks(AuthJanitorServiceConfiguration serviceConfiguration, MultiCredentialProvider credentialProvider, INotificationProvider notificationProvider, ISecureStorageProvider secureStorageProvider, IDataStore<ManagedSecret> managedSecretStore, IDataStore<Resource> resourceStore, IDataStore<RekeyingTask> rekeyingTaskStore, Func<ManagedSecret, ManagedSecretViewModel> managedSecretViewModelDelegate, Func<Resource, ResourceViewModel> resourceViewModelDelegate, Func<RekeyingTask, RekeyingTaskViewModel> rekeyingTaskViewModelDelegate, Func<AuthJanitorProviderConfiguration, ProviderConfigurationViewModel> configViewModelDelegate, Func<LoadedProviderMetadata, LoadedProviderViewModel> providerViewModelDelegate, Func<string, IAuthJanitorProvider> providerFactory, Func<string, AuthJanitorProviderConfiguration> providerConfigurationFactory, Func<string, LoadedProviderMetadata> providerDetailsFactory, List<LoadedProviderMetadata> loadedProviders) : base(serviceConfiguration, credentialProvider, notificationProvider, secureStorageProvider, managedSecretStore, resourceStore, rekeyingTaskStore, managedSecretViewModelDelegate, resourceViewModelDelegate, rekeyingTaskViewModelDelegate, configViewModelDelegate, providerViewModelDelegate, providerFactory, providerConfigurationFactory, providerDetailsFactory, loadedProviders)
         {
         }
 
@@ -48,7 +49,7 @@ namespace AuthJanitor.Automation.AdminApi
 
             RekeyingTask newTask = new RekeyingTask()
             {
-                Queued = DateTimeOffset.Now,
+                Queued = DateTimeOffset.UtcNow,
                 Expiry = earliestExpiry,
                 ManagedSecretIds = secretIds.Select(s => Guid.Parse(s)).ToList()
             };
@@ -100,6 +101,7 @@ namespace AuthJanitor.Automation.AdminApi
             return new OkResult();
         }
 
+        [RegisterOBOCredential]
         [ProtectedApiEndpoint]
         [FunctionName("RekeyingTasks-Approve")]
         public async Task<IActionResult> Approve(
@@ -108,47 +110,44 @@ namespace AuthJanitor.Automation.AdminApi
             ILogger log)
         {
             log.LogInformation("Administrator approved Task ID {0}", taskId);
-
             RekeyingTask task = RekeyingTasks.Get(taskId);
-            Dictionary<Guid, string> secretResults = new Dictionary<Guid, string>();
 
-            if (task.Expiry < DateTime.Now)
+            if (task.ConfirmationType == TaskConfirmationStrategies.AdminCachesSignOff)
             {
-                log.LogError("Expiry time has passed; this rekeying operation may be a little bumpy!");
+                var credential = CredentialProvider.Get(MultiCredentialProvider.CredentialType.UserCredential);
+                var persisted = await SecureStorageProvider.Persist<string>(credential.Expiry, credential.AccessToken);
+                task.PersistedCredentialId = persisted;
+                task.PersistedCredentialUser = credential.Username;
+                await RekeyingTasks.UpdateAsync(task);
+                await RekeyingTasks.CommitAsync();
+                return new OkResult();
             }
-
-            var allResourceIds = Resources.List().Select(r => r.ObjectId);
-            foreach (Guid managedSecretId in task.ManagedSecretIds)
+            else if (task.ConfirmationType == TaskConfirmationStrategies.AdminSignsOffJustInTime)
             {
-                try
-                {
-                    log.LogInformation("Rekeying Managed Secret ID {0}", managedSecretId);
-                    ManagedSecret secret = ManagedSecrets.Get(managedSecretId);
+                task.RekeyingInProgress = true;
+                await RekeyingTasks.UpdateAsync(task);
+                await RekeyingTasks.CommitAsync();
 
-                    if (secret.ResourceIds.Any(id => !allResourceIds.Contains(id)))
-                    {
-                        return new BadRequestErrorMessageResult("Invalid Resource ID in set");
-                    }
+                var result = await ExecuteRekeyingWorkflow(log, task);
 
-                    var providers =
-                        secret.ResourceIds.Select(id => Resources.Get(id))
-                                          .Select(r =>
-                                          {
-                                              var provider = GetProvider(r.ProviderType);
-                                              provider.SerializedConfiguration = r.ProviderConfiguration;
-                                              return provider;
-                                          }).ToArray();
+                task.RekeyingInProgress = false;
+                if (result != string.Empty)
+                    task.RekeyingErrorMessage = result;
+                else
+                    task.RekeyingCompleted = true;
+                await RekeyingTasks.UpdateAsync(task);
+                await RekeyingTasks.CommitAsync();
 
-                    await HelperMethods.RunRekeyingWorkflow(log, secret.ValidPeriod, providers);
-                    secretResults.Add(managedSecretId, "Success");
-                }
-                catch (Exception ex)
-                {
-                    secretResults.Add(managedSecretId, $"Error: {ex.Message}");
-                }
+                if (result != string.Empty)
+                    return new BadRequestErrorMessageResult(result);
+                else
+                    return new OkResult();
             }
-
-            return new OkObjectResult(secretResults);
+            else
+            {
+                log.LogError("Task does not support an Administrator's approval!");
+                return new BadRequestErrorMessageResult("Task does not support an Administrator's approval!");
+            }
         }
     }
 }

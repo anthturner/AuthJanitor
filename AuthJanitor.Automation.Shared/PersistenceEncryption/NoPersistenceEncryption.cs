@@ -1,6 +1,6 @@
 ﻿using System.Threading.Tasks;
 
-namespace AuthJanitor.Automation.Shared.SecureStorageProviders
+namespace AuthJanitor.Automation.Shared.PersistenceEncryption
 {
     public class NoPersistenceEncryption : IPersistenceEncryption
     {

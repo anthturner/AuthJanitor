@@ -11,6 +11,9 @@ namespace AuthJanitor.Automation.Shared
         public DateTimeOffset Expiry { get; set; }
 
         public bool RekeyingInProgress { get; set; } = false;
+        public bool RekeyingCompleted { get; set; } = false;
+        public string RekeyingErrorMessage { get; set; } = string.Empty;
+
 
         public TaskConfirmationStrategies ConfirmationType { get; set; }
 

@@ -27,6 +27,7 @@ namespace AuthJanitor.Automation.Shared.NotificationProviders
 
         public async Task DispatchNotification_AdminApprovalRequiredTaskCreated(string[] toAddresses, RekeyingTask task)
         {
+            if (toAddresses == null || !toAddresses.Any()) return;
             var msg = Template("AuthJanitor Administrator Approval Required");
             msg.AddBccs(toAddresses.Select(a => new EmailAddress(a)).ToList());
 
@@ -40,8 +41,25 @@ namespace AuthJanitor.Automation.Shared.NotificationProviders
             await new SendGridClient(_sendGridApiKey).SendEmailAsync(msg);
         }
 
+        public async Task DispatchNotification_AutoRekeyingTaskCreated(string[] toAddresses, RekeyingTask task)
+        {
+            if (toAddresses == null || !toAddresses.Any()) return;
+            var msg = Template("AuthJanitor Auto-Rekeying Task Created");
+            msg.AddBccs(toAddresses.Select(a => new EmailAddress(a)).ToList());
+
+            msg.AddContent(MimeType.Text,
+                "New Automatic Rekeying Task was created!" + Environment.NewLine +
+                $"{new Uri(AuthJanitorUiBase + "aj/tasks/" + task.ObjectId)}");
+            msg.AddContent(MimeType.Html,
+                "<p>New Automatic Rekeying Task was created!</p><br />" +
+                $"<a href=\"{new Uri(AuthJanitorUiBase + "aj/tasks/" + task.ObjectId)}\">Click here to review!</a>");
+
+            await new SendGridClient(_sendGridApiKey).SendEmailAsync(msg);
+        }
+
         public async Task DispatchNotification_ManagedSecretExpired(string[] toAddresses, ManagedSecret secret)
         {
+            if (toAddresses == null || !toAddresses.Any()) return;
             var msg = Template("AuthJanitor Managed Secret Has Expired!");
             msg.AddBccs(toAddresses.Select(a => new EmailAddress(a)).ToList());
 
@@ -57,6 +75,7 @@ namespace AuthJanitor.Automation.Shared.NotificationProviders
 
         public async Task DispatchNotification_SanityTestFailed(string[] toAddresses, Resource resource)
         {
+            if (toAddresses == null || !toAddresses.Any()) return;
             var msg = Template("AuthJanitor Resource Sanity Test Failed!");
             msg.AddBccs(toAddresses.Select(a => new EmailAddress(a)).ToList());
 

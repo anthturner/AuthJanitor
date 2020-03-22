@@ -27,7 +27,7 @@ namespace AuthJanitor.Providers.Storage
 
             return new RegeneratedSecret()
             {
-                Expiry = DateTimeOffset.Now + requestedValidPeriod,
+                Expiry = DateTimeOffset.UtcNow + requestedValidPeriod,
                 UserHint = Configuration.UserHint,
                 NewSecretValue = newKey?.Value
             };

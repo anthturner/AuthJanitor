@@ -1,19 +1,14 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
     <RazorLangVersion>3.0</RazorLangVersion>
-    <Configurations>Debug;Release;Web+Functions Debug</Configurations>
+    <Configurations>Debug;Release</Configurations>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <BlazorWebAssemblyEnableLinking>false</BlazorWebAssemblyEnableLinking>
   </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Web+Functions Debug|AnyCPU'">
-    <BlazorWebAssemblyEnableLinking>false</BlazorWebAssemblyEnableLinking>
-  </PropertyGroup>
-
   <ItemGroup>
     <PackageReference Include="Blazorise" Version="0.8.8.4" />
     <PackageReference Include="Blazorise.Bootstrap" Version="0.8.8.4" />
@@ -37,13 +32,5 @@
     <ProjectReference Include="..\AuthJanitor.Providers.ServiceBus\AuthJanitor.Providers.ServiceBus.csproj" />
     <ProjectReference Include="..\AuthJanitor.Providers.Storage\AuthJanitor.Providers.Storage.csproj" />
     <ProjectReference Include="..\AuthJanitor.Providers\AuthJanitor.Providers.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Content Update="Properties\launchSettings.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
-      <CopyToPublishDirectory>Never</CopyToPublishDirectory>
-    </Content>
   </ItemGroup>
 </Project>

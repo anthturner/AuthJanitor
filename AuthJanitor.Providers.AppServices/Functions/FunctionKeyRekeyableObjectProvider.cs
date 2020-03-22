@@ -18,7 +18,7 @@ namespace AuthJanitor.Providers.AppServices.Functions
         {
             RegeneratedSecret newKey = new RegeneratedSecret()
             {
-                Expiry = DateTimeOffset.Now + requestedValidPeriod,
+                Expiry = DateTimeOffset.UtcNow + requestedValidPeriod,
                 UserHint = Configuration.UserHint,
                 NewSecretValue = HelperMethods.GenerateCryptographicallySecureString(Configuration.KeyLength)
             };

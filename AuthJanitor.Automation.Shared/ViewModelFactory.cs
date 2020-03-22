@@ -109,9 +109,10 @@ namespace AuthJanitor.Automation.Shared
                 Description = secret.Description,
                 TaskConfirmationStrategies = secret.TaskConfirmationStrategies,
                 LastChanged = secret.LastChanged,
-                ValidPeriod = secret.ValidPeriod,
+                ValidPeriodMinutes = (int)secret.ValidPeriod.TotalMinutes,
                 Nonce = secret.Nonce,
-                Resources = resources
+                Resources = resources,
+                AdminEmails = secret.AdminEmails
             };
         }
 
@@ -121,6 +122,11 @@ namespace AuthJanitor.Automation.Shared
                 ObjectId = rekeyingTask.ObjectId,
                 Queued = rekeyingTask.Queued,
                 Expiry = rekeyingTask.Expiry,
+                PersistedCredentialUser = rekeyingTask.PersistedCredentialUser,
+                ConfirmationType = rekeyingTask.ConfirmationType,
+                RekeyingCompleted = rekeyingTask.RekeyingCompleted,
+                RekeyingErrorMessage = rekeyingTask.RekeyingErrorMessage,
+                RekeyingInProgress = rekeyingTask.RekeyingInProgress,
                 ManagedSecrets = rekeyingTask.ManagedSecretIds
                                       .Select(secretId => serviceProvider.GetRequiredService<IDataStore<ManagedSecret>>()
                                                                          .Get(secretId))

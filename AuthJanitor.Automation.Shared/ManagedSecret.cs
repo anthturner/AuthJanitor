@@ -41,6 +41,8 @@ namespace AuthJanitor.Automation.Shared
         public DateTimeOffset LastChanged { get; set; } = DateTimeOffset.MinValue;
         public TimeSpan ValidPeriod { get; set; }
 
+        public IEnumerable<string> AdminEmails { get; set; } = new List<string>();
+
         public string Nonce { get; set; } = HelperMethods.GenerateCryptographicallySecureString(DEFAULT_NONCE_LENGTH);
 
         public IEnumerable<Guid> ResourceIds { get; set; } = new List<Guid>();
@@ -49,7 +51,7 @@ namespace AuthJanitor.Automation.Shared
         /// If the ManagedSecret is valid
         /// </summary>
         [JsonIgnore]
-        public bool IsValid => LastChanged + ValidPeriod < DateTime.Now;
+        public bool IsValid => Expiry < DateTimeOffset.UtcNow;
 
         /// <summary>
         /// Date/Time of expiry
@@ -61,6 +63,6 @@ namespace AuthJanitor.Automation.Shared
         /// Time remaining until Expiry (if expired, TimeSpan.Zero)
         /// </summary>
         [JsonIgnore]
-        public TimeSpan TimeRemaining => IsValid ? Expiry - DateTimeOffset.Now : TimeSpan.Zero;
+        public TimeSpan TimeRemaining => IsValid ? Expiry - DateTimeOffset.UtcNow : TimeSpan.Zero;
     }
 }

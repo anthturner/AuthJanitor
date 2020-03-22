@@ -21,7 +21,7 @@ namespace AuthJanitor.Providers.ServiceBus
             IAuthorizationKeys newKeys = await Regenerate(GetPolicyKey());
             return new RegeneratedSecret()
             {
-                Expiry = DateTimeOffset.Now + requestedValidPeriod,
+                Expiry = DateTimeOffset.UtcNow + requestedValidPeriod,
                 UserHint = Configuration.UserHint,
                 NewSecretValue = GetKeyValue(newKeys),
                 NewConnectionString = GetConnectionStringValue(newKeys)

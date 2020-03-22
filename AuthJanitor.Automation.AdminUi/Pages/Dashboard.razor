@@ -22,15 +22,34 @@
                 <CardHeader>Expiring Soon</CardHeader>
                 @if (Metrics.ExpiringSoon.Any())
                 {
-                    <CardBody Padding="Padding.Is0"> 
+                    <CardBody Padding="Padding.Is0">
                         <BlazorTable.Table TableItem="ManagedSecretViewModel" Items="@Metrics.ExpiringSoon" TableClass="table table-striped table-bordered">
-                            <BlazorTable.Column TableItem="ManagedSecretViewModel" Title="Name" Field="@(x => x.Name)" Sortable="true" Filterable="true" />
-                            <BlazorTable.Column TableItem="ManagedSecretViewModel" Title="Valid For" Field="@(x => x.ValidPeriod)" Sortable="true" />
-                            <BlazorTable.Column TableItem="ManagedSecretViewModel" Title="Expiry" Field="@(x => x.Expiry)" Sortable="true" Filterable="true" />
+                            <BlazorTable.Column TableItem="ManagedSecretViewModel" Title="Name" Field="@(x => x.Name)" Sortable="true" />
+                            <BlazorTable.Column TableItem="ManagedSecretViewModel" Title="Valid For" Field="@(x => x.ValidPeriodMinutes)" Sortable="true">
+                                <Template>
+                                    <TimespanComponent @bind-Value="@context.ValidPeriodMinutes" ShowEditControls="false" />
+                                </Template>
+                            </BlazorTable.Column>
+                            <BlazorTable.Column TableItem="ManagedSecretViewModel" Title="Expiry" Field="@(x => x.Expiry)" Sortable="true" />
+                            <BlazorTable.Column TableItem="ManagedSecretViewModel"
+                                                Title="Resources">
+                                <Template>
+                                    <ListGroup Margin="Margin.Is0.OnAll" Padding="Padding.Is0.OnAll">
+                                        @foreach (var resource in context.Resources)
+                                        {
+                                            <ListGroupItem Padding="Padding.Is2.OnAll"
+                                                           Class="@(resource.IsRekeyableObjectProvider ? "border-left-primary" : "border-left-secondary")">
+                                                <ResourceNameComponent Value="@resource" />
+                                            </ListGroupItem>
+                                        }
+                                    </ListGroup>
+                                </Template>
+                            </BlazorTable.Column>
                             <BlazorTable.Pager ShowPageNumber="true" ShowTotalCount="true" />
                         </BlazorTable.Table>
                     </CardBody>
-                } else
+                }
+                else
                 {
                     <Paragraph Class="text-center text-success" Padding="Padding.Is0" Margin="Margin.Is2">No Managed Secrets Expiring Soon!</Paragraph>
                 }
@@ -38,27 +57,29 @@
         </Column>
     </Row>
     @*<Row Padding="Padding.Is3.OnY">
-        <Column ColumnSize="ColumnSize.Is6">
-            <Card>
-                <CardHeader>Risks</CardHeader>
-                <CardBody>
-                    <Blazorise.Charts.DoughnutChart @ref="riskChart" TItem="int" />
-                </CardBody>
-            </Card>
-        </Column>
-        <Column ColumnSize="ColumnSize.Is6">
-            <Card>
-                <CardHeader>Expiry</CardHeader>
-                <CardBody>
-                    <Blazorise.Charts.LineChart @ref="lineChart" TItem="double" />
-                </CardBody>
-            </Card>
-        </Column>
-    </Row>*@
+            <Column ColumnSize="ColumnSize.Is6">
+                <Card>
+                    <CardHeader>Risks</CardHeader>
+                    <CardBody>
+                        <Blazorise.Charts.DoughnutChart @ref="riskChart" TItem="int" />
+                    </CardBody>
+                </Card>
+            </Column>
+            <Column ColumnSize="ColumnSize.Is6">
+                <Card>
+                    <CardHeader>Expiry</CardHeader>
+                    <CardBody>
+                        <Blazorise.Charts.LineChart @ref="lineChart" TItem="double" />
+                    </CardBody>
+                </Card>
+            </Column>
+        </Row>*@
 </Container>
 
-@using AuthJanitor.Automation.AdminUi.Components 
-@using AuthJanitor.Automation.Shared.ViewModels 
+@using AuthJanitor.Automation.AdminUi.Components
+@using AuthJanitor.Automation.AdminUi.Components.Resources
+@using AuthJanitor.Automation.AdminUi.Components.Secrets
+@using AuthJanitor.Automation.Shared.ViewModels
 @code {
     protected DashboardMetrics Metrics { get; set; } = new DashboardMetrics();
 

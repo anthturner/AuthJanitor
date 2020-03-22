@@ -1,5 +1,6 @@
 ﻿using AuthJanitor.Automation.Shared;
 using AuthJanitor.Automation.Shared.NotificationProviders;
+using AuthJanitor.Automation.Shared.SecureStorageProviders;
 using AuthJanitor.Automation.Shared.ViewModels;
 using AuthJanitor.Providers;
 using Microsoft.AspNetCore.Http;
@@ -8,7 +9,6 @@ using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Logging;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Web.Http;
@@ -21,7 +21,7 @@ namespace AuthJanitor.Automation.AdminApi
     /// </summary>
     public class ManagedSecrets : StorageIntegratedFunction
     {
-        public ManagedSecrets(INotificationProvider notificationProvider, IDataStore<ManagedSecret> managedSecretStore, IDataStore<Resource> resourceStore, IDataStore<RekeyingTask> rekeyingTaskStore, Func<ManagedSecret, ManagedSecretViewModel> managedSecretViewModelDelegate, Func<Resource, ResourceViewModel> resourceViewModelDelegate, Func<RekeyingTask, RekeyingTaskViewModel> rekeyingTaskViewModelDelegate, Func<AuthJanitorProviderConfiguration, ProviderConfigurationViewModel> configViewModelDelegate, Func<LoadedProviderMetadata, LoadedProviderViewModel> providerViewModelDelegate) : base(notificationProvider, managedSecretStore, resourceStore, rekeyingTaskStore, managedSecretViewModelDelegate, resourceViewModelDelegate, rekeyingTaskViewModelDelegate, configViewModelDelegate, providerViewModelDelegate)
+        public ManagedSecrets(AuthJanitorServiceConfiguration serviceConfiguration, MultiCredentialProvider credentialProvider, INotificationProvider notificationProvider, ISecureStorageProvider secureStorageProvider, IDataStore<ManagedSecret> managedSecretStore, IDataStore<Resource> resourceStore, IDataStore<RekeyingTask> rekeyingTaskStore, Func<ManagedSecret, ManagedSecretViewModel> managedSecretViewModelDelegate, Func<Resource, ResourceViewModel> resourceViewModelDelegate, Func<RekeyingTask, RekeyingTaskViewModel> rekeyingTaskViewModelDelegate, Func<AuthJanitorProviderConfiguration, ProviderConfigurationViewModel> configViewModelDelegate, Func<LoadedProviderMetadata, LoadedProviderViewModel> providerViewModelDelegate) : base(serviceConfiguration, credentialProvider, notificationProvider, secureStorageProvider, managedSecretStore, resourceStore, rekeyingTaskStore, managedSecretViewModelDelegate, resourceViewModelDelegate, rekeyingTaskViewModelDelegate, configViewModelDelegate, providerViewModelDelegate)
         {
         }
 
@@ -46,8 +46,8 @@ namespace AuthJanitor.Automation.AdminApi
             {
                 Name = inputSecret.Name,
                 Description = inputSecret.Description,
-                ValidPeriod = inputSecret.ValidPeriod,
-                LastChanged = DateTimeOffset.Now - inputSecret.ValidPeriod,
+                ValidPeriod = TimeSpan.FromMinutes(inputSecret.ValidPeriodMinutes),
+                LastChanged = DateTimeOffset.UtcNow - TimeSpan.FromMinutes(inputSecret.ValidPeriodMinutes),
                 TaskConfirmationStrategies = inputSecret.TaskConfirmationStrategies,
                 ResourceIds = resourceIds
             };
@@ -106,7 +106,8 @@ namespace AuthJanitor.Automation.AdminApi
 
             return new OkResult();
         }
-
+        
+        [ProtectedApiEndpoint]
         [FunctionName("ManagedSecrets-Update")]
         public async Task<IActionResult> Update(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "secrets/{secretId:guid}")] ManagedSecretViewModel inputSecret,
@@ -132,7 +133,7 @@ namespace AuthJanitor.Automation.AdminApi
                 ObjectId = secretId,
                 Name = inputSecret.Name,
                 Description = inputSecret.Description,
-                ValidPeriod = inputSecret.ValidPeriod,
+                ValidPeriod = TimeSpan.FromMinutes(inputSecret.ValidPeriodMinutes),
                 TaskConfirmationStrategies = inputSecret.TaskConfirmationStrategies,
                 ResourceIds = resourceIds
             };
