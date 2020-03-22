@@ -1,5 +1,6 @@
 ﻿using AuthJanitor.Automation.Shared;
 using AuthJanitor.Automation.Shared.NotificationProviders;
+using AuthJanitor.Automation.Shared.SecureStorageProviders;
 using AuthJanitor.Providers;
 using McMaster.NETCore.Plugins;
 using Microsoft.Azure.WebJobs;
@@ -46,6 +47,17 @@ namespace AuthJanitor.Automation.AdminApi
                 "sendGridApiKey",
                 "uiNotificationUrlBase",
                 "authjanitor@bitoblivion.com"));
+
+            logger.LogDebug("Registering Persistence Encryption");
+            builder.Services.AddSingleton<IPersistenceEncryption>(
+                new Rfc2898AesPersistenceEncryption(Environment.GetEnvironmentVariable("AUTHJANITOR_PERSISTENCE_KEY")));
+
+            logger.LogDebug("Registering Secure Storage Provider");
+            builder.Services.AddSingleton<ISecureStorageProvider>((s) =>
+                new KeyVaultSecureStorageProvider(
+                    s.GetService<IPersistenceEncryption>(),
+                    s.GetService<MultiCredentialProvider>(),
+                    Environment.GetEnvironmentVariable("AUTHJANITOR_PERSISTENCE_VAULT")));
 
             logger.LogDebug("Registering DataStores");
             ConfigureStorage(builder.Services).Wait();

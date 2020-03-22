@@ -1,5 +1,5 @@
-﻿using Azure.Core;
-using Azure.Security.KeyVault.Keys;
+﻿using Azure.Security.KeyVault.Keys;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -20,9 +20,12 @@ namespace AuthJanitor.Providers.KeyVault
 
         public override async Task<RegeneratedSecret> Rekey(TimeSpan requestedValidPeriod)
         {
-            // TODO: This doesn't use the other credential set, it tries to execute its own set of fallbacks!
             KeyClient client = new KeyClient(new Uri($"https://{Configuration.VaultName}.vault.azure.net/"),
-                _serviceProvider.GetService(typeof(TokenCredential)) as TokenCredential);
+                _serviceProvider
+                    .GetService<MultiCredentialProvider>()
+                    .Get(MultiCredentialProvider.CredentialType.AgentServicePrincipal)
+                    .DefaultAzureCredential);
+
             Azure.Response<KeyVaultKey> currentKey = await client.GetKeyAsync(Configuration.KeyName);
 
             CreateKeyOptions creationOptions = new CreateKeyOptions()

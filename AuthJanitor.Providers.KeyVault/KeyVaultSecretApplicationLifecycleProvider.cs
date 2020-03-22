@@ -1,5 +1,5 @@
-﻿using Azure.Identity;
-using Azure.Security.KeyVault.Secrets;
+﻿using Azure.Security.KeyVault.Secrets;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -23,7 +23,11 @@ namespace AuthJanitor.Providers.KeyVault
         public override async Task CommitNewSecrets(List<RegeneratedSecret> newSecrets)
         {
             // Connect to the Key Vault storing application secrets
-            SecretClient client = new SecretClient(new Uri($"https://{Configuration.VaultName}.vault.azure.net/"), new DefaultAzureCredential(true));
+            SecretClient client = new SecretClient(new Uri($"https://{Configuration.VaultName}.vault.azure.net/"),
+                _serviceProvider
+                    .GetService<MultiCredentialProvider>()
+                    .Get(MultiCredentialProvider.CredentialType.AgentServicePrincipal)
+                    .DefaultAzureCredential);
 
             foreach (RegeneratedSecret secret in newSecrets)
             {
