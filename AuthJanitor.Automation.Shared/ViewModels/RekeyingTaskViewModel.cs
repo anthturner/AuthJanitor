@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 
 namespace AuthJanitor.Automation.Shared.ViewModels
 {
@@ -20,6 +19,6 @@ namespace AuthJanitor.Automation.Shared.ViewModels
 
         public Guid AvailabilityScheduleId { get; set; }
 
-        public IEnumerable<ManagedSecretViewModel> ManagedSecrets { get; set; }
+        public ManagedSecretViewModel ManagedSecret { get; set; }
     }
 }

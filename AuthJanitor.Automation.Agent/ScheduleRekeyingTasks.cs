@@ -68,7 +68,7 @@ namespace AuthJanitor.Automation.Agent
         private RekeyingTask CreateRekeyingTask(ManagedSecret secret, DateTimeOffset expiry) =>
             new RekeyingTask()
             {
-                ManagedSecretIds = new List<Guid>() { secret.ObjectId },
+                ManagedSecretId = secret.ObjectId,
                 Expiry = expiry,
                 ConfirmationType = GetPreferredConfirmation(secret.TaskConfirmationStrategies),
                 Queued = DateTimeOffset.UtcNow,
@@ -79,23 +79,21 @@ namespace AuthJanitor.Automation.Agent
         {
             if (!tasks.Any()) return;
             await Task.WhenAll(tasks.Select(t => RekeyingTasks.CreateAsync(t)));
-            await RekeyingTasks.CommitAsync();
 
             foreach (var task in tasks)
             {
+                var secret = await ManagedSecrets.GetAsync(task.ManagedSecretId);
                 if (task.ConfirmationType == TaskConfirmationStrategies.AdminCachesSignOff ||
                     task.ConfirmationType == TaskConfirmationStrategies.AdminSignsOffJustInTime)
                 {
-                    await Task.WhenAll(task.ManagedSecretIds.Select(s =>
-                        NotificationProvider.DispatchNotification_AdminApprovalRequiredTaskCreated(
-                            ManagedSecrets.Get(s).AdminEmails.ToArray(), task)));
+                    await NotificationProvider.DispatchNotification_AdminApprovalRequiredTaskCreated(
+                        secret.AdminEmails.ToArray(), task);
                 }
                 else if (task.ConfirmationType == TaskConfirmationStrategies.AutomaticRekeyingAsNeeded ||
                          task.ConfirmationType == TaskConfirmationStrategies.AutomaticRekeyingScheduled)
                 {
-                    await Task.WhenAll(task.ManagedSecretIds.Select(s =>
-                        NotificationProvider.DispatchNotification_AutoRekeyingTaskCreated(
-                            ManagedSecrets.Get(s).AdminEmails.ToArray(), task)));
+                    await NotificationProvider.DispatchNotification_AutoRekeyingTaskCreated(
+                        secret.AdminEmails.ToArray(), task);
                 }
             }
         }
@@ -111,11 +109,18 @@ namespace AuthJanitor.Automation.Agent
             return taskConfirmationStrategy;
         }
 
-        private Task<List<ManagedSecret>> GetSecretsForRekeyingTask(
+        private async Task<List<ManagedSecret>> GetSecretsForRekeyingTask(
             TaskConfirmationStrategies taskConfirmationStrategies,
-            int leadTimeHours) => ManagedSecrets.GetAsync(s =>
+            int leadTimeHours)
+        {
+            var secretsToRotate = await ManagedSecrets.GetAsync(s =>
                 s.TaskConfirmationStrategies.HasFlag(taskConfirmationStrategies) &&
-                s.Expiry < DateTimeOffset.UtcNow + TimeSpan.FromHours(leadTimeHours) &&
-                !RekeyingTasks.Get(t => t.ManagedSecretIds.Contains(s.ObjectId)).Any());
+                s.Expiry < DateTimeOffset.UtcNow + TimeSpan.FromHours(leadTimeHours));
+
+            var rekeyingTasks = await RekeyingTasks.ListAsync();
+            return secretsToRotate
+                        .Where(s => !rekeyingTasks.Any(t => t.ManagedSecretId == s.ObjectId))
+                        .ToList();
+        }
     }
 }

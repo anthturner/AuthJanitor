@@ -79,11 +79,32 @@ namespace AuthJanitor.Automation.Agent
                     s.GetRequiredService<AuthJanitorServiceConfiguration>()
                      .SecurePersistenceContainerName));
 
+            // -----
+
             logger.LogDebug("Registering DataStores");
-            ConfigureStorage(builder.Services, ServiceConfiguration).Wait();
+            var connectionString = Environment.GetEnvironmentVariable("AzureWebJobsStorage", EnvironmentVariableTarget.Process);
+            builder.Services.AddSingleton<IDataStore<ManagedSecret>>(
+                new AzureBlobDataStore<ManagedSecret>(
+                    connectionString,
+                    ServiceConfiguration.MetadataStorageContainerName,
+                    MANAGED_SECRETS_BLOB_NAME));
+            builder.Services.AddSingleton<IDataStore<RekeyingTask>>(
+                new AzureBlobDataStore<RekeyingTask>(
+                    connectionString,
+                    ServiceConfiguration.MetadataStorageContainerName,
+                    REKEYING_TASKS_BLOB_NAME));
+            builder.Services.AddSingleton<IDataStore<Resource>>(
+                new AzureBlobDataStore<Resource>(
+                    connectionString,
+                    ServiceConfiguration.MetadataStorageContainerName,
+                    RESOURCES_BLOB_NAME));
+
+            // -----
 
             logger.LogDebug("Registering ViewModel generators");
             ViewModelFactory.ConfigureServices(builder.Services);
+
+            // -----
 
             logger.LogDebug("Scanning for Provider modules at {0}\\{1} recursively", PROVIDER_SEARCH_PATH, PROVIDER_SEARCH_MASK);
 
@@ -97,33 +118,9 @@ namespace AuthJanitor.Automation.Agent
             logger.LogInformation("Registering providers and service principal default credentials");
             ProviderFactory.ConfigureProviderServices(builder.Services, providerTypes);
 
+            // -----
+
             ServiceProvider = builder.Services.BuildServiceProvider();
-        }
-
-        public static async Task ConfigureStorage(IServiceCollection serviceCollection,
-                                                  AuthJanitorServiceConfiguration serviceConfiguration)
-        {
-            var secretStore = await GetDataStore<ManagedSecret>(
-                serviceConfiguration.MetadataStorageContainerName,
-                MANAGED_SECRETS_BLOB_NAME).InitializeAsync();
-            var taskStore = await GetDataStore<RekeyingTask>(
-                serviceConfiguration.MetadataStorageContainerName,
-                REKEYING_TASKS_BLOB_NAME).InitializeAsync();
-            var resourceStore = await GetDataStore<Resource>(
-                serviceConfiguration.MetadataStorageContainerName,
-                RESOURCES_BLOB_NAME).InitializeAsync();
-
-            serviceCollection.AddScoped<IDataStore<ManagedSecret>>((s) => secretStore);
-            serviceCollection.AddScoped<IDataStore<RekeyingTask>>((s) => taskStore);
-            serviceCollection.AddScoped<IDataStore<Shared.Resource>>((s) => resourceStore);
-        }
-
-        private static AzureBlobDataStore<T> GetDataStore<T>(string container, string name) where T : IDataStoreCompatibleStructure
-        {
-            return new AzureBlobDataStore<T>(CloudStorageAccount.Parse(Environment.GetEnvironmentVariable("AzureWebJobsStorage", EnvironmentVariableTarget.Process))
-                .CreateCloudBlobClient()
-                .GetContainerReference(container)
-                .GetBlockBlobReference(name));
         }
     }
 }

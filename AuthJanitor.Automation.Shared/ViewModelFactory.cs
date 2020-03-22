@@ -93,7 +93,7 @@ namespace AuthJanitor.Automation.Shared
         {
             var resources = secret.ResourceIds
                                 .Select(resourceId => serviceProvider.GetRequiredService<IDataStore<Resource>>()
-                                                                    .Get(resourceId))
+                                                                    .GetAsync(resourceId).Result)
                                 .Select(resource => serviceProvider.GetRequiredService<Func<Resource, ResourceViewModel>>()(resource));
             foreach (var resource in resources)
             {
@@ -127,10 +127,8 @@ namespace AuthJanitor.Automation.Shared
                 RekeyingCompleted = rekeyingTask.RekeyingCompleted,
                 RekeyingErrorMessage = rekeyingTask.RekeyingErrorMessage,
                 RekeyingInProgress = rekeyingTask.RekeyingInProgress,
-                ManagedSecrets = rekeyingTask.ManagedSecretIds
-                                      .Select(secretId => serviceProvider.GetRequiredService<IDataStore<ManagedSecret>>()
-                                                                         .Get(secretId))
-                                      .Select(secret => serviceProvider.GetRequiredService<Func<ManagedSecret, ManagedSecretViewModel>>()(secret))
+                ManagedSecret = serviceProvider.GetRequiredService<Func<ManagedSecret, ManagedSecretViewModel>>()(
+                                    serviceProvider.GetRequiredService<IDataStore<ManagedSecret>>().GetAsync(rekeyingTask.ManagedSecretId).Result)
             };
 
         private static ViewModels.ResourceViewModel GetViewModel(IServiceProvider serviceProvider, Resource resource)

@@ -29,12 +29,12 @@ namespace AuthJanitor.Automation.AdminApi
         {
             log.LogInformation("Requested Dashboard metrics");
 
-            var expiringInNextWeek = ManagedSecrets.Get(s => DateTimeOffset.UtcNow.AddDays(7) < (s.LastChanged + s.ValidPeriod));
-            var expired = ManagedSecrets.Get(s => !s.IsValid);
+            var allSecrets = await ManagedSecrets.ListAsync();
+            var allResources = await Resources.ListAsync();
+            var allTasks = await RekeyingTasks.ListAsync();
 
-            var allSecrets = ManagedSecrets.List();
-            var allResources = Resources.List();
-            var allTasks = RekeyingTasks.List();
+            var expiringInNextWeek = allSecrets.Where(s => DateTimeOffset.UtcNow.AddDays(7) < (s.LastChanged + s.ValidPeriod));
+            var expired = allSecrets.Where(s => !s.IsValid);
 
             var metrics = new DashboardMetrics()
             {
@@ -52,7 +52,7 @@ namespace AuthJanitor.Automation.AdminApi
                 var riskScore = 0;
                 foreach (var resourceId in secret.ResourceIds)
                 {
-                    var resource = Resources.Get(resourceId);
+                    var resource = allResources.FirstOrDefault(r => r.ObjectId == resourceId);
                     var provider = GetProvider(resource.ProviderType);
                     provider.SerializedConfiguration = resource.ProviderConfiguration;
                     riskScore += provider.GetRisks(secret.ValidPeriod).Sum(r => r.Score);

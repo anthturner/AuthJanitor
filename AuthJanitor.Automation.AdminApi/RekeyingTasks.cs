@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
+using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -29,34 +30,28 @@ namespace AuthJanitor.Automation.AdminApi
         [ProtectedApiEndpoint]
         [FunctionName("RekeyingTasks-Create")]
         public async Task<IActionResult> Create(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "tasks")] string secretIdsDelimited,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "tasks")] string secretId,
             HttpRequest req,
             ILogger log)
         {
             log.LogInformation("Creating new Task.");
 
-            var secretIds = secretIdsDelimited.Split(';');
-            if (secretIds.Any(id => !ManagedSecrets.ContainsId(Guid.Parse(id))) ||
-                ManagedSecrets.Get(s => secretIds.Contains(s.ObjectId.ToString())).Any(s =>
-                    !s.TaskConfirmationStrategies.HasFlag(TaskConfirmationStrategies.AdminCachesSignOff) &&
-                    !s.TaskConfirmationStrategies.HasFlag(TaskConfirmationStrategies.AdminSignsOffJustInTime)))
-            {
-                return new BadRequestErrorMessageResult("Invalid Managed Secret ID in set");
-            }
-
-            var earliestExpiry = ManagedSecrets.Get(s => secretIds.Contains(s.ObjectId.ToString()))
-                .Min(s => s.LastChanged + s.ValidPeriod);
+            if (!await ManagedSecrets.ContainsIdAsync(Guid.Parse(secretId)))
+                return new BadRequestErrorMessageResult("Invalid Managed Secret ID");
+            
+            var secret = await ManagedSecrets.GetAsync(Guid.Parse(secretId));
+            if (!secret.TaskConfirmationStrategies.HasFlag(TaskConfirmationStrategies.AdminCachesSignOff) &&
+                !secret.TaskConfirmationStrategies.HasFlag(TaskConfirmationStrategies.AdminSignsOffJustInTime))
+                return new BadRequestErrorMessageResult("Managed Secret does not support administrator approval!");
 
             RekeyingTask newTask = new RekeyingTask()
             {
                 Queued = DateTimeOffset.UtcNow,
-                Expiry = earliestExpiry,
-                ManagedSecretIds = secretIds.Select(s => Guid.Parse(s)).ToList()
+                Expiry = secret.Expiry,
+                ManagedSecretId = secret.ObjectId
             };
 
-            await RekeyingTasks.InitializeAsync();
-            RekeyingTasks.Create(newTask);
-            await RekeyingTasks.CommitAsync();
+            await RekeyingTasks.CreateAsync(newTask);
 
             return new OkObjectResult(newTask);
         }
@@ -69,7 +64,7 @@ namespace AuthJanitor.Automation.AdminApi
         {
             log.LogInformation("List all Tasks.");
 
-            return new OkObjectResult(RekeyingTasks.List().Select(t => GetViewModel(t)));
+            return new OkObjectResult((await RekeyingTasks.ListAsync()).Select(t => GetViewModel(t)));
         }
 
         [ProtectedApiEndpoint]
@@ -81,7 +76,7 @@ namespace AuthJanitor.Automation.AdminApi
         {
             log.LogInformation("Preview Actions for Task ID {0}.", taskId);
 
-            return new OkObjectResult(GetViewModel(RekeyingTasks.Get(taskId)));
+            return new OkObjectResult(GetViewModel((await RekeyingTasks.GetAsync(taskId))));
         }
 
         [ProtectedApiEndpoint]
@@ -93,11 +88,10 @@ namespace AuthJanitor.Automation.AdminApi
         {
             log.LogInformation("Deleting Task ID {0}.", taskId);
 
-            if (!ManagedSecrets.ContainsId(taskId))
+            if (!await RekeyingTasks.ContainsIdAsync(taskId))
                 return new BadRequestErrorMessageResult("Task not found!");
 
-            RekeyingTasks.Delete(taskId);
-            await RekeyingTasks.CommitAsync();
+            await RekeyingTasks.DeleteAsync(taskId);
             return new OkResult();
         }
 
@@ -110,7 +104,7 @@ namespace AuthJanitor.Automation.AdminApi
             ILogger log)
         {
             log.LogInformation("Administrator approved Task ID {0}", taskId);
-            RekeyingTask task = RekeyingTasks.Get(taskId);
+            var task = await RekeyingTasks.GetAsync(taskId);
 
             if (task.ConfirmationType == TaskConfirmationStrategies.AdminCachesSignOff)
             {
@@ -119,14 +113,12 @@ namespace AuthJanitor.Automation.AdminApi
                 task.PersistedCredentialId = persisted;
                 task.PersistedCredentialUser = credential.Username;
                 await RekeyingTasks.UpdateAsync(task);
-                await RekeyingTasks.CommitAsync();
                 return new OkResult();
             }
             else if (task.ConfirmationType == TaskConfirmationStrategies.AdminSignsOffJustInTime)
             {
                 task.RekeyingInProgress = true;
                 await RekeyingTasks.UpdateAsync(task);
-                await RekeyingTasks.CommitAsync();
 
                 var result = await ExecuteRekeyingWorkflow(log, task);
 
@@ -136,7 +128,6 @@ namespace AuthJanitor.Automation.AdminApi
                 else
                     task.RekeyingCompleted = true;
                 await RekeyingTasks.UpdateAsync(task);
-                await RekeyingTasks.CommitAsync();
 
                 if (result != string.Empty)
                     return new BadRequestErrorMessageResult(result);

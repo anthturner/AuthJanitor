@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 
 namespace AuthJanitor.Automation.Shared
 {
@@ -22,6 +21,6 @@ namespace AuthJanitor.Automation.Shared
 
         public Guid AvailabilityScheduleId { get; set; }
 
-        public IList<Guid> ManagedSecretIds { get; set; }
+        public Guid ManagedSecretId { get; set; }
     }
 }

@@ -32,7 +32,6 @@ namespace AuthJanitor.Automation.Agent
             {
                 task.RekeyingInProgress = true;
                 await RekeyingTasks.UpdateAsync(task);
-                await RekeyingTasks.CommitAsync();
 
                 string result;
                 try
@@ -49,7 +48,6 @@ namespace AuthJanitor.Automation.Agent
                 else
                     task.RekeyingCompleted = true;
                 await RekeyingTasks.UpdateAsync(task);
-                await RekeyingTasks.CommitAsync();
             }
         }
     }

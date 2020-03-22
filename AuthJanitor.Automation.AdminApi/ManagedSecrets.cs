@@ -34,12 +34,13 @@ namespace AuthJanitor.Automation.AdminApi
         {
             log.LogInformation("Creating new Managed Secret");
 
+            var resources = await Resources.ListAsync();
             var resourceIds = inputSecret.ResourceIds.Split(';').Select(r => Guid.Parse(r)).ToList();
-            if (resourceIds.Any(r => !Resources.ContainsId(r)))
+            if (resourceIds.Any(id => !resources.Any(r => r.ObjectId == id)))
             {
-                var invalidIds = resourceIds.Where(r => !Resources.ContainsId(r));
+                var invalidIds = resourceIds.Where(id => !resources.Any(r => r.ObjectId == id));
                 log.LogError("New Managed Secret attempted to link one or more invalid Resource IDs: {0}", invalidIds);
-                return new BadRequestErrorMessageResult("One or more ResourceIds not found!");
+                return new BadRequestErrorMessageResult("One or more Resource IDs not found!");
             }
 
             ManagedSecret newManagedSecret = new ManagedSecret()
@@ -52,9 +53,7 @@ namespace AuthJanitor.Automation.AdminApi
                 ResourceIds = resourceIds
             };
 
-            await ManagedSecrets.InitializeAsync(); // reload before committing
-            ManagedSecrets.Create(newManagedSecret);
-            await ManagedSecrets.CommitAsync();
+            await ManagedSecrets.CreateAsync(newManagedSecret);
 
             log.LogInformation("Created new Managed Secret '{0}'", newManagedSecret.Name);
 
@@ -69,7 +68,7 @@ namespace AuthJanitor.Automation.AdminApi
         {
             log.LogInformation("Listing all Managed Secrets.");
 
-            return new OkObjectResult(ManagedSecrets.List().Select(s => GetViewModel(s)));
+            return new OkObjectResult((await ManagedSecrets.ListAsync()).Select(s => GetViewModel(s)));
         }
 
         [ProtectedApiEndpoint]
@@ -81,10 +80,10 @@ namespace AuthJanitor.Automation.AdminApi
         {
             log.LogInformation("Retrieving Managed Secret {0}.", secretId);
 
-            if (!ManagedSecrets.ContainsId(secretId))
+            if (!await ManagedSecrets.ContainsIdAsync(secretId))
                 return new BadRequestErrorMessageResult("Secret not found!");
 
-            return new OkObjectResult(GetViewModel(ManagedSecrets.Get(secretId)));
+            return new OkObjectResult(GetViewModel(await ManagedSecrets.GetAsync(secretId)));
         }
 
         [ProtectedApiEndpoint]
@@ -96,11 +95,10 @@ namespace AuthJanitor.Automation.AdminApi
         {
             log.LogInformation("Deleting Managed Secret {0}", secretId);
 
-            if (!ManagedSecrets.ContainsId(secretId))
+            if (!await ManagedSecrets.ContainsIdAsync(secretId))
                 return new BadRequestErrorMessageResult("Secret not found!");
 
-            ManagedSecrets.Delete(secretId);
-            await ManagedSecrets.CommitAsync();
+            await ManagedSecrets.DeleteAsync(secretId);
 
             log.LogInformation("Deleted Managed Secret {0}", secretId);
 
@@ -117,13 +115,14 @@ namespace AuthJanitor.Automation.AdminApi
         {
             log.LogInformation("Updating Managed Secret {0}", secretId);
 
-            if (!ManagedSecrets.ContainsId(secretId))
+            if (!await ManagedSecrets.ContainsIdAsync(secretId))
                 return new BadRequestErrorMessageResult("Secret not found!");
 
+            var resources = await Resources.ListAsync();
             var resourceIds = inputSecret.ResourceIds.Split(';').Select(r => Guid.Parse(r)).ToList();
-            if (resourceIds.Any(r => !Resources.ContainsId(r)))
+            if (resourceIds.Any(id => !resources.Any(r => r.ObjectId == id)))
             {
-                var invalidIds = resourceIds.Where(r => !Resources.ContainsId(r));
+                var invalidIds = resourceIds.Where(id => !resources.Any(r => r.ObjectId == id));
                 log.LogError("New Managed Secret attempted to link one or more invalid Resource IDs: {0}", invalidIds);
                 return new BadRequestErrorMessageResult("One or more ResourceIds not found!");
             }
@@ -138,9 +137,7 @@ namespace AuthJanitor.Automation.AdminApi
                 ResourceIds = resourceIds
             };
 
-            await ManagedSecrets.InitializeAsync(); // reload before committing
-            ManagedSecrets.Update(newManagedSecret);
-            await ManagedSecrets.CommitAsync();
+            await ManagedSecrets.UpdateAsync(newManagedSecret);
 
             log.LogInformation("Updated Managed Secret '{0}'", newManagedSecret.Name);
 

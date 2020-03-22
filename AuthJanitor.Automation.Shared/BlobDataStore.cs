@@ -1,4 +1,5 @@
-﻿using Microsoft.WindowsAzure.Storage.Blob;
+﻿using Microsoft.WindowsAzure.Storage;
+using Microsoft.WindowsAzure.Storage.Blob;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -10,84 +11,81 @@ namespace AuthJanitor.Automation.Shared
     public class AzureBlobDataStore<TDataType> : IDataStore<TDataType> where TDataType : IDataStoreCompatibleStructure
     {
         protected CloudBlockBlob Blob { get; }
-        protected List<TDataType> _data = new List<TDataType>();
 
         public AzureBlobDataStore(CloudBlockBlob blob)
         {
             Blob = blob;
         }
+        public AzureBlobDataStore(string connectionString, string container, string name) :
+            this(CloudStorageAccount.Parse(connectionString)
+                .CreateCloudBlobClient()
+                .GetContainerReference(container)
+                .GetBlockBlobReference(name)) { }
 
-        public async Task<IDataStore<TDataType>> CommitAsync()
+        public Task<bool> ContainsIdAsync(Guid id) =>
+            ListAsync().ContinueWith(t => t.Result.Any(o => o.ObjectId == id));
+
+        public async Task CreateAsync(TDataType model)
         {
-            await Blob.UploadTextAsync(JsonConvert.SerializeObject(_data));
-            return this;
-        }
-
-        public bool ContainsId(Guid id) => _data.Any(d => d.ObjectId == id);
-
-        public Task<bool> ContainsIdAsync(Guid id) => Task.FromResult(ContainsId(id));
-
-        public void Create(TDataType model)
-        {
-            if (ContainsId(model.ObjectId))
+            var existing = await ListAsync();
+            if (existing.Any(o => o.ObjectId == model.ObjectId))
                 throw new InvalidOperationException("ID already exists!");
-            _data.Add(model);
+            existing.Add(model);
+            await Commit(existing);
         }
 
-        public Task CreateAsync(TDataType model) => Task.Run(() => Create(model));
-
-        public void Delete(Guid id)
+        public async Task DeleteAsync(Guid id)
         {
-            if (!ContainsId(id))
+            var existing = await ListAsync();
+            if (!existing.Any(o => o.ObjectId == id))
                 throw new InvalidOperationException("ID does not exist!");
-            _data.RemoveAll(d => d.ObjectId == id);
+            existing.RemoveAll(o => o.ObjectId == id);
+            await Commit(existing);
         }
 
-        public Task DeleteAsync(Guid id) => Task.Run(() => Delete(id));
-
-        public TDataType Get(Guid id)
+        public async Task<TDataType> GetAsync(Guid id)
         {
-            if (!ContainsId(id))
+            if (!await ContainsIdAsync(id))
                 throw new InvalidOperationException("ID does not exist!");
-            return _data.FirstOrDefault(d => d.ObjectId == id);
+            return (await Retrieve()).FirstOrDefault(o => o.ObjectId == id);
         }
 
-        public List<TDataType> Get(Func<TDataType, bool> predicate)
+        public async Task<List<TDataType>> GetAsync(Func<TDataType, bool> predicate)
         {
-            return _data.Where(predicate).ToList();
+            return (await Retrieve()).Where(predicate).ToList();
         }
 
-        public Task<TDataType> GetAsync(Guid id) => Task.FromResult(Get(id));
+        public async Task<TDataType> GetOneAsync(Func<TDataType, bool> predicate)
+        {
+            return (await Retrieve()).Where(predicate).FirstOrDefault();
+        }
 
-        public Task<List<TDataType>> GetAsync(Func<TDataType, bool> predicate) => Task.FromResult(Get(predicate));
+        public async Task<List<TDataType>> ListAsync()
+        {
+            return (await Retrieve()).ToList();
+        }
 
-        public TDataType GetOne(Func<TDataType, bool> predicate) => Get(predicate).FirstOrDefault();
+        public async Task UpdateAsync(TDataType model)
+        {
+            var list = await ListAsync();
+            if (!list.Any(o => o.ObjectId == model.ObjectId))
+                throw new InvalidOperationException("ID does not exist!");
+            list.RemoveAll(o => o.ObjectId == model.ObjectId);
+            list.Add(model);
+            await Commit(list);
+        }
 
-        public Task<TDataType> GetOneAsync(Func<TDataType, bool> predicate) => Task.FromResult(GetOne(predicate));
+        private Task Commit(List<TDataType> data) => 
+            Blob.UploadTextAsync(JsonConvert.SerializeObject(data, Formatting.None));
 
-        public async Task<IDataStore<TDataType>> InitializeAsync()
+        private async Task<List<TDataType>> Retrieve()
         {
             if (!await Blob.ExistsAsync())
             {
                 await Blob.UploadTextAsync("[]");
-                _data = new List<TDataType>();
+                return new List<TDataType>();
             }
-            else _data = JsonConvert.DeserializeObject<List<TDataType>>(await Blob.DownloadTextAsync());
-            return this;
+            return JsonConvert.DeserializeObject<List<TDataType>>(await Blob.DownloadTextAsync());
         }
-
-        public List<TDataType> List() => new List<TDataType>(_data);
-
-        public Task<List<TDataType>> ListAsync() => Task.FromResult(List());
-
-        public void Update(TDataType model)
-        {
-            if (!ContainsId(model.ObjectId))
-                throw new InvalidOperationException("ID does not exist!");
-            Delete(model.ObjectId);
-            Create(model);
-        }
-
-        public Task UpdateAsync(TDataType model) => Task.Run(() => Update(model));
     }
 }

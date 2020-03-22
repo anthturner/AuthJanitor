@@ -78,45 +78,39 @@ namespace AuthJanitor.Automation.Shared
 
             log.LogInformation("Using credential type {0} to access resources", credentialType);
 
-            var secrets = task.ManagedSecretIds.Select(s => ManagedSecrets.Get(s));
-            foreach (var secret in secrets)
+            var secret = await ManagedSecrets.GetAsync(task.ManagedSecretId);
+            log.LogInformation("Beginning rekeying for ManagedSecret '{0}' (ID {1})", secret.Name, secret.ObjectId);
+
+            log.LogDebug("Running access sanity check on {0} Resources associated with ManagedSecret", secret.ResourceIds.Count());
+            
+            var testResults = new Dictionary<Guid, bool>();
+            var resources = await Resources.GetAsync(r => secret.ResourceIds.Contains(r.ObjectId));
+            await Task.WhenAll(resources.Select(r => 
+                GetProvider(r.ProviderType, r.ProviderConfiguration, credentialType)
+                    .Test()
+                    .ContinueWith(test => testResults[r.ObjectId] = test.Result)));
+
+            if (testResults.Any(r => !r.Value))
             {
-                log.LogInformation("Beginning rekeying for ManagedSecret '{0}' (ID {1})", secret.Name, secret.ObjectId);
-
-                log.LogDebug("Running access sanity check on {0} Resources associated with ManagedSecret", secret.ResourceIds.Count());
-                var testResults = new Dictionary<Guid, bool>();
-
-                // Run all tests in parallel to save time!
-                await Task.WhenAll(
-                    Resources.Get(r => secret.ResourceIds.Contains(r.ObjectId))
-                             .Select(r =>
-                                GetProvider(r.ProviderType, r.ProviderConfiguration, credentialType)
-                                .Test()
-                                .ContinueWith(testTask =>
-                                {
-                                    testResults[r.ObjectId] = testTask.Result;
-                                })));
-
-                if (testResults.Any(r => !r.Value))
-                {
-                    log.LogCritical("Failed to run sanity checks; skipping this secret!");
-                    return "Failed to run sanity checks; skipping this secret!";
-                }
-
-                try
-                {
-                    await HelperMethods.RunRekeyingWorkflow(log, secret.ValidPeriod,
-                    Resources.Get(r => secret.ResourceIds.Contains(r.ObjectId))
-                             .Select(r => GetProvider(r.ProviderType, r.ProviderConfiguration, credentialType))
-                             .ToArray());
-                }
-                catch (Exception ex)
-                {
-                    return $"Error ({secret.Name}): {ex.Message}";
-                }
-
-                log.LogInformation("Completed rekeying workflow for ManagedSecret '{0}' (ID {1})", secret.Name, secret.ObjectId);
+                var failedResourceNames = testResults
+                    .Where(r => !r.Value)
+                    .Select(r => resources.FirstOrDefault(resource => resource.ObjectId == r.Key).Name);                    
+                log.LogCritical("Access tests failed on: {0}", string.Join("; ", failedResourceNames));
+                return $"Access tests failed on: {string.Join("; ", failedResourceNames)}";
             }
+
+            try
+            {
+                await HelperMethods.RunRekeyingWorkflow(log, secret.ValidPeriod,
+                    resources.Select(r => GetProvider(r.ProviderType, r.ProviderConfiguration, credentialType))
+                             .ToArray());
+            }
+            catch (Exception ex)
+            {
+                return $"{ex.Message}";
+            }
+
+            log.LogInformation("Completed rekeying workflow for ManagedSecret '{0}' (ID {1})", secret.Name, secret.ObjectId);
 
             if (credentialType == MultiCredentialProvider.CredentialType.CachedCredential)
             {

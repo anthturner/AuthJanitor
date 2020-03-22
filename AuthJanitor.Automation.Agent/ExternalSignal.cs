@@ -37,83 +37,60 @@ namespace AuthJanitor.Automation.Agent
         {
             log.LogInformation("External signal called to check ManagedSecret ID {0} against nonce {1}", managedSecretId,  nonce);
 
-            var secret = ManagedSecrets.Get(managedSecretId);
+            var secret = await ManagedSecrets.GetAsync(managedSecretId);
             if (secret == null)
                 return new BadRequestErrorMessageResult("Invalid ManagedSecret ID");
             if (!secret.TaskConfirmationStrategies.HasFlag(TaskConfirmationStrategies.ExternalSignal))
                 return new BadRequestErrorMessageResult("This ManagedSecret cannot be used with External Signals");
 
-            if (RekeyingTasks.Get(t => t.ManagedSecretIds.Contains(secret.ObjectId))
-                             .Any(t => t.RekeyingInProgress))
+            if ((await RekeyingTasks.GetAsync(t => t.ManagedSecretId == secret.ObjectId))
+                                    .Any(t => t.RekeyingInProgress))
             {
                 return new OkObjectResult(RETURN_RETRY_SHORTLY);
             }
 
             if ((secret.IsValid && secret.TimeRemaining <= TimeSpan.FromHours(ServiceConfiguration.ExternalSignalRekeyableLeadTimeHours)) || !secret.IsValid)
             {
-                var temporaryTask = new RekeyingTask()
-                {
-                    ManagedSecretIds = new List<Guid>() { secret.ObjectId },
-                    Expiry = secret.Expiry,
-                    Queued = DateTimeOffset.UtcNow,
-                    RekeyingInProgress = true
-                };
-                RekeyingTasks.Create(temporaryTask);
-                await RekeyingTasks.CommitAsync();
-
-                try
-                {
-                    log.LogInformation("Rekeying ManagedSecret '{0}' (ID {1}) - {2} remaining", secret.Name, secret.ObjectId, secret.TimeRemaining);
-
-                    log.LogDebug("Running access sanity check on {0} Resources associated with ManagedSecret", secret.ResourceIds.Count());
-                    var testResults = new Dictionary<Guid, bool>();
-
-                    // Run all tests in parallel to save time!
-                    await Task.WhenAll(Resources.Get(r => secret.ResourceIds.Contains(r.ObjectId))
-                                                .Select(r =>
-                                                    GetProvider(
-                                                        r.ProviderType,
-                                                        r.ProviderConfiguration,
-                                                        MultiCredentialProvider.CredentialType.AgentServicePrincipal)
-                                                    .Test()
-                                                    .ContinueWith(testTask =>
-                                                    {
-                                                        testResults[r.ObjectId] = testTask.Result;
-                                                    })));
-
-                    if (testResults.Any(r => !r.Value))
+                var rekeyingTask = new Task(async () =>
                     {
-                        log.LogCritical("Failed to run sanity checks!");
-                        return new OkObjectResult(RETURN_NO_CHANGE);
-                    }
-
-                    var rekeyingTask = new Task(async () =>
+                        var task = new RekeyingTask()
                         {
-                            await HelperMethods.RunRekeyingWorkflow(log, secret.ValidPeriod,
-                                  Resources.Get(r => secret.ResourceIds.Contains(r.ObjectId))
-                                           .Select(r => GetProvider(r.ProviderType, r.ProviderConfiguration, MultiCredentialProvider.CredentialType.AgentServicePrincipal))
-                                           .ToArray());
-                            RekeyingTasks.Delete(temporaryTask.ObjectId);
-                            await RekeyingTasks.CommitAsync();
-                        },
-                        TaskCreationOptions.LongRunning);
-                    rekeyingTask.Start();
+                            ManagedSecretId = secret.ObjectId,
+                            Expiry = secret.Expiry,
+                            Queued = DateTimeOffset.UtcNow,
+                            RekeyingInProgress = true
+                        };
+                        await RekeyingTasks.CreateAsync(task);
 
-                    if (!rekeyingTask.Wait(TimeSpan.FromSeconds(MAX_EXECUTION_SECONDS_BEFORE_RETRY)))
-                    {
-                        log.LogInformation("Rekeying workflow was started but exceeded the maximum request time! ({0})", TimeSpan.FromSeconds(MAX_EXECUTION_SECONDS_BEFORE_RETRY));
-                        return new OkObjectResult(RETURN_RETRY_SHORTLY);
-                    }
-                    else
-                    {
-                        log.LogInformation("Completed rekeying workflow within maximum time! ({0})", TimeSpan.FromSeconds(MAX_EXECUTION_SECONDS_BEFORE_RETRY));
-                        return new OkObjectResult(RETURN_CHANGE_OCCURRED);
-                    }
-                }
-                catch (Exception ex)
+                        string result;
+                        try
+                        {
+                            result = await ExecuteRekeyingWorkflow(log, task);
+                        }
+                        catch (Exception ex)
+                        {
+                            result = ex.Message;
+                        }
+
+                        task.RekeyingInProgress = false;
+                        if (result != string.Empty)
+                            task.RekeyingErrorMessage = result;
+                        else
+                            task.RekeyingCompleted = true;
+                        await RekeyingTasks.UpdateAsync(task);
+                    },
+                    TaskCreationOptions.LongRunning);
+                rekeyingTask.Start();
+
+                if (!rekeyingTask.Wait(TimeSpan.FromSeconds(MAX_EXECUTION_SECONDS_BEFORE_RETRY)))
                 {
-                    log.LogCritical(ex, "Error executing a rekeying operation on ManagedSecret ID {0}", secret.ObjectId);
-                    return new InternalServerErrorResult();
+                    log.LogInformation("Rekeying workflow was started but exceeded the maximum request time! ({0})", TimeSpan.FromSeconds(MAX_EXECUTION_SECONDS_BEFORE_RETRY));
+                    return new OkObjectResult(RETURN_RETRY_SHORTLY);
+                }
+                else
+                {
+                    log.LogInformation("Completed rekeying workflow within maximum time! ({0})", TimeSpan.FromSeconds(MAX_EXECUTION_SECONDS_BEFORE_RETRY));
+                    return new OkObjectResult(RETURN_CHANGE_OCCURRED);
                 }
             }
             return new OkObjectResult(RETURN_NO_CHANGE);

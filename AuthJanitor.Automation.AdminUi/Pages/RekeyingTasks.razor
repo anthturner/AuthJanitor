@@ -63,20 +63,17 @@
         </Template>
     </BlazorTable.Column>
 
-    <!-- Participating Secrets -->
-    <BlazorTable.Column TableItem="RekeyingTaskViewModel" Title="Secrets">
+    <!-- Participating Resources -->
+    <BlazorTable.Column TableItem="RekeyingTaskViewModel" Title="Resources">
         <Template>
-            @foreach (var secret in context.ManagedSecrets)
-            {
-                <ListGroup Margin="Margin.Is0.OnX.Is1.OnY" Padding="Padding.Is0.OnAll">
-                    @foreach (var resource in secret.Resources)
-                    {
-                        <ListGroupItem Padding="Padding.Is2.OnAll">
-                            <ResourceNameComponent Value="@resource" />
-                        </ListGroupItem>
-                    }
-                </ListGroup>
-            }
+            <ListGroup Margin="Margin.Is0.OnX.Is1.OnY" Padding="Padding.Is0.OnAll">
+                @foreach (var resource in context.ManagedSecret.Resources)
+                {
+                    <ListGroupItem Padding="Padding.Is2.OnAll">
+                        <ResourceNameComponent Value="@resource" />
+                    </ListGroupItem>
+                }
+            </ListGroup>
         </Template>
     </BlazorTable.Column>
 
@@ -123,8 +120,11 @@
 
     protected async Task DeleteConfirmCallback(bool result)
     {
-        if (!result) return;
-        await Http.AJDelete<RekeyingTaskViewModel>(SelectedValue.ObjectId);
-        await LoadData();
+        if (result)
+        {
+            await Http.AJDelete<RekeyingTaskViewModel>(SelectedValue.ObjectId);
+            await LoadData();
+        }
+        DeleteModalShowing = false;
     }
 }

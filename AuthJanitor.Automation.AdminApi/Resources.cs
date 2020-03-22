@@ -64,9 +64,7 @@ namespace AuthJanitor.Automation.AdminApi
                 ProviderConfiguration = resource.SerializedProviderConfiguration
             };
 
-            await Resources.InitializeAsync();
-            Resources.Create(newResource);
-            await Resources.CommitAsync();
+            await Resources.CreateAsync(newResource);
 
             return new OkObjectResult(GetViewModel(newResource));
         }
@@ -79,7 +77,7 @@ namespace AuthJanitor.Automation.AdminApi
         {
             log.LogInformation("List all Resource IDs.");
 
-            return new OkObjectResult(Resources.List().Select(r => GetViewModel(r)));
+            return new OkObjectResult((await Resources.ListAsync()).Select(r => GetViewModel(r)));
         }
 
         [ProtectedApiEndpoint]
@@ -91,10 +89,10 @@ namespace AuthJanitor.Automation.AdminApi
         {
             log.LogInformation("Get Resource ID {0}.", resourceId);
 
-            if (!Resources.ContainsId(resourceId))
+            if (!await Resources.ContainsIdAsync(resourceId))
                 return new BadRequestErrorMessageResult("Resource not found!");
 
-            return new OkObjectResult(GetViewModel(Resources.Get(resourceId)));
+            return new OkObjectResult(GetViewModel(await Resources.GetAsync(resourceId)));
         }
 
         [ProtectedApiEndpoint]
@@ -106,11 +104,10 @@ namespace AuthJanitor.Automation.AdminApi
         {
             log.LogInformation("Deleting Resource ID {0}.", resourceId);
 
-            if (!Resources.ContainsId(resourceId))
+            if (!await Resources.ContainsIdAsync(resourceId))
                 return new BadRequestErrorMessageResult("Resource not found!");
             
-            Resources.Delete(resourceId);
-            await Resources.CommitAsync();
+            await Resources.DeleteAsync(resourceId);
             return new OkResult();
         }
 
@@ -142,8 +139,7 @@ namespace AuthJanitor.Automation.AdminApi
                 ProviderConfiguration = resource.ProviderConfiguration
             };
 
-            Resources.Update(newResource);
-            await Resources.CommitAsync();
+            await Resources.UpdateAsync(newResource);
 
             return new OkObjectResult(GetViewModel(newResource));
         }
