@@ -43,16 +43,18 @@
             <BarEnd Padding="Padding.Is2.FromTop" Margin="Margin.Is2.FromTop" Class="border-top">
                 <BarItem>
                     <Row>
-                        <Column ColumnSize="ColumnSize.Is1" Class="text-danger text-nowrap" title="Expired">
+                        @{var erroredCollapse = Metrics.TasksInError == 0 ? "collapse" : "";};
+                        <Column ColumnSize="ColumnSize.Is1" Class="@($"text-danger text-nowrap {erroredCollapse}")" title="Tasks in Error">
                             <Icon Class="fa-2x" Name="FontAwesomeIcons.ExclamationTriangle" Padding="Padding.Is1.FromTop" Margin="Margin.Is1.FromRight" Float="Float.Left" />
                             <Paragraph Class="h2" Margin="Margin.Is0" Padding="Padding.Is0" Style="font-size:2em;">
-                                1
+                                @Metrics.TasksInError
                             </Paragraph>
                         </Column>
-                        <Column ColumnSize="ColumnSize.Is1" Class="text-warning text-nowrap" title="Expiring Soon">
-                            <Icon Class="fa-2x" Name="FontAwesomeIcons.ExclamationTriangle" Padding="Padding.Is1.FromTop" Margin="Margin.Is1.FromRight" Float="Float.Left" />
+                        @{var expiringSoonCollapse = Metrics.TotalExpiringSoon == 0 ? "collapse" : "";};
+                        <Column ColumnSize="ColumnSize.Is1" Class="@($"text-danger text-nowrap {expiringSoonCollapse}")" title="Expiring Soon">
+                            <Icon Class="fa-2x" Name="FontAwesomeIcons.HourglassHalf" Padding="Padding.Is1.FromTop" Margin="Margin.Is1.FromRight" Float="Float.Left" />
                             <Paragraph Class="h2" Margin="Margin.Is0" Padding="Padding.Is0" Style="font-size:2em;">
-                                6
+                                @Metrics.ExpiringSoon
                             </Paragraph>
                         </Column>
                         <Column></Column>
@@ -75,3 +77,12 @@
         @Body
     </div>
 </div>
+
+@code {
+    protected DashboardMetrics Metrics { get; set; } = new DashboardMetrics();
+
+    protected override async Task OnInitializedAsync()
+    {
+        Metrics = await Http.AJGet<DashboardMetrics>();
+    }
+}

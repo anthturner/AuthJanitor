@@ -40,11 +40,14 @@ namespace AuthJanitor.Automation.AdminApi
             {
                 TotalResources = allResources.Count,
                 TotalSecrets = allSecrets.Count,
-                TotalPendingApproval = allTasks.Count,
+                TotalPendingApproval = allTasks.Where(t => 
+                    t.ConfirmationType.HasFlag(TaskConfirmationStrategies.AdminCachesSignOff) ||
+                    t.ConfirmationType.HasFlag(TaskConfirmationStrategies.AdminSignsOffJustInTime)).Count(),
                 TotalExpiringSoon = expiringInNextWeek.Count(),
                 TotalExpired = expired.Count(),
                 ExpiringSoon = expiringInNextWeek.Select(s => GetViewModel(s)),
                 PercentExpired = (int)((double)expired.Count() / allSecrets.Count) * 100,
+                TasksInError = allTasks.Count(t => !string.IsNullOrEmpty(t.RekeyingErrorMessage))
             };
 
             foreach (var secret in allSecrets)

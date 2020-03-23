@@ -9,6 +9,7 @@ namespace AuthJanitor.Automation.Shared
         public int TotalResources { get; set; }
         public int TotalExpiringSoon { get; set; }
         public int TotalExpired { get; set; }
+        public int TasksInError { get; set; }
 
         public int TotalPendingApproval { get; set; }
         public int PercentExpired { get; set; }

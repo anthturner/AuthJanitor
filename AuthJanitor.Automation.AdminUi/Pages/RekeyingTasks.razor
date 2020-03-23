@@ -47,7 +47,7 @@
             }
             else if (!string.IsNullOrEmpty(context.RekeyingErrorMessage))
             {
-                <Alert Color="Color.Danger" IsDismisable="false" IsShow="true" Class="col-4">
+                <Alert Color="Color.Danger" IsDismisable="false" IsShow="true">
                     <strong>Error Rekeying! </strong>
                     @context.RekeyingErrorMessage
                 </Alert>
@@ -86,7 +86,7 @@
            YesButton="Approve"
            NoButton="Cancel"
            ResultClicked="@ApproveCallback">
-    Approval Modal
+    <RekeyingTaskApprovalSummary Task="@SelectedValue" />
 </DataModal>
 <DeleteConfirmationModal @bind-Visible="@DeleteModalShowing"
                          ObjectId="@SelectedValue.ObjectId"
@@ -94,6 +94,7 @@
                          ResultClicked="@DeleteConfirmCallback" />
 
 @using AuthJanitor.Automation.AdminUi.Components
+@using AuthJanitor.Automation.AdminUi.Components.RekeyingTasks
 @using AuthJanitor.Automation.AdminUi.Components.Resources
 @using AuthJanitor.Automation.Shared.ViewModels
 @code {
