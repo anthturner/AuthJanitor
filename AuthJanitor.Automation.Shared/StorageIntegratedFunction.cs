@@ -12,6 +12,7 @@ namespace AuthJanitor.Automation.Shared
         private readonly Func<Resource, ResourceViewModel> _resourceViewModelDelegate;
         private readonly Func<RekeyingTask, RekeyingTaskViewModel> _rekeyingTaskViewModelDelegate;
         private readonly Func<AuthJanitorProviderConfiguration, ProviderConfigurationViewModel> _configViewModelDelegate;
+        private readonly Func<ScheduleWindow, ScheduleWindowViewModel> _scheduleViewModelDelegate;
         private readonly Func<LoadedProviderMetadata, LoadedProviderViewModel> _providerViewModelDelegate;
 
         protected IDataStore<ManagedSecret> ManagedSecrets { get; }
@@ -27,6 +28,7 @@ namespace AuthJanitor.Automation.Shared
         protected ResourceViewModel GetViewModel(Resource resource) => _resourceViewModelDelegate(resource);
         protected RekeyingTaskViewModel GetViewModel(RekeyingTask rekeyingTask) => _rekeyingTaskViewModelDelegate(rekeyingTask);
         protected ProviderConfigurationViewModel GetViewModel(AuthJanitorProviderConfiguration config) => _configViewModelDelegate(config);
+        protected ScheduleWindowViewModel GetViewModel(ScheduleWindow schedule) => _scheduleViewModelDelegate(schedule);
         protected LoadedProviderViewModel GetViewModel(LoadedProviderMetadata provider) => _providerViewModelDelegate(provider);
 
         protected StorageIntegratedFunction(
@@ -41,6 +43,7 @@ namespace AuthJanitor.Automation.Shared
             Func<Resource, ResourceViewModel> resourceViewModelDelegate,
             Func<RekeyingTask, RekeyingTaskViewModel> rekeyingTaskViewModelDelegate,
             Func<AuthJanitorProviderConfiguration, ProviderConfigurationViewModel> configViewModelDelegate,
+            Func<ScheduleWindow, ScheduleWindowViewModel> scheduleViewModelDelegate,
             Func<LoadedProviderMetadata, LoadedProviderViewModel> providerViewModelDelegate)
         {
             ServiceConfiguration = serviceConfiguration;
@@ -56,6 +59,7 @@ namespace AuthJanitor.Automation.Shared
             _resourceViewModelDelegate = resourceViewModelDelegate;
             _rekeyingTaskViewModelDelegate = rekeyingTaskViewModelDelegate;
             _configViewModelDelegate = configViewModelDelegate;
+            _scheduleViewModelDelegate = scheduleViewModelDelegate;
             _providerViewModelDelegate = providerViewModelDelegate;
         }
     }

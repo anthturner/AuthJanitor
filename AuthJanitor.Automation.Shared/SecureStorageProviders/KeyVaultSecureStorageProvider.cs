@@ -56,7 +56,7 @@ namespace AuthJanitor.Automation.Shared.SecureStorageProviders
         {
             return new SecretClient(new Uri($"https://{_vaultName}.vault.azure.net/"),
                 _credentialProvider.Get(MultiCredentialProvider.CredentialType.AgentServicePrincipal)
-                                   .DefaultAzureCredential);
+                                   .AzureIdentityTokenCredential);
         }
     }
 }

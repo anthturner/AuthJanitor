@@ -24,7 +24,7 @@ namespace AuthJanitor.Providers.KeyVault
                 _serviceProvider
                     .GetService<MultiCredentialProvider>()
                     .Get(MultiCredentialProvider.CredentialType.AgentServicePrincipal)
-                    .DefaultAzureCredential);
+                    .AzureIdentityTokenCredential);
 
             Azure.Response<KeyVaultKey> currentKey = await client.GetKeyAsync(Configuration.KeyName);
 

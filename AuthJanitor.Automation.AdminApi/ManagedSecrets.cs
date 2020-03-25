@@ -21,17 +21,19 @@ namespace AuthJanitor.Automation.AdminApi
     /// </summary>
     public class ManagedSecrets : StorageIntegratedFunction
     {
-        public ManagedSecrets(AuthJanitorServiceConfiguration serviceConfiguration, MultiCredentialProvider credentialProvider, INotificationProvider notificationProvider, ISecureStorageProvider secureStorageProvider, IDataStore<ManagedSecret> managedSecretStore, IDataStore<Resource> resourceStore, IDataStore<RekeyingTask> rekeyingTaskStore, Func<ManagedSecret, ManagedSecretViewModel> managedSecretViewModelDelegate, Func<Resource, ResourceViewModel> resourceViewModelDelegate, Func<RekeyingTask, RekeyingTaskViewModel> rekeyingTaskViewModelDelegate, Func<AuthJanitorProviderConfiguration, ProviderConfigurationViewModel> configViewModelDelegate, Func<LoadedProviderMetadata, LoadedProviderViewModel> providerViewModelDelegate) : base(serviceConfiguration, credentialProvider, notificationProvider, secureStorageProvider, managedSecretStore, resourceStore, rekeyingTaskStore, managedSecretViewModelDelegate, resourceViewModelDelegate, rekeyingTaskViewModelDelegate, configViewModelDelegate, providerViewModelDelegate)
+        public ManagedSecrets(AuthJanitorServiceConfiguration serviceConfiguration, MultiCredentialProvider credentialProvider, INotificationProvider notificationProvider, ISecureStorageProvider secureStorageProvider, IDataStore<ManagedSecret> managedSecretStore, IDataStore<Resource> resourceStore, IDataStore<RekeyingTask> rekeyingTaskStore, Func<ManagedSecret, ManagedSecretViewModel> managedSecretViewModelDelegate, Func<Resource, ResourceViewModel> resourceViewModelDelegate, Func<RekeyingTask, RekeyingTaskViewModel> rekeyingTaskViewModelDelegate, Func<AuthJanitorProviderConfiguration, ProviderConfigurationViewModel> configViewModelDelegate, Func<ScheduleWindow, ScheduleWindowViewModel> scheduleViewModelDelegate, Func<LoadedProviderMetadata, LoadedProviderViewModel> providerViewModelDelegate) : base(serviceConfiguration, credentialProvider, notificationProvider, secureStorageProvider, managedSecretStore, resourceStore, rekeyingTaskStore, managedSecretViewModelDelegate, resourceViewModelDelegate, rekeyingTaskViewModelDelegate, configViewModelDelegate, scheduleViewModelDelegate, providerViewModelDelegate)
         {
         }
 
         [ProtectedApiEndpoint]
         [FunctionName("ManagedSecrets-Create")]
         public async Task<IActionResult> Create(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "secrets")] ManagedSecretViewModel inputSecret,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "managedSecrets")] ManagedSecretViewModel inputSecret,
             HttpRequest req,
             ILogger log)
         {
+            if (!req.IsValidUser(AuthJanitorRoles.SecretAdmin, AuthJanitorRoles.GlobalAdmin)) return new UnauthorizedResult();
+
             log.LogInformation("Creating new Managed Secret");
 
             var resources = await Resources.ListAsync();
@@ -63,9 +65,11 @@ namespace AuthJanitor.Automation.AdminApi
         [ProtectedApiEndpoint]
         [FunctionName("ManagedSecrets-List")]
         public async Task<IActionResult> List(
-            [HttpTrigger(AuthorizationLevel.Function, "get", Route = "secrets")] HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "managedSecrets")] HttpRequest req,
             ILogger log)
         {
+            if (!req.IsValidUser()) return new UnauthorizedResult();
+
             log.LogInformation("Listing all Managed Secrets.");
 
             return new OkObjectResult((await ManagedSecrets.ListAsync()).Select(s => GetViewModel(s)));
@@ -74,10 +78,12 @@ namespace AuthJanitor.Automation.AdminApi
         [ProtectedApiEndpoint]
         [FunctionName("ManagedSecrets-Get")]
         public async Task<IActionResult> Get(
-            [HttpTrigger(AuthorizationLevel.Function, "get", Route = "secrets/{secretId:guid}")] HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "managedSecrets/{secretId:guid}")] HttpRequest req,
             Guid secretId,
             ILogger log)
         {
+            if (!req.IsValidUser()) return new UnauthorizedResult();
+
             log.LogInformation("Retrieving Managed Secret {0}.", secretId);
 
             if (!await ManagedSecrets.ContainsIdAsync(secretId))
@@ -89,10 +95,12 @@ namespace AuthJanitor.Automation.AdminApi
         [ProtectedApiEndpoint]
         [FunctionName("ManagedSecrets-Delete")]
         public async Task<IActionResult> Delete(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "secrets/{secretId:guid}")] HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "managedSecrets/{secretId:guid}")] HttpRequest req,
             Guid secretId,
             ILogger log)
         {
+            if (!req.IsValidUser(AuthJanitorRoles.SecretAdmin, AuthJanitorRoles.GlobalAdmin)) return new UnauthorizedResult();
+
             log.LogInformation("Deleting Managed Secret {0}", secretId);
 
             if (!await ManagedSecrets.ContainsIdAsync(secretId))
@@ -108,11 +116,13 @@ namespace AuthJanitor.Automation.AdminApi
         [ProtectedApiEndpoint]
         [FunctionName("ManagedSecrets-Update")]
         public async Task<IActionResult> Update(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "secrets/{secretId:guid}")] ManagedSecretViewModel inputSecret,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "managedSecrets/{secretId:guid}")] ManagedSecretViewModel inputSecret,
             HttpRequest req,
             Guid secretId,
             ILogger log)
         {
+            if (!req.IsValidUser(AuthJanitorRoles.SecretAdmin, AuthJanitorRoles.GlobalAdmin)) return new UnauthorizedResult();
+
             log.LogInformation("Updating Managed Secret {0}", secretId);
 
             if (!await ManagedSecrets.ContainsIdAsync(secretId))

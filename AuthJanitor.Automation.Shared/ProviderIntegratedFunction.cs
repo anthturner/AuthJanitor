@@ -47,11 +47,12 @@ namespace AuthJanitor.Automation.Shared
             Func<Resource, ResourceViewModel> resourceViewModelDelegate,
             Func<RekeyingTask, RekeyingTaskViewModel> rekeyingTaskViewModelDelegate,
             Func<AuthJanitorProviderConfiguration, ProviderConfigurationViewModel> configViewModelDelegate,
+            Func<ScheduleWindow, ScheduleWindowViewModel> scheduleViewModelDelegate,
             Func<LoadedProviderMetadata, LoadedProviderViewModel> providerViewModelDelegate,
             Func<string, IAuthJanitorProvider> providerFactory,
             Func<string, AuthJanitorProviderConfiguration> providerConfigurationFactory,
             Func<string, LoadedProviderMetadata> providerDetailsFactory,
-            List<LoadedProviderMetadata> loadedProviders) : base(serviceConfiguration, credentialProvider, notificationProvider, secureStorageProvider,  managedSecretStore, resourceStore, rekeyingTaskStore, managedSecretViewModelDelegate, resourceViewModelDelegate, rekeyingTaskViewModelDelegate, configViewModelDelegate, providerViewModelDelegate)
+            List<LoadedProviderMetadata> loadedProviders) : base(serviceConfiguration, credentialProvider, notificationProvider, secureStorageProvider,  managedSecretStore, resourceStore, rekeyingTaskStore, managedSecretViewModelDelegate, resourceViewModelDelegate, rekeyingTaskViewModelDelegate, configViewModelDelegate, scheduleViewModelDelegate, providerViewModelDelegate)
         {
             _providerFactory = providerFactory;
             _providerConfigurationFactory = providerConfigurationFactory;
@@ -69,10 +70,15 @@ namespace AuthJanitor.Automation.Shared
                     log.LogError("Cached sign-off is preferred but no credentials were persisted!");
                     return "Cached sign-off is preferred but no credentials were persisted!";
                 }
-                var token = await SecureStorageProvider.Retrieve<string>(task.PersistedCredentialId);
-                CredentialProvider.Register(MultiCredentialProvider.CredentialType.CachedCredential, token);
+                var token = await SecureStorageProvider.Retrieve<Azure.Core.AccessToken>(task.PersistedCredentialId);
+                CredentialProvider.Register(
+                    MultiCredentialProvider.CredentialType.CachedCredential, 
+                    token.Token,
+                    token.ExpiresOn);
                 credentialType = MultiCredentialProvider.CredentialType.CachedCredential;
             }
+            else if (task.ConfirmationType == TaskConfirmationStrategies.AdminSignsOffJustInTime)
+                credentialType = MultiCredentialProvider.CredentialType.UserCredential;
             else
                 credentialType = MultiCredentialProvider.CredentialType.AgentServicePrincipal;
 
@@ -109,6 +115,9 @@ namespace AuthJanitor.Automation.Shared
             {
                 return $"{ex.Message}";
             }
+
+            secret.LastChanged = DateTimeOffset.UtcNow;
+            await ManagedSecrets.UpdateAsync(secret);
 
             log.LogInformation("Completed rekeying workflow for ManagedSecret '{0}' (ID {1})", secret.Name, secret.ObjectId);
 

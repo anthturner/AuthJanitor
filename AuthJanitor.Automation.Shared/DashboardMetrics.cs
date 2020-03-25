@@ -5,6 +5,10 @@ namespace AuthJanitor.Automation.Shared
 {
     public class DashboardMetrics : IAuthJanitorViewModel
     {
+        public string SignedInName { get; set; } = "John Doe";
+        public string SignedInEmail { get; set; } = "john.doe@contoso.com";
+        public string SignedInRole { get; set; } = "NoRole";
+
         public int TotalSecrets { get; set; }
         public int TotalResources { get; set; }
         public int TotalExpiringSoon { get; set; }

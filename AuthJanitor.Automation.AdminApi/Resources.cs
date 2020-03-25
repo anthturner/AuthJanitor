@@ -23,7 +23,7 @@ namespace AuthJanitor.Automation.AdminApi
     /// </summary>
     public class Resources : ProviderIntegratedFunction
     {
-        public Resources(AuthJanitorServiceConfiguration serviceConfiguration, MultiCredentialProvider credentialProvider, INotificationProvider notificationProvider, ISecureStorageProvider secureStorageProvider, IDataStore<ManagedSecret> managedSecretStore, IDataStore<Resource> resourceStore, IDataStore<RekeyingTask> rekeyingTaskStore, Func<ManagedSecret, ManagedSecretViewModel> managedSecretViewModelDelegate, Func<Resource, ResourceViewModel> resourceViewModelDelegate, Func<RekeyingTask, RekeyingTaskViewModel> rekeyingTaskViewModelDelegate, Func<AuthJanitorProviderConfiguration, ProviderConfigurationViewModel> configViewModelDelegate, Func<LoadedProviderMetadata, LoadedProviderViewModel> providerViewModelDelegate, Func<string, IAuthJanitorProvider> providerFactory, Func<string, AuthJanitorProviderConfiguration> providerConfigurationFactory, Func<string, LoadedProviderMetadata> providerDetailsFactory, List<LoadedProviderMetadata> loadedProviders) : base(serviceConfiguration, credentialProvider, notificationProvider, secureStorageProvider, managedSecretStore, resourceStore, rekeyingTaskStore, managedSecretViewModelDelegate, resourceViewModelDelegate, rekeyingTaskViewModelDelegate, configViewModelDelegate, providerViewModelDelegate, providerFactory, providerConfigurationFactory, providerDetailsFactory, loadedProviders)
+        public Resources(AuthJanitorServiceConfiguration serviceConfiguration, MultiCredentialProvider credentialProvider, INotificationProvider notificationProvider, ISecureStorageProvider secureStorageProvider, IDataStore<ManagedSecret> managedSecretStore, IDataStore<Resource> resourceStore, IDataStore<RekeyingTask> rekeyingTaskStore, Func<ManagedSecret, ManagedSecretViewModel> managedSecretViewModelDelegate, Func<Resource, ResourceViewModel> resourceViewModelDelegate, Func<RekeyingTask, RekeyingTaskViewModel> rekeyingTaskViewModelDelegate, Func<AuthJanitorProviderConfiguration, ProviderConfigurationViewModel> configViewModelDelegate, Func<ScheduleWindow, ScheduleWindowViewModel> scheduleViewModelDelegate, Func<LoadedProviderMetadata, LoadedProviderViewModel> providerViewModelDelegate, Func<string, IAuthJanitorProvider> providerFactory, Func<string, AuthJanitorProviderConfiguration> providerConfigurationFactory, Func<string, LoadedProviderMetadata> providerDetailsFactory, List<LoadedProviderMetadata> loadedProviders) : base(serviceConfiguration, credentialProvider, notificationProvider, secureStorageProvider, managedSecretStore, resourceStore, rekeyingTaskStore, managedSecretViewModelDelegate, resourceViewModelDelegate, rekeyingTaskViewModelDelegate, configViewModelDelegate, scheduleViewModelDelegate, providerViewModelDelegate, providerFactory, providerConfigurationFactory, providerDetailsFactory, loadedProviders)
         {
         }
 
@@ -34,6 +34,8 @@ namespace AuthJanitor.Automation.AdminApi
             HttpRequest req,
             ILogger log)
         {
+            if (!req.IsValidUser(AuthJanitorRoles.ResourceAdmin, AuthJanitorRoles.GlobalAdmin)) return new UnauthorizedResult();
+
             log.LogInformation("Creating new Resource.");
 
             var provider = GetProviderDetails(resource.ProviderType);
@@ -75,6 +77,8 @@ namespace AuthJanitor.Automation.AdminApi
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "resources")] HttpRequest req,
             ILogger log)
         {
+            if (!req.IsValidUser()) return new UnauthorizedResult();
+
             log.LogInformation("List all Resource IDs.");
 
             return new OkObjectResult((await Resources.ListAsync()).Select(r => GetViewModel(r)));
@@ -87,6 +91,8 @@ namespace AuthJanitor.Automation.AdminApi
             Guid resourceId,
             ILogger log)
         {
+            if (!req.IsValidUser()) return new UnauthorizedResult();
+
             log.LogInformation("Get Resource ID {0}.", resourceId);
 
             if (!await Resources.ContainsIdAsync(resourceId))
@@ -102,6 +108,8 @@ namespace AuthJanitor.Automation.AdminApi
             Guid resourceId,
             ILogger log)
         {
+            if (!req.IsValidUser(AuthJanitorRoles.ResourceAdmin, AuthJanitorRoles.GlobalAdmin)) return new UnauthorizedResult();
+
             log.LogInformation("Deleting Resource ID {0}.", resourceId);
 
             if (!await Resources.ContainsIdAsync(resourceId))
@@ -119,6 +127,8 @@ namespace AuthJanitor.Automation.AdminApi
             Guid resourceId,
             ILogger log)
         {
+            if (!req.IsValidUser(AuthJanitorRoles.ResourceAdmin, AuthJanitorRoles.GlobalAdmin)) return new UnauthorizedResult();
+
             log.LogInformation("Updating Resource ID {0}.", resourceId);
 
             try

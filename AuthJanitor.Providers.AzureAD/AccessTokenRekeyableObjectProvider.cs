@@ -21,8 +21,8 @@ namespace AuthJanitor.Providers.AzureAD
 
             var token = await _serviceProvider.GetRequiredService<MultiCredentialProvider>()
                 .Get(CredentialType)
-                .DefaultAzureCredential
-                .GetTokenAsync(new Azure.Core.TokenRequestContext(Configuration.Scopes));
+                .AzureIdentityTokenCredential
+                .GetTokenAsync(new Azure.Core.TokenRequestContext(Configuration.Scopes), System.Threading.CancellationToken.None);
             
             return new RegeneratedSecret()
             {

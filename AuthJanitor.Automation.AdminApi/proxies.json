@@ -6,14 +6,21 @@
         "methods": [ "GET" ],
         "route": "/aj"
       },
-      "backendUri": "%STORAGE_WEB_URL%/"
+      "backendUri": "%STORAGE_WEB_URL%/index.html"
     },
-    "uiManagedSecrets": {
+    "uiOtherPages": {
       "matchCondition": {
-        "methods": [ "GET", "DELETE", "POST" ],
-        "route": "/aj/{*restOfUrl}"
+        "methods": [ "GET" ],
+        "route": "/aj/{*restOfPath}"
       },
-      "backendUri": "%STORAGE_WEB_URL%/{restOfUrl}"
+      "backendUri": "%STORAGE_WEB_URL%/{restOfPath}"
+    },
+    "favicon": {
+      "matchCondition": {
+        "methods": [ "GET" ],
+        "route": "/favicon.ico"
+      },
+      "backendUri": "%STORAGE_WEB_URL%/favicon.ico"
     }
   }
 }

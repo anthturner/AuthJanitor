@@ -27,7 +27,7 @@ namespace AuthJanitor.Providers.KeyVault
                 _serviceProvider
                     .GetService<MultiCredentialProvider>()
                     .Get(MultiCredentialProvider.CredentialType.AgentServicePrincipal)
-                    .DefaultAzureCredential);
+                    .AzureIdentityTokenCredential);
 
             foreach (RegeneratedSecret secret in newSecrets)
             {

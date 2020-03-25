@@ -4,7 +4,6 @@ using Newtonsoft.Json.Serialization;
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
-using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace AuthJanitor.Automation.Shared
@@ -17,7 +16,7 @@ namespace AuthJanitor.Automation.Shared
         private static Dictionary<Type, string> ApiFormatStrings = new Dictionary<Type, string>()
         {
             { typeof(DashboardMetrics), "dashboard" },
-            { typeof(ManagedSecretViewModel), "secrets" },
+            { typeof(ManagedSecretViewModel), "managedSecrets" },
             { typeof(RekeyingTaskViewModel), "tasks" },
             { typeof(ResourceViewModel), "resources" },
             { typeof(LoadedProviderViewModel), "providers" },

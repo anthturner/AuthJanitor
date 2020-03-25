@@ -2,12 +2,34 @@
 using Azure.Identity;
 using Microsoft.Azure.Management.ResourceManager.Fluent;
 using Microsoft.Azure.Management.ResourceManager.Fluent.Authentication;
+using Microsoft.Rest;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace AuthJanitor.Providers
 {
+    public class ExistingTokenCredential : TokenCredential
+    {
+        private AccessToken _accessToken;
+        public ExistingTokenCredential(string accessToken, DateTimeOffset expiresOn)
+        {
+            _accessToken = new AccessToken(accessToken, expiresOn);
+        }
+
+        public override AccessToken GetToken(TokenRequestContext requestContext, CancellationToken cancellationToken)
+        {
+            return _accessToken;
+        }
+
+        public override ValueTask<AccessToken> GetTokenAsync(TokenRequestContext requestContext, CancellationToken cancellationToken)
+        {
+            return new ValueTask<AccessToken>(_accessToken);
+        }
+    }
+
     public class MultiCredentialProvider
     {
         public enum CredentialType
@@ -21,12 +43,18 @@ namespace AuthJanitor.Providers
 
         public MultiCredential Get(CredentialType type) => Credentials.FirstOrDefault(c => c.Type == type);
 
-        public void Register(CredentialType type, string accessToken)
+        public void Register(CredentialType type, string accessToken, DateTimeOffset expiresOn)
         {
-            // TODO: How to convert an access token (or something else) to the types of credentials below?
             Credentials.Add(new MultiCredential()
             {
                 Type = type,
+                Expiry = expiresOn,
+                AzureIdentityTokenCredential = new ExistingTokenCredential(accessToken, expiresOn),
+                ServiceClientCredentials = new AzureCredentials(
+                    new TokenCredentials(accessToken),
+                    new TokenCredentials(accessToken),
+                    Environment.GetEnvironmentVariable("TENANT_ID", EnvironmentVariableTarget.Process),
+                    AzureEnvironment.AzureGlobalCloud),
                 AccessToken = accessToken
             });
         }
@@ -36,8 +64,8 @@ namespace AuthJanitor.Providers
             Credentials.Add(new MultiCredential()
             {
                 Type = CredentialType.AgentServicePrincipal,
-                DefaultAzureCredential = new DefaultAzureCredential(false),
-                AzureCredentials = SdkContext.AzureCredentialsFactory.FromMSI(
+                AzureIdentityTokenCredential = new DefaultAzureCredential(false),
+                ServiceClientCredentials = SdkContext.AzureCredentialsFactory.FromMSI(
                                     new MSILoginInformation(MSIResourceType.AppService),
                                     AzureEnvironment.AzureGlobalCloud)
             });
@@ -46,8 +74,8 @@ namespace AuthJanitor.Providers
         public class MultiCredential
         {
             public CredentialType Type { get; set; }
-            public DefaultAzureCredential DefaultAzureCredential { get; set; }
-            public AzureCredentials AzureCredentials { get; set; }
+            public TokenCredential AzureIdentityTokenCredential { get; set; }
+            public AzureCredentials ServiceClientCredentials { get; set; }
             public string AccessToken { get; set; } // todo: generate from credentials? vice versa?
             public DateTimeOffset Expiry { get; set; } // todo: save this
             public string Username { get; set; } // todo: save this

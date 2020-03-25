@@ -12,12 +12,13 @@ using System.Collections.Generic;
 using System.Linq;
 using AuthJanitor.Automation.Shared.NotificationProviders;
 using AuthJanitor.Automation.Shared.SecureStorageProviders;
+using System.Security.Claims;
 
 namespace AuthJanitor.Automation.AdminApi
 {
     public class Dashboard : ProviderIntegratedFunction
     {
-        public Dashboard(AuthJanitorServiceConfiguration serviceConfiguration, MultiCredentialProvider credentialProvider, INotificationProvider notificationProvider, ISecureStorageProvider secureStorageProvider, IDataStore<ManagedSecret> managedSecretStore, IDataStore<Resource> resourceStore, IDataStore<RekeyingTask> rekeyingTaskStore, Func<ManagedSecret, ManagedSecretViewModel> managedSecretViewModelDelegate, Func<Resource, ResourceViewModel> resourceViewModelDelegate, Func<RekeyingTask, RekeyingTaskViewModel> rekeyingTaskViewModelDelegate, Func<AuthJanitorProviderConfiguration, ProviderConfigurationViewModel> configViewModelDelegate, Func<LoadedProviderMetadata, LoadedProviderViewModel> providerViewModelDelegate, Func<string, IAuthJanitorProvider> providerFactory, Func<string, AuthJanitorProviderConfiguration> providerConfigurationFactory, Func<string, LoadedProviderMetadata> providerDetailsFactory, List<LoadedProviderMetadata> loadedProviders) : base(serviceConfiguration, credentialProvider, notificationProvider, secureStorageProvider, managedSecretStore, resourceStore, rekeyingTaskStore, managedSecretViewModelDelegate, resourceViewModelDelegate, rekeyingTaskViewModelDelegate, configViewModelDelegate, providerViewModelDelegate, providerFactory, providerConfigurationFactory, providerDetailsFactory, loadedProviders)
+        public Dashboard(AuthJanitorServiceConfiguration serviceConfiguration, MultiCredentialProvider credentialProvider, INotificationProvider notificationProvider, ISecureStorageProvider secureStorageProvider, IDataStore<ManagedSecret> managedSecretStore, IDataStore<Resource> resourceStore, IDataStore<RekeyingTask> rekeyingTaskStore, Func<ManagedSecret, ManagedSecretViewModel> managedSecretViewModelDelegate, Func<Resource, ResourceViewModel> resourceViewModelDelegate, Func<RekeyingTask, RekeyingTaskViewModel> rekeyingTaskViewModelDelegate, Func<AuthJanitorProviderConfiguration, ProviderConfigurationViewModel> configViewModelDelegate, Func<ScheduleWindow, ScheduleWindowViewModel> scheduleViewModelDelegate, Func<LoadedProviderMetadata, LoadedProviderViewModel> providerViewModelDelegate, Func<string, IAuthJanitorProvider> providerFactory, Func<string, AuthJanitorProviderConfiguration> providerConfigurationFactory, Func<string, LoadedProviderMetadata> providerDetailsFactory, List<LoadedProviderMetadata> loadedProviders) : base(serviceConfiguration, credentialProvider, notificationProvider, secureStorageProvider, managedSecretStore, resourceStore, rekeyingTaskStore, managedSecretViewModelDelegate, resourceViewModelDelegate, rekeyingTaskViewModelDelegate, configViewModelDelegate, scheduleViewModelDelegate, providerViewModelDelegate, providerFactory, providerConfigurationFactory, providerDetailsFactory, loadedProviders)
         {
         }
 
@@ -25,8 +26,11 @@ namespace AuthJanitor.Automation.AdminApi
         [FunctionName("Dashboard")]
         public async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "dashboard")] HttpRequest req,
+            ClaimsPrincipal claimsPrincipal,
             ILogger log)
         {
+            if (!req.IsValidUser()) return new UnauthorizedResult();
+
             log.LogInformation("Requested Dashboard metrics");
 
             var allSecrets = await ManagedSecrets.ListAsync();
@@ -38,6 +42,12 @@ namespace AuthJanitor.Automation.AdminApi
 
             var metrics = new DashboardMetrics()
             {
+                SignedInName = 
+                    claimsPrincipal.FindFirst(ClaimTypes.GivenName)?.Value + 
+                    " " +
+                    claimsPrincipal.FindFirst(ClaimTypes.Surname)?.Value,
+                SignedInEmail = claimsPrincipal.FindFirst(ClaimTypes.Email)?.Value,
+                SignedInRole = claimsPrincipal.FindFirst(ClaimTypes.Role)?.Value,
                 TotalResources = allResources.Count,
                 TotalSecrets = allSecrets.Count,
                 TotalPendingApproval = allTasks.Where(t => 

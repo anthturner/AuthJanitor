@@ -140,7 +140,10 @@ namespace AuthJanitor.Providers
         {
             return await Microsoft.Azure.Management.Fluent.Azure
                 .Configure()
-                .Authenticate(_serviceProvider.GetService<MultiCredentialProvider>().Get(CredentialType)?.AzureCredentials)
+                .Authenticate(
+                    _serviceProvider.GetService<MultiCredentialProvider>()
+                                    .Get(CredentialType)?
+                                    .ServiceClientCredentials)
                 .WithDefaultSubscriptionAsync();
         }
     }

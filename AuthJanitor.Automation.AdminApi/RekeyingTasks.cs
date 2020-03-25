@@ -9,9 +9,12 @@ using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Web.Http;
 
@@ -23,7 +26,7 @@ namespace AuthJanitor.Automation.AdminApi
     /// </summary>
     public class RekeyingTasks : ProviderIntegratedFunction
     {
-        public RekeyingTasks(AuthJanitorServiceConfiguration serviceConfiguration, MultiCredentialProvider credentialProvider, INotificationProvider notificationProvider, ISecureStorageProvider secureStorageProvider, IDataStore<ManagedSecret> managedSecretStore, IDataStore<Resource> resourceStore, IDataStore<RekeyingTask> rekeyingTaskStore, Func<ManagedSecret, ManagedSecretViewModel> managedSecretViewModelDelegate, Func<Resource, ResourceViewModel> resourceViewModelDelegate, Func<RekeyingTask, RekeyingTaskViewModel> rekeyingTaskViewModelDelegate, Func<AuthJanitorProviderConfiguration, ProviderConfigurationViewModel> configViewModelDelegate, Func<LoadedProviderMetadata, LoadedProviderViewModel> providerViewModelDelegate, Func<string, IAuthJanitorProvider> providerFactory, Func<string, AuthJanitorProviderConfiguration> providerConfigurationFactory, Func<string, LoadedProviderMetadata> providerDetailsFactory, List<LoadedProviderMetadata> loadedProviders) : base(serviceConfiguration, credentialProvider, notificationProvider, secureStorageProvider, managedSecretStore, resourceStore, rekeyingTaskStore, managedSecretViewModelDelegate, resourceViewModelDelegate, rekeyingTaskViewModelDelegate, configViewModelDelegate, providerViewModelDelegate, providerFactory, providerConfigurationFactory, providerDetailsFactory, loadedProviders)
+        public RekeyingTasks(AuthJanitorServiceConfiguration serviceConfiguration, MultiCredentialProvider credentialProvider, INotificationProvider notificationProvider, ISecureStorageProvider secureStorageProvider, IDataStore<ManagedSecret> managedSecretStore, IDataStore<Resource> resourceStore, IDataStore<RekeyingTask> rekeyingTaskStore, Func<ManagedSecret, ManagedSecretViewModel> managedSecretViewModelDelegate, Func<Resource, ResourceViewModel> resourceViewModelDelegate, Func<RekeyingTask, RekeyingTaskViewModel> rekeyingTaskViewModelDelegate, Func<AuthJanitorProviderConfiguration, ProviderConfigurationViewModel> configViewModelDelegate, Func<ScheduleWindow, ScheduleWindowViewModel> scheduleViewModelDelegate, Func<LoadedProviderMetadata, LoadedProviderViewModel> providerViewModelDelegate, Func<string, IAuthJanitorProvider> providerFactory, Func<string, AuthJanitorProviderConfiguration> providerConfigurationFactory, Func<string, LoadedProviderMetadata> providerDetailsFactory, List<LoadedProviderMetadata> loadedProviders) : base(serviceConfiguration, credentialProvider, notificationProvider, secureStorageProvider, managedSecretStore, resourceStore, rekeyingTaskStore, managedSecretViewModelDelegate, resourceViewModelDelegate, rekeyingTaskViewModelDelegate, configViewModelDelegate, scheduleViewModelDelegate, providerViewModelDelegate, providerFactory, providerConfigurationFactory, providerDetailsFactory, loadedProviders)
         {
         }
 
@@ -34,6 +37,8 @@ namespace AuthJanitor.Automation.AdminApi
             HttpRequest req,
             ILogger log)
         {
+            if (!req.IsValidUser(AuthJanitorRoles.ServiceOperator, AuthJanitorRoles.GlobalAdmin)) return new UnauthorizedResult();
+
             log.LogInformation("Creating new Task.");
 
             if (!await ManagedSecrets.ContainsIdAsync(Guid.Parse(secretId)))
@@ -62,6 +67,8 @@ namespace AuthJanitor.Automation.AdminApi
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "tasks")] HttpRequest req,
             ILogger log)
         {
+            if (!req.IsValidUser()) return new UnauthorizedResult();
+
             log.LogInformation("List all Tasks.");
 
             return new OkObjectResult((await RekeyingTasks.ListAsync()).Select(t => GetViewModel(t)));
@@ -74,6 +81,8 @@ namespace AuthJanitor.Automation.AdminApi
             Guid taskId,
             ILogger log)
         {
+            if (!req.IsValidUser()) return new UnauthorizedResult();
+
             log.LogInformation("Preview Actions for Task ID {0}.", taskId);
 
             return new OkObjectResult(GetViewModel((await RekeyingTasks.GetAsync(taskId))));
@@ -86,6 +95,8 @@ namespace AuthJanitor.Automation.AdminApi
             Guid taskId,
             ILogger log)
         {
+            if (!req.IsValidUser(AuthJanitorRoles.ServiceOperator, AuthJanitorRoles.GlobalAdmin)) return new UnauthorizedResult();
+
             log.LogInformation("Deleting Task ID {0}.", taskId);
 
             if (!await RekeyingTasks.ContainsIdAsync(taskId))
@@ -95,7 +106,6 @@ namespace AuthJanitor.Automation.AdminApi
             return new OkResult();
         }
 
-        [RegisterOBOCredential]
         [ProtectedApiEndpoint]
         [FunctionName("RekeyingTasks-Approve")]
         public async Task<IActionResult> Approve(
@@ -103,13 +113,21 @@ namespace AuthJanitor.Automation.AdminApi
             Guid taskId,
             ILogger log)
         {
+            if (!req.IsValidUser(AuthJanitorRoles.ServiceOperator, AuthJanitorRoles.GlobalAdmin)) return new UnauthorizedResult();
+
             log.LogInformation("Administrator approved Task ID {0}", taskId);
+
+            log.LogInformation("Registering incoming user credential...");
+            await RegisterUserCredential(req);
+
             var task = await RekeyingTasks.GetAsync(taskId);
 
             if (task.ConfirmationType == TaskConfirmationStrategies.AdminCachesSignOff)
             {
                 var credential = CredentialProvider.Get(MultiCredentialProvider.CredentialType.UserCredential);
-                var persisted = await SecureStorageProvider.Persist<string>(credential.Expiry, credential.AccessToken);
+                var persisted = await SecureStorageProvider.Persist<Azure.Core.AccessToken>(
+                    credential.Expiry,
+                    new Azure.Core.AccessToken(credential.AccessToken, credential.Expiry));
                 task.PersistedCredentialId = persisted;
                 task.PersistedCredentialUser = credential.Username;
                 await RekeyingTasks.UpdateAsync(task);
@@ -139,6 +157,39 @@ namespace AuthJanitor.Automation.AdminApi
                 log.LogError("Task does not support an Administrator's approval!");
                 return new BadRequestErrorMessageResult("Task does not support an Administrator's approval!");
             }
+        }
+
+        private async Task RegisterUserCredential(HttpRequest request)
+        {
+            if (!request.Headers.ContainsKey("X-MS-TOKEN-AAD-ID-TOKEN"))
+                return;
+
+            var idToken = request.Headers["X-MS-TOKEN-AAD-ID-TOKEN"].FirstOrDefault();
+
+            var client = new HttpClient();
+            var expando = new System.Dynamic.ExpandoObject();
+            var dict = new Microsoft.AspNetCore.Routing.RouteValueDictionary(new
+            {
+                grant_type = "urn:ietf:params:oauth:grant-type:jwt-bearer",
+                client_id = Environment.GetEnvironmentVariable("CLIENT_ID", EnvironmentVariableTarget.Process),
+                client_secret = Environment.GetEnvironmentVariable("CLIENT_SECRET", EnvironmentVariableTarget.Process),
+                assertion = request.Headers["X-MS-TOKEN-AAD-ID-TOKEN"].FirstOrDefault(),
+                resource = "https://management.core.windows.net",
+                //scope = "https://management.core.windows.net//user_impersonation",
+                requested_token_use = "on_behalf_of"
+            });
+
+            var result = await client.PostAsync("https://login.microsoftonline.com/" +
+                Environment.GetEnvironmentVariable("TENANT_ID", EnvironmentVariableTarget.Process) +
+                "/oauth2/token",
+                new FormUrlEncodedContent(dict.ToDictionary(k => k.Key, v => v.Value as string).ToList()));
+            var resultObj = JsonConvert.DeserializeObject<TokenExchangeResponse>(
+                await result.Content.ReadAsStringAsync());
+
+            CredentialProvider.Register(
+                MultiCredentialProvider.CredentialType.UserCredential,
+                resultObj.AccessToken,
+                resultObj.ExpiresOnDateTime);
         }
     }
 }

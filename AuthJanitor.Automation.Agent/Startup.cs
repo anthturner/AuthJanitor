@@ -23,6 +23,7 @@ namespace AuthJanitor.Automation.Agent
         private const string RESOURCES_BLOB_NAME = "resources";
         private const string MANAGED_SECRETS_BLOB_NAME = "secrets";
         private const string REKEYING_TASKS_BLOB_NAME = "tasks";
+        private const string SCHEDULES_BLOB_NAME = "schedules";
 
         private const string PROVIDER_SEARCH_MASK = "AuthJanitor.Providers.*.dll";
         private static readonly string PROVIDER_SEARCH_PATH = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), ".."));
@@ -98,6 +99,11 @@ namespace AuthJanitor.Automation.Agent
                     connectionString,
                     ServiceConfiguration.MetadataStorageContainerName,
                     RESOURCES_BLOB_NAME));
+            builder.Services.AddSingleton<IDataStore<ScheduleWindow>>(
+                new AzureBlobDataStore<ScheduleWindow>(
+                    connectionString,
+                    ServiceConfiguration.MetadataStorageContainerName,
+                    SCHEDULES_BLOB_NAME));
 
             // -----
 

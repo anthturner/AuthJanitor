@@ -96,6 +96,17 @@ namespace AuthJanitor.Providers
                 log.LogError(ex, "Error executing AfterRekeying on Application Lifecycle Provider(s)");
                 throw new Exception("Error executing AfterRekeying on Application Lifecycle Provider(s)");
             }
+
+            log.LogInformation("Completing finalizing operations on {0} Rekeyable Object Providers...", alcProviders.Count);
+            try
+            {
+                await Task.WhenAll(rkoProviders.Select(rko => rko.OnConsumingApplicationSwapped()));
+            }
+            catch (Exception ex)
+            {
+                log.LogError(ex, "Error executing OnConsumingApplicationSwapped on Rekeyable Object Provider(s)");
+                throw new Exception("Error executing OnConsumingApplicationSwapped on Rekeyable Object Provider(s)");
+            }
         }
 
         public static T GetEnumValueAttribute<T>(this Enum enumVal) where T : Attribute
@@ -111,6 +122,21 @@ namespace AuthJanitor.Providers
             using (SHA256 sha256Hash = SHA256.Create())
             {
                 byte[] bytes = sha256Hash.ComputeHash(Encoding.UTF8.GetBytes(str));
+                StringBuilder sb = new StringBuilder();
+                for (int i = 0; i < bytes.Length; i++)
+                {
+                    sb.Append(bytes[i].ToString("x2"));
+                }
+
+                return sb.ToString();
+            }
+        }
+
+        public static string MD5HashString(string str)
+        {
+            using (MD5 md5Hash = MD5.Create())
+            {
+                byte[] bytes = md5Hash.ComputeHash(Encoding.UTF8.GetBytes(str));
                 StringBuilder sb = new StringBuilder();
                 for (int i = 0; i < bytes.Length; i++)
                 {

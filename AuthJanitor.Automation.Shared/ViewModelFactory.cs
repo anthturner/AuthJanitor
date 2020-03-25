@@ -36,6 +36,7 @@ namespace AuthJanitor.Automation.Shared
             serviceCollection.AddTransient<Func<ManagedSecret, ManagedSecretViewModel>>(serviceProvider => secret => GetViewModel(serviceProvider, secret));
             serviceCollection.AddTransient<Func<Resource, ResourceViewModel>>(serviceProvider => resource => GetViewModel(serviceProvider, resource));
             serviceCollection.AddTransient<Func<RekeyingTask, RekeyingTaskViewModel>>(serviceProvider => rekeyingTask => GetViewModel(serviceProvider, rekeyingTask));
+            serviceCollection.AddTransient<Func<ScheduleWindow, ScheduleWindowViewModel>>(serviceProvider => scheduleWindow => GetViewModel(serviceProvider, scheduleWindow));
             serviceCollection.AddTransient<Func<AuthJanitorProviderConfiguration, ProviderConfigurationViewModel>>(serviceProvider => config => GetViewModel(serviceProvider, config));
         }
 
@@ -155,5 +156,12 @@ namespace AuthJanitor.Automation.Shared
                 Risks = provider.GetRisks()
             };
         }
+
+        private static ScheduleWindowViewModel GetViewModel(IServiceProvider serviceProvider, ScheduleWindow scheduleWindow) =>
+            new ScheduleWindowViewModel()
+            {
+                ObjectId = scheduleWindow.ObjectId,
+                CronStrings = new List<string>(scheduleWindow.CronStrings)
+            };
     }
 }

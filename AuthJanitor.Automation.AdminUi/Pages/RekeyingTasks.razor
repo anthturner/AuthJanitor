@@ -115,8 +115,9 @@
 
     protected async Task ApproveCallback()
     {
-        // Approval code goes here
+        await Http.PostAsync($"/api/tasks/{SelectedValue.ObjectId}/approve", new StringContent(string.Empty));
         await LoadData();
+        ApproveModalShowing = false;
     }
 
     protected async Task DeleteConfirmCallback(bool result)
