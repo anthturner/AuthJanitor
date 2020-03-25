@@ -12,24 +12,10 @@ namespace AuthJanitor.Providers.AppServices.Functions
         {
         }
 
-        protected async Task<IFunctionApp> GetFunctionsApp()
-        {
-            return await (await GetAzure()).AppServices.FunctionApps.GetByResourceGroupAsync(ResourceGroup, ResourceName);
-        }
+        protected Task<IFunctionApp> GetFunctionsApp() =>
+            GetAzure().ContinueWith(az => az.Result.AppServices.FunctionApps.GetByResourceGroupAsync(ResourceGroup, ResourceName)).Unwrap();
 
-        protected async Task<IFunctionDeploymentSlot> GetDeploymentSlot(string name)
-        {
-            return await (await GetFunctionsApp()).DeploymentSlots.GetByNameAsync(name);
-        }
-
-        protected async Task PrepareTemporaryDeploymentSlot()
-        {
-            await (await GetDeploymentSlot(TemporarySlotName)).ApplySlotConfigurationsAsync(SourceSlotName);
-        }
-
-        protected async Task SwapTemporaryToDestination()
-        {
-            await (await GetDeploymentSlot(DestinationSlotName)).SwapAsync(TemporarySlotName);
-        }
+        protected Task<IFunctionDeploymentSlot> GetDeploymentSlot(string name) =>
+            GetFunctionsApp().ContinueWith(az => az.Result.DeploymentSlots.GetByNameAsync(name)).Unwrap();
     }
 }

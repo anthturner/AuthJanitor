@@ -21,15 +21,5 @@ namespace AuthJanitor.Providers.AppServices.WebApps
         {
             return await (await GetWebApp()).DeploymentSlots.GetByNameAsync(name);
         }
-
-        protected async Task PrepareTemporaryDeploymentSlot()
-        {
-            await (await GetDeploymentSlot(TemporarySlotName)).ApplySlotConfigurationsAsync(SourceSlotName);
-        }
-
-        protected async Task SwapTemporaryToDestination()
-        {
-            await (await GetDeploymentSlot(DestinationSlotName)).SwapAsync(TemporarySlotName);
-        }
     }
 }

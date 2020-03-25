@@ -22,9 +22,26 @@ namespace AuthJanitor.Providers.AppServices.WebApps
         /// Call to prepare the application for a new secret, passing in a secret
         /// which will be valid while the Rekeying is taking place (for zero-downtime)
         /// </summary>
-        public override Task BeforeRekeying(List<RegeneratedSecret> temporaryUseSecrets)
+        public override async Task BeforeRekeying(List<RegeneratedSecret> temporaryUseSecrets)
         {
-            return PrepareTemporaryDeploymentSlot();
+            await (await GetDeploymentSlot(TemporarySlotName)).ApplySlotConfigurationsAsync(SourceSlotName);
+            if (temporaryUseSecrets.Count > 1 && temporaryUseSecrets.Select(s => s.UserHint).Distinct().Count() != temporaryUseSecrets.Count)
+            {
+                throw new Exception("Multiple secrets sent to Provider but without distinct UserHints!");
+            }
+
+            IUpdate<IDeploymentSlot> updateBase = (await GetDeploymentSlot(TemporarySlotName)).Update();
+            foreach (RegeneratedSecret secret in temporaryUseSecrets)
+            {
+                var secretName = string.IsNullOrEmpty(secret.UserHint) ? Configuration.SettingName : $"{Configuration.SettingName}-{secret.UserHint}";
+                updateBase = updateBase.WithoutAppSetting(secretName);
+                updateBase = updateBase.WithAppSetting(secretName, secret.NewSecretValue);
+            }
+
+            await updateBase.ApplyAsync();
+
+            // Swap to Temporary (which has temp key)
+            await(await GetDeploymentSlot(TemporarySlotName)).SwapAsync(SourceSlotName);
         }
 
         /// <summary>
@@ -49,9 +66,9 @@ namespace AuthJanitor.Providers.AppServices.WebApps
         /// <summary>
         /// Call after all new keys have been committed
         /// </summary>
-        public override Task AfterRekeying()
+        public override async Task AfterRekeying()
         {
-            return SwapTemporaryToDestination();
+            await (await GetDeploymentSlot(DestinationSlotName)).SwapAsync(TemporarySlotName);
         }
 
         public override string GetDescription() =>
