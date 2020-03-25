@@ -2,6 +2,7 @@
 using Microsoft.Azure.Management.ServiceBus.Fluent.Models;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace AuthJanitor.Providers.ServiceBus
@@ -16,15 +17,27 @@ namespace AuthJanitor.Providers.ServiceBus
         {
         }
 
+        public override async Task<RegeneratedSecret> GetSecretToUseDuringRekeying()
+        {
+            IAuthorizationKeys otherKeys = await Get();
+            return new RegeneratedSecret()
+            {
+                Expiry = DateTimeOffset.UtcNow + TimeSpan.FromMinutes(10),
+                UserHint = Configuration.UserHint,
+                NewSecretValue = GetKeyValue(OtherPolicyKey, otherKeys),
+                NewConnectionString = GetConnectionStringValue(OtherPolicyKey, otherKeys)
+            };
+        }
+
         public override async Task<RegeneratedSecret> Rekey(TimeSpan requestedValidPeriod)
         {
-            IAuthorizationKeys newKeys = await Regenerate(GetPolicyKey());
+            IAuthorizationKeys newKeys = await Regenerate(PolicyKey);
             return new RegeneratedSecret()
             {
                 Expiry = DateTimeOffset.UtcNow + requestedValidPeriod,
                 UserHint = Configuration.UserHint,
-                NewSecretValue = GetKeyValue(newKeys),
-                NewConnectionString = GetConnectionStringValue(newKeys)
+                NewSecretValue = GetKeyValue(PolicyKey, newKeys),
+                NewConnectionString = GetConnectionStringValue(PolicyKey, newKeys)
             };
         }
 
@@ -32,39 +45,65 @@ namespace AuthJanitor.Providers.ServiceBus
         {
             if (!Configuration.SkipScramblingOtherKey)
             {
-                await Regenerate(GetOtherPolicyKey());
+                await Regenerate(OtherPolicyKey);
             }
         }
 
-        private async Task<IAuthorizationKeys> Regenerate(Policykey keyType)
+        public override IList<RiskyConfigurationItem> GetRisks()
         {
-            IServiceBusNamespace serviceBusNamespace = await (await GetAzure()).ServiceBusNamespaces.GetByResourceGroupAsync(ResourceGroup, ResourceName);
-            INamespaceAuthorizationRule authRule = await serviceBusNamespace.AuthorizationRules.GetByNameAsync(Configuration.AuthorizationRuleName);
-            return await authRule.RegenerateKeyAsync(keyType);
+            List<RiskyConfigurationItem> issues = new List<RiskyConfigurationItem>();
+            if (Configuration.SkipScramblingOtherKey)
+            {
+                issues.Add(new RiskyConfigurationItem()
+                {
+                    Score = 80,
+                    Risk = $"The other (unused) Service Bus Key is not being scrambled during key rotation",
+                    Recommendation = "Unless other services use the alternate key, consider allowing the scrambling of the unused key to 'fully' rekey the Service Bus and maintain a high degree of security."
+                });
+            }
+
+            return issues;
         }
 
-        private Policykey GetPolicyKey()
-        {
-            return Configuration.KeyType == ServiceBusKeyConfiguration.ServiceBusKeyTypes.Primary ?
-Policykey.PrimaryKey : Policykey.SecondaryKey;
-        }
+        public override string GetDescription() =>
+            $"Regenerates the {PolicyKey} key for a Service Bus called " +
+            $"'{ResourceName}' (Resource Group '{ResourceGroup}') for the " +
+            $"authorization rule {Configuration.AuthorizationRuleName}. " +
+            $"The {OtherPolicyKey} key is used as a temporary key while " +
+            $"rekeying is taking place. The {OtherPolicyKey} key will " +
+            $"{(Configuration.SkipScramblingOtherKey ? "not" : "also")} be rotated.";
 
-        private Policykey GetOtherPolicyKey()
-        {
-            return Configuration.KeyType == ServiceBusKeyConfiguration.ServiceBusKeyTypes.Secondary ?
-Policykey.PrimaryKey : Policykey.SecondaryKey;
-        }
+        private Policykey PolicyKey =>
+            Configuration.KeyType switch
+            {
+                ServiceBusKeyConfiguration.ServiceBusKeyTypes.Secondary => Policykey.SecondaryKey,
+                _ => Policykey.PrimaryKey,
+            };
+        private Policykey OtherPolicyKey =>
+            Configuration.KeyType switch
+            {
+                ServiceBusKeyConfiguration.ServiceBusKeyTypes.Secondary => Policykey.PrimaryKey,
+                _ => Policykey.SecondaryKey,
+            };
 
-        private string GetKeyValue(IAuthorizationKeys keys)
-        {
-            return Configuration.KeyType == ServiceBusKeyConfiguration.ServiceBusKeyTypes.Primary ?
-keys.PrimaryKey : keys.SecondaryKey;
-        }
+        private Task<IAuthorizationKeys> Regenerate(Policykey keyType) =>
+            AuthorizationRule.ContinueWith(rule => rule.Result.RegenerateKeyAsync(keyType)).Unwrap();
+        private Task<IAuthorizationKeys> Get() =>
+            AuthorizationRule.ContinueWith(rule => rule.Result.GetKeysAsync()).Unwrap();
+        
+        private Task<IServiceBusNamespace> ServiceBusNamespace => GetAzure().ContinueWith(az => az.Result.ServiceBusNamespaces.GetByResourceGroupAsync(ResourceGroup, ResourceName)).Unwrap();
+        private Task<INamespaceAuthorizationRule> AuthorizationRule => ServiceBusNamespace.ContinueWith(ns => ns.Result.AuthorizationRules.GetByNameAsync(Configuration.AuthorizationRuleName)).Unwrap();
 
-        private string GetConnectionStringValue(IAuthorizationKeys keys)
+        private string GetKeyValue(Policykey key, IAuthorizationKeys keys) => key switch
         {
-            return Configuration.KeyType == ServiceBusKeyConfiguration.ServiceBusKeyTypes.Primary ?
-keys.PrimaryConnectionString : keys.SecondaryConnectionString;
-        }
+            Policykey.SecondaryKey => keys.SecondaryKey,
+            _ => keys.PrimaryKey,
+        };
+
+        private string GetConnectionStringValue(Policykey key, IAuthorizationKeys keys) => key switch
+        {
+            Policykey.SecondaryKey => keys.SecondaryConnectionString,
+            _ => keys.PrimaryConnectionString,
+        };
     }
 }

@@ -64,10 +64,24 @@ namespace AuthJanitor.Providers
             List<IApplicationLifecycleProvider> alcProviders = providers.Where(p => p is IApplicationLifecycleProvider).Cast<IApplicationLifecycleProvider>().ToList();
             List<IRekeyableObjectProvider> rkoProviders = providers.Where(p => p is IRekeyableObjectProvider).Cast<IRekeyableObjectProvider>().ToList();
 
+            log.LogInformation("Getting temporary secrets from {0} Rekeyable Object Lifecycle Providers...", rkoProviders.Count);
+            List<RegeneratedSecret> temporarySecrets = new List<RegeneratedSecret>();
+            try
+            {
+                await Task.WhenAll(rkoProviders.Select(rkoProvider => 
+                            rkoProvider.GetSecretToUseDuringRekeying()
+                                       .ContinueWith(task => { if (task != null) temporarySecrets.Add(task.Result); })));
+            }
+            catch (Exception ex)
+            {
+                log.LogError(ex, "Error executing GetSecretToUseDuringRekeying on Rekeyable Object Provider(s)");
+                throw new Exception("Error executing GetSecretToUseDuringRekeying on Rekeyable Object Provider(s)");
+            }
+
             log.LogInformation("Preparing {0} Application Lifecycle Providers...", alcProviders.Count);
             try
             {
-                await Task.WhenAll(alcProviders.Select(alcProvider => alcProvider.BeforeRekeying()));
+                await Task.WhenAll(alcProviders.Select(alcProvider => alcProvider.BeforeRekeying(temporarySecrets)));
             }
             catch (Exception ex)
             {
@@ -88,7 +102,6 @@ namespace AuthJanitor.Providers
                 log.LogError(ex, "Error executing Rekey on Rekeyable Object Provider(s)");
                 throw new Exception("Error executing Rekey on Rekeyable Object Provider(s)");
             }
-
 
             log.LogInformation("Committing {0} Keys to {1} Application Lifecycle Providers...", generatedSecrets.Count, alcProviders.Count);
             try

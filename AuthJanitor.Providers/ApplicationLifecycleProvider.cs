@@ -11,9 +11,10 @@ namespace AuthJanitor.Providers
     public interface IApplicationLifecycleProvider : IAuthJanitorProvider
     {
         /// <summary>
-        /// Call to prepare the application for a new secret
+        /// Call to prepare the application for a new secret, passing in a secret
+        /// which will be valid while the Rekeying is taking place (for zero-downtime)
         /// </summary>
-        Task BeforeRekeying();
+        Task BeforeRekeying(List<RegeneratedSecret> temporaryUseSecrets);
 
         /// <summary>
         /// Call to commit the newly generated secret(s)
@@ -37,9 +38,10 @@ namespace AuthJanitor.Providers
         }
 
         /// <summary>
-        /// Call to prepare the application for a new secret
+        /// Call to prepare the application for a new secret, passing in a secret
+        /// which will be valid while the Rekeying is taking place (for zero-downtime)
         /// </summary>
-        public virtual Task BeforeRekeying()
+        public virtual Task BeforeRekeying(List<RegeneratedSecret> temporaryUseSecrets)
         {
             return Task.FromResult(true);
         }

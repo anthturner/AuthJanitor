@@ -19,9 +19,10 @@ namespace AuthJanitor.Providers.AppServices.WebApps
         }
 
         /// <summary>
-        /// Call to prepare the application for a new secret
+        /// Call to prepare the application for a new secret, passing in a secret
+        /// which will be valid while the Rekeying is taking place (for zero-downtime)
         /// </summary>
-        public override Task BeforeRekeying()
+        public override Task BeforeRekeying(List<RegeneratedSecret> temporaryUseSecrets)
         {
             return PrepareTemporaryDeploymentSlot();
         }
@@ -53,22 +54,11 @@ namespace AuthJanitor.Providers.AppServices.WebApps
             return SwapTemporaryToDestination();
         }
 
-        public override IList<RiskyConfigurationItem> GetRisks(TimeSpan requestedValidPeriod)
-        {
-            return new List<RiskyConfigurationItem>()
-            {
-                new RiskyConfigurationItem()
-                {
-                    Risk = "Sample Risk",
-                    Recommendation = "This can be safely ignored.",
-                    Score = 80
-                }
-            };
-        }
-
-        public override string GetDescription()
-        {
-            return $"Update Azure WebApps AppSetting name '{Configuration.SettingName}'." + Environment.NewLine + base.GetDescription();
-        }
+        public override string GetDescription() =>
+            $"Populates an App Setting called '{Configuration.SettingName}' in an Azure " +
+            $"Web Application called {Configuration.ResourceName} (Resource Group " +
+            $"'{Configuration.ResourceGroup}'). During the rekeying, the Functions App will " +
+            $"be moved from slot '{Configuration.SourceSlot}' to slot '{Configuration.TemporarySlot}' " +
+            $"temporarily, and then to slot '{Configuration.DestinationSlot}'.";
     }
 }

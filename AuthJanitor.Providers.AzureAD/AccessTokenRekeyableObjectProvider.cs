@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace AuthJanitor.Providers.AzureAD
@@ -31,5 +32,28 @@ namespace AuthJanitor.Providers.AzureAD
                 Expiry = token.ExpiresOn
             };
         }
+
+        /// <summary>
+        /// Get a list of configuration choices that might be risky
+        /// </summary>
+        /// <returns></returns>
+        public override IList<RiskyConfigurationItem> GetRisks()
+        {
+            List<RiskyConfigurationItem> issues = new List<RiskyConfigurationItem>();
+            if (Configuration.Scopes.Length > 10)
+            {
+                issues.Add(new RiskyConfigurationItem()
+                {
+                    Score = 70,
+                    Risk = $"There are more than 10 ({Configuration.Scopes.Length}) scopes defined for a single access token",
+                    Recommendation = "Reduce the number of scopes per token by segregating access between data security boundaries in the application(s)."
+                });
+            }
+
+            return issues;
+        }
+
+        public override string GetDescription() =>
+            $"Requests an Access Token with the scopes {string.Join(", ", Configuration.Scopes)}.";
     }
 }

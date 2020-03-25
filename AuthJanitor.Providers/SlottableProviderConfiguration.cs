@@ -29,15 +29,5 @@ namespace AuthJanitor.Providers
         /// </summary>
         [Description("Destination Application Slot")]
         public string DestinationSlot { get; set; } = DEFAULT_DESTINATION_SLOT;
-
-        /// <summary>
-        /// Get a string describing the Configuration
-        /// </summary>
-        /// <returns></returns>
-        public override string GetDescriptiveString()
-        {
-            return base.GetDescriptiveString() + Environment.NewLine +
-                $"Slots = Source: {SourceSlot} - Temporary: {TemporarySlot} - Destination: {DestinationSlot}";
-        }
     }
 }

@@ -1,6 +1,8 @@
 ﻿using Microsoft.Azure.Management.CosmosDB.Fluent;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
 namespace AuthJanitor.Providers.CosmosDb
@@ -20,18 +22,29 @@ namespace AuthJanitor.Providers.CosmosDb
         {
         }
 
+        public override async Task<RegeneratedSecret> GetSecretToUseDuringRekeying()
+        {
+            var cosmosDbAccount = await CosmosDbAccount;
+            IDatabaseAccountListKeysResult keys = await cosmosDbAccount.ListKeysAsync();
+            return new RegeneratedSecret()
+            {
+                Expiry = DateTimeOffset.UtcNow + TimeSpan.FromMinutes(10),
+                UserHint = Configuration.UserHint,
+                NewSecretValue = GetKeyValue(keys, GetOtherKeyKind(Configuration.KeyKind))
+            };
+        }
+
         public override async Task<RegeneratedSecret> Rekey(TimeSpan requestedValidPeriod)
         {
-            ICosmosDBAccount cosmosDbAccount = await (await GetAzure()).CosmosDBAccounts.GetByResourceGroupAsync(ResourceGroup, ResourceName);
-
-            await cosmosDbAccount.RegenerateKeyAsync(GetKeyKindString());
+            var cosmosDbAccount = await CosmosDbAccount;
+            await cosmosDbAccount.RegenerateKeyAsync(GetKeyKindString(Configuration.KeyKind));
 
             IDatabaseAccountListKeysResult keys = await cosmosDbAccount.ListKeysAsync();
             return new RegeneratedSecret()
             {
                 Expiry = DateTimeOffset.UtcNow + requestedValidPeriod,
                 UserHint = Configuration.UserHint,
-                NewSecretValue = GetKeyValue(keys)
+                NewSecretValue = GetKeyValue(keys, Configuration.KeyKind)
             };
         }
 
@@ -39,60 +52,61 @@ namespace AuthJanitor.Providers.CosmosDb
         {
             if (!Configuration.SkipScramblingOtherKey)
             {
-                string keyType = GetInverseKeyKindString();
-                ICosmosDBAccount cosmosDbAccount = await (await GetAzure()).CosmosDBAccounts.GetByResourceGroupAsync(ResourceGroup, ResourceName);
-                await cosmosDbAccount.RegenerateKeyAsync(keyType);
+                await (await CosmosDbAccount).RegenerateKeyAsync(
+                    GetKeyKindString(GetOtherKeyKind(Configuration.KeyKind)));
             }
         }
 
-        private string GetInverseKeyKindString()
+        public override IList<RiskyConfigurationItem> GetRisks()
         {
-            switch (Configuration.KeyKind)
+            List<RiskyConfigurationItem> issues = new List<RiskyConfigurationItem>();
+            if (Configuration.SkipScramblingOtherKey)
             {
-                case CosmosDbKeyConfiguration.CosmosDbKeyKinds.Primary:
-                    return GetKeyKindString(CosmosDbKeyConfiguration.CosmosDbKeyKinds.Secondary);
-                case CosmosDbKeyConfiguration.CosmosDbKeyKinds.Secondary:
-                    return GetKeyKindString(CosmosDbKeyConfiguration.CosmosDbKeyKinds.Primary);
-                case CosmosDbKeyConfiguration.CosmosDbKeyKinds.PrimaryReadOnly:
-                    return GetKeyKindString(CosmosDbKeyConfiguration.CosmosDbKeyKinds.SecondaryReadOnly);
-                case CosmosDbKeyConfiguration.CosmosDbKeyKinds.SecondaryReadOnly:
-                    return GetKeyKindString(CosmosDbKeyConfiguration.CosmosDbKeyKinds.PrimaryReadOnly);
+                issues.Add(new RiskyConfigurationItem()
+                {
+                    Score = 80,
+                    Risk = $"The other (unused) CosmosDb Key of this type is not being scrambled during key rotation",
+                    Recommendation = "Unless other services use the alternate key, consider allowing the scrambling of the unused key to 'fully' rekey CosmosDb and maintain a high degree of security."
+                });
             }
-            throw new System.Exception($"KeyKind '{Configuration.KeyKind}' not implemented");
+
+            return issues;
         }
 
-        private string GetKeyKindString()
-        {
-            return GetKeyKindString(Configuration.KeyKind);
-        }
+        public override string GetDescription() =>
+            $"Regenerates the {Configuration.KeyKind} key for a CosmosDB instance " +
+            $"called '{ResourceName}' (Resource Group '{ResourceGroup}'). " +
+            $"The {GetOtherKeyKind(Configuration.KeyKind)} key is used as a temporary " +
+            $"key while rekeying is taking place. The {GetOtherKeyKind(Configuration.KeyKind)} " +
+            $"key will {(Configuration.SkipScramblingOtherKey ? "not" : "also")} be rotated.";
 
-        private string GetKeyKindString(CosmosDbKeyConfiguration.CosmosDbKeyKinds keyKind)
-        {
-            switch (Configuration.KeyKind)
-            {
-                case CosmosDbKeyConfiguration.CosmosDbKeyKinds.Primary: return PRIMARY_KEY;
-                case CosmosDbKeyConfiguration.CosmosDbKeyKinds.Secondary: return SECONDARY_KEY;
-                case CosmosDbKeyConfiguration.CosmosDbKeyKinds.PrimaryReadOnly: return PRIMARY_READONLY_KEY;
-                case CosmosDbKeyConfiguration.CosmosDbKeyKinds.SecondaryReadOnly: return SECONDARY_READONLY_KEY;
-            }
-            throw new System.Exception($"KeyKind '{keyKind}' not implemented");
-        }
+        private Task<ICosmosDBAccount> CosmosDbAccount => GetAzure().ContinueWith(az => az.Result.CosmosDBAccounts.GetByResourceGroupAsync(ResourceGroup, ResourceName)).Unwrap();
 
-        private string GetKeyValue(IDatabaseAccountListKeysResult keys)
+        private string GetKeyKindString(CosmosDbKeyConfiguration.CosmosDbKeyKinds keyKind) => keyKind switch
         {
-            return GetKeyValue(keys, Configuration.KeyKind);
-        }
+            CosmosDbKeyConfiguration.CosmosDbKeyKinds.Primary => PRIMARY_KEY,
+            CosmosDbKeyConfiguration.CosmosDbKeyKinds.Secondary => SECONDARY_KEY,
+            CosmosDbKeyConfiguration.CosmosDbKeyKinds.PrimaryReadOnly => PRIMARY_READONLY_KEY,
+            CosmosDbKeyConfiguration.CosmosDbKeyKinds.SecondaryReadOnly => SECONDARY_READONLY_KEY,
+            _ => throw new System.Exception($"KeyKind '{keyKind}' not implemented")
+        };
 
-        private string GetKeyValue(IDatabaseAccountListKeysResult keys, CosmosDbKeyConfiguration.CosmosDbKeyKinds keyKind)
+        private CosmosDbKeyConfiguration.CosmosDbKeyKinds GetOtherKeyKind(CosmosDbKeyConfiguration.CosmosDbKeyKinds keyKind) => keyKind switch
         {
-            switch (keyKind)
-            {
-                case CosmosDbKeyConfiguration.CosmosDbKeyKinds.Primary: return keys.PrimaryMasterKey;
-                case CosmosDbKeyConfiguration.CosmosDbKeyKinds.Secondary: return keys.SecondaryMasterKey;
-                case CosmosDbKeyConfiguration.CosmosDbKeyKinds.PrimaryReadOnly: return keys.PrimaryReadonlyMasterKey;
-                case CosmosDbKeyConfiguration.CosmosDbKeyKinds.SecondaryReadOnly: return keys.SecondaryReadonlyMasterKey;
-            }
-            throw new System.Exception($"KeyKind '{keyKind}' not implemented");
-        }
+            CosmosDbKeyConfiguration.CosmosDbKeyKinds.Primary => CosmosDbKeyConfiguration.CosmosDbKeyKinds.Secondary,
+            CosmosDbKeyConfiguration.CosmosDbKeyKinds.Secondary => CosmosDbKeyConfiguration.CosmosDbKeyKinds.Primary,
+            CosmosDbKeyConfiguration.CosmosDbKeyKinds.PrimaryReadOnly => CosmosDbKeyConfiguration.CosmosDbKeyKinds.SecondaryReadOnly,
+            CosmosDbKeyConfiguration.CosmosDbKeyKinds.SecondaryReadOnly => CosmosDbKeyConfiguration.CosmosDbKeyKinds.PrimaryReadOnly,
+            _ => throw new System.Exception($"KeyKind '{keyKind}' not implemented")
+        };
+
+        private string GetKeyValue(IDatabaseAccountListKeysResult keys, CosmosDbKeyConfiguration.CosmosDbKeyKinds keyKind) => keyKind switch
+        {
+            CosmosDbKeyConfiguration.CosmosDbKeyKinds.Primary => keys.PrimaryMasterKey,
+            CosmosDbKeyConfiguration.CosmosDbKeyKinds.Secondary => keys.SecondaryMasterKey,
+            CosmosDbKeyConfiguration.CosmosDbKeyKinds.PrimaryReadOnly => keys.PrimaryReadonlyMasterKey,
+            CosmosDbKeyConfiguration.CosmosDbKeyKinds.SecondaryReadOnly => keys.SecondaryReadonlyMasterKey,
+            _ => throw new System.Exception($"KeyKind '{keyKind}' not implemented")
+        };
     }
 }

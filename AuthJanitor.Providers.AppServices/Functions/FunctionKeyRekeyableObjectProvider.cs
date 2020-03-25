@@ -30,9 +30,14 @@ namespace AuthJanitor.Providers.AppServices.Functions
             return newKey;
         }
 
-        public override string GetDescription()
-        {
-            return $"Rekey Azure Function '{Configuration.FunctionName}' key name '{Configuration.FunctionKeyName}' with new {Configuration.KeyLength}-length key." + Environment.NewLine + base.GetDescription();
-        }
+        public override string GetDescription() =>
+            $"Regenerates a Functions key for an Azure " +
+            $"Functions application called {Configuration.ResourceName} (Resource Group " +
+            $"'{Configuration.ResourceGroup}').";
+        
+        // TODO: Zero-downtime rotation here with similar slotting?
+        //During the rekeying, the Functions App will " +
+        //    $"be moved from slot '{Configuration.SourceSlot}' to slot '{Configuration.TemporarySlot}' " +
+        //    $"temporarily, and then to slot '{Configuration.DestinationSlot}'.";
     }
 }

@@ -1,14 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Linq;
+﻿using System.ComponentModel;
 
 namespace AuthJanitor.Providers.KeyVault
 {
-    public class KeyVaultSecretConfiguration : AuthJanitorProviderConfiguration
+    public class KeyVaultSecretLifecycleConfiguration : AuthJanitorProviderConfiguration
     {
-        public const int DEFAULT_SECRET_LENGTH = 64;
-
         /// <summary>
         /// Key Vault name (xxxxx.vault.azure.net)
         /// </summary>
@@ -22,9 +17,9 @@ namespace AuthJanitor.Providers.KeyVault
         public string SecretName { get; set; }
 
         /// <summary>
-        /// Length of secret to regenerate
+        /// Commit the ConnectionString instead of the Key
         /// </summary>
-        [Description("New Secret Length")]
-        public int SecretLength { get; set; } = DEFAULT_SECRET_LENGTH;
+        [Description("Commit Connection String instead of Key")]
+        public bool UseConnectionString { get; set; }
     }
 }

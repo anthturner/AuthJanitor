@@ -28,11 +28,5 @@ namespace AuthJanitor.Providers
         /// Destination Slot (updated application). By default this is the same as the Source Slot.
         /// </summary>
         public string DestinationSlotName => Configuration.DestinationSlot;
-
-
-        public override string GetDescription()
-        {
-            return $"+ Slotted Deployment (Original: '{SourceSlotName}') (Temporary: '{TemporarySlotName}') (Destination: '{DestinationSlotName}')" + Environment.NewLine + base.GetDescription();
-        }
     }
 }

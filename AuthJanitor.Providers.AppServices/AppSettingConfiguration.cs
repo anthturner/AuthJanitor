@@ -14,14 +14,5 @@ namespace AuthJanitor.Providers.AppServices
         [DisplayName("AppSetting Name")]
         [Description("AppSetting Name")]
         public string SettingName { get; set; }
-
-        /// <summary>
-        /// Get a string describing the Configuration
-        /// </summary>
-        /// <returns></returns>
-        public override string GetDescriptiveString()
-        {
-            return base.GetDescriptiveString() + Environment.NewLine + $"AppSetting Name: {SettingName}";
-        }
     }
 }

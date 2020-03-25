@@ -11,7 +11,7 @@ namespace AuthJanitor.Providers.KeyVault
               IconClass = "fa fa-low-vision",
               Description = "Manages the lifecycle of a Key Vault Secret where a Managed Secret's value is stored")]
     [ProviderImage(ProviderImages.KEY_VAULT_SVG)]
-    public class KeyVaultSecretApplicationLifecycleProvider : ApplicationLifecycleProvider<KeyVaultSecretConfiguration>
+    public class KeyVaultSecretApplicationLifecycleProvider : ApplicationLifecycleProvider<KeyVaultSecretLifecycleConfiguration>
     {
         public KeyVaultSecretApplicationLifecycleProvider(ILoggerFactory loggerFactory, IServiceProvider serviceProvider) : base(loggerFactory, serviceProvider)
         {
@@ -22,13 +22,7 @@ namespace AuthJanitor.Providers.KeyVault
         /// </summary>
         public override async Task CommitNewSecrets(List<RegeneratedSecret> newSecrets)
         {
-            // Connect to the Key Vault storing application secrets
-            SecretClient client = new SecretClient(new Uri($"https://{Configuration.VaultName}.vault.azure.net/"),
-                _serviceProvider
-                    .GetService<MultiCredentialProvider>()
-                    .Get(MultiCredentialProvider.CredentialType.AgentServicePrincipal)
-                    .AzureIdentityTokenCredential);
-
+            var client = GetSecretClient();
             foreach (RegeneratedSecret secret in newSecrets)
             {
                 Azure.Response<KeyVaultSecret> currentSecret = await client.GetSecretAsync(Configuration.SecretName);
@@ -54,5 +48,17 @@ namespace AuthJanitor.Providers.KeyVault
                 await client.SetSecretAsync(newKvSecret);
             }
         }
+
+        private SecretClient GetSecretClient() =>
+            new SecretClient(new Uri($"https://{Configuration.VaultName}.vault.azure.net/"),
+                _serviceProvider
+                    .GetService<MultiCredentialProvider>()
+                    .Get(CredentialType)
+                    .AzureIdentityTokenCredential);
+
+        public override string GetDescription() =>
+            $"Populates a Key Vault Secret called '{Configuration.SecretName}' " +
+            $"from vault '{Configuration.VaultName}' with a given " +
+            (Configuration.UseConnectionString ? "connection string" : "key") + ".";
     }
 }

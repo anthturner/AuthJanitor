@@ -1,5 +1,4 @@
 ﻿using Microsoft.Azure.Management.AppService.Fluent.Models;
-using System;
 using System.ComponentModel;
 
 namespace AuthJanitor.Providers.AppServices
@@ -20,15 +19,5 @@ namespace AuthJanitor.Providers.AppServices
         /// </summary>
         [Description("Connection String Type")]
         public ConnectionStringType ConnectionStringType { get; set; }
-
-        /// <summary>
-        /// Get a string describing the Configuration
-        /// </summary>
-        /// <returns></returns>
-        public override string GetDescriptiveString()
-        {
-            return base.GetDescriptiveString() + Environment.NewLine +
-$"Connection String Name: {ConnectionStringName} - Type: {ConnectionStringType}";
-        }
     }
 }

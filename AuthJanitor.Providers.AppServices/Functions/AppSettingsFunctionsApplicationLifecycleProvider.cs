@@ -22,9 +22,10 @@ namespace AuthJanitor.Providers.AppServices.Functions
         }
 
         /// <summary>
-        /// Call to prepare the application for a new secret
+        /// Call to prepare the application for a new secret, passing in a secret
+        /// which will be valid while the Rekeying is taking place (for zero-downtime)
         /// </summary>
-        public override Task BeforeRekeying()
+        public override Task BeforeRekeying(List<RegeneratedSecret> temporaryUseSecrets)
         {
             return PrepareTemporaryDeploymentSlot();
         }
@@ -42,7 +43,9 @@ namespace AuthJanitor.Providers.AppServices.Functions
             IUpdate<IFunctionDeploymentSlot> updateBase = (await GetDeploymentSlot(TemporarySlotName)).Update();
             foreach (RegeneratedSecret secret in newSecrets)
             {
-                updateBase = updateBase.WithAppSetting($"{Configuration.SettingName}-{secret.UserHint}", secret.NewSecretValue);
+                var secretName = string.IsNullOrEmpty(secret.UserHint) ? Configuration.SettingName : $"{Configuration.SettingName}-{secret.UserHint}";
+                updateBase = updateBase.WithoutAppSetting(secretName);
+                updateBase = updateBase.WithAppSetting(secretName, secret.NewSecretValue);
             }
 
             await updateBase.ApplyAsync();
@@ -56,9 +59,11 @@ namespace AuthJanitor.Providers.AppServices.Functions
             return SwapTemporaryToDestination();
         }
 
-        public override string GetDescription()
-        {
-            return $"Update Azure Functions App Setting name '{Configuration.SettingName}'." + Environment.NewLine + base.GetDescription();
-        }
+        public override string GetDescription() =>
+            $"Populates an App Setting called '{Configuration.SettingName}' in an Azure " +
+            $"Functions application called {Configuration.ResourceName} (Resource Group " +
+            $"'{Configuration.ResourceGroup}'). During the rekeying, the Functions App will " +
+            $"be moved from slot '{Configuration.SourceSlot}' to slot '{Configuration.TemporarySlot}' " +
+            $"temporarily, and then to slot '{Configuration.DestinationSlot}'.";
     }
 }

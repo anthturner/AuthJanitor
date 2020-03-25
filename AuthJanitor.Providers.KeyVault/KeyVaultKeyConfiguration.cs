@@ -16,14 +16,5 @@ namespace AuthJanitor.Providers.KeyVault
         /// </summary>
         [Description("Key Name")]
         public string KeyName { get; set; }
-
-        /// <summary>
-        /// Get a string describing the Configuration
-        /// </summary>
-        /// <returns></returns>
-        public override string GetDescriptiveString()
-        {
-            return base.GetDescriptiveString() + Environment.NewLine + $"Key Vault Name: {VaultName} - Object Name: {KeyName}";
-        }
     }
 }

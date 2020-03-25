@@ -18,14 +18,21 @@ namespace AuthJanitor.Providers.KeyVault
         {
         }
 
+        public override async Task<RegeneratedSecret> GetSecretToUseDuringRekeying()
+        {
+            var client = GetSecretClient();
+            Azure.Response<KeyVaultSecret> currentSecret = await client.GetSecretAsync(Configuration.SecretName);
+            return new RegeneratedSecret()
+            {
+                Expiry = currentSecret.Value.Properties.ExpiresOn.Value,
+                UserHint = Configuration.UserHint,
+                NewSecretValue = currentSecret.Value.Value
+            };
+        }
+
         public override async Task<RegeneratedSecret> Rekey(TimeSpan requestedValidPeriod)
         {
-            // TODO: This doesn't use the other credential set, it tries to execute its own set of fallbacks!
-            SecretClient client = new SecretClient(new Uri($"https://{Configuration.VaultName}.vault.azure.net/"),
-                _serviceProvider
-                    .GetService<MultiCredentialProvider>()
-                    .Get(MultiCredentialProvider.CredentialType.AgentServicePrincipal)
-                    .AzureIdentityTokenCredential);
+            var client = GetSecretClient();
             Azure.Response<KeyVaultSecret> currentSecret = await client.GetSecretAsync(Configuration.SecretName);
 
             // Create a new version of the Secret
@@ -53,6 +60,29 @@ namespace AuthJanitor.Providers.KeyVault
                 NewSecretValue = secretResponse.Value.Value
             };
         }
+        public override IList<RiskyConfigurationItem> GetRisks()
+        {
+            List<RiskyConfigurationItem> issues = new List<RiskyConfigurationItem>();
+            if (Configuration.SecretLength < 16)
+            {
+                issues.Add(new RiskyConfigurationItem()
+                {
+                    Score = 80,
+                    Risk = $"The specified secret length is extremely short ({Configuration.SecretLength} characters), making it easier to compromise through brute force attacks",
+                    Recommendation = "Increase the length of the secret to over 32 characters; prefer 64 or up."
+                });
+            }
+            else if (Configuration.SecretLength < 32)
+            {
+                issues.Add(new RiskyConfigurationItem()
+                {
+                    Score = 40,
+                    Risk = $"The specified secret length is somewhat short ({Configuration.SecretLength} characters), making it easier to compromise through brute force attacks",
+                    Recommendation = "Increase the length of the secret to over 32 characters; prefer 64 or up."
+                });
+            }
+            return issues;
+        }
 
         public override IList<RiskyConfigurationItem> GetRisks(TimeSpan requestedValidPeriod)
         {
@@ -62,7 +92,7 @@ namespace AuthJanitor.Providers.KeyVault
                 issues.Add(new RiskyConfigurationItem()
                 {
                     Score = 80,
-                    Risk = $"The specificed Valid Period is TimeSpan.MaxValue, which is effectively Infinity; it is dangerous to allow infinite periods of validity because it allows an object's prior version to be available after the object has been rotated",
+                    Risk = $"The specified Valid Period is TimeSpan.MaxValue, which is effectively Infinity; it is dangerous to allow infinite periods of validity because it allows an object's prior version to be available after the object has been rotated",
                     Recommendation = "Specify a reasonable value for Valid Period"
                 });
             }
@@ -71,11 +101,22 @@ namespace AuthJanitor.Providers.KeyVault
                 issues.Add(new RiskyConfigurationItem()
                 {
                     Score = 100,
-                    Risk = $"The specificed Valid Period is zero, so this object will never be allowed to be used",
+                    Risk = $"The specified Valid Period is zero, so this object will never be allowed to be used",
                     Recommendation = "Specify a reasonable value for Valid Period"
                 });
             }
-            return issues.Union(base.GetRisks(requestedValidPeriod)).ToList();
+            return issues.Union(GetRisks()).ToList();
         }
+
+        public override string GetDescription() =>
+            $"Regenerates the secret called '{Configuration.SecretName}' from vault " +
+            $"'{Configuration.VaultName}' with a length of {Configuration.SecretLength}.";
+
+        private SecretClient GetSecretClient() =>
+            new SecretClient(new Uri($"https://{Configuration.VaultName}.vault.azure.net/"),
+                _serviceProvider
+                    .GetService<MultiCredentialProvider>()
+                    .Get(CredentialType)
+                    .AzureIdentityTokenCredential);
     }
 }

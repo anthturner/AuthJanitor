@@ -22,23 +22,5 @@ namespace AuthJanitor.Providers
         /// RegeneratedSecrets entering an ApplicationLifecycleProvider
         /// </summary>
         public string UserHint { get; set; }
-
-        /// <summary>
-        /// Get a string describing the Configuration
-        /// </summary>
-        /// <returns></returns>
-        public virtual string GetDescriptiveString()
-        {
-            return $"Resource Group: {ResourceGroup} - Resource Name: {ResourceName}";
-        }
-
-        /// <summary>
-        /// Get a list of configuration choices that might be risky
-        /// </summary>
-        /// <returns></returns>
-        public virtual IList<RiskyConfigurationItem> GetRiskyConfigurations()
-        {
-            return new List<RiskyConfigurationItem>();
-        }
     }
 }

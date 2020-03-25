@@ -18,14 +18,21 @@ namespace AuthJanitor.Providers.KeyVault
         {
         }
 
+        public override async Task<RegeneratedSecret> GetSecretToUseDuringRekeying()
+        {
+            var client = GetKeyClient();
+            Azure.Response<KeyVaultKey> currentKey = await client.GetKeyAsync(Configuration.KeyName);
+
+            return new RegeneratedSecret()
+            {
+                UserHint = Configuration.UserHint,
+                NewSecretValue = currentKey.Value.Key.Id.ToString()
+            };
+        }
+
         public override async Task<RegeneratedSecret> Rekey(TimeSpan requestedValidPeriod)
         {
-            KeyClient client = new KeyClient(new Uri($"https://{Configuration.VaultName}.vault.azure.net/"),
-                _serviceProvider
-                    .GetService<MultiCredentialProvider>()
-                    .Get(MultiCredentialProvider.CredentialType.AgentServicePrincipal)
-                    .AzureIdentityTokenCredential);
-
+            var client = GetKeyClient();
             Azure.Response<KeyVaultKey> currentKey = await client.GetKeyAsync(Configuration.KeyName);
 
             CreateKeyOptions creationOptions = new CreateKeyOptions()
@@ -76,5 +83,17 @@ namespace AuthJanitor.Providers.KeyVault
             }
             return issues.Union(base.GetRisks(requestedValidPeriod)).ToList();
         }
+
+        public override string GetDescription() =>
+            $"Regenerates the key called '{Configuration.KeyName}' from vault " +
+            $"'{Configuration.VaultName}' with its current parameters and at its " +
+            $"current key size.";
+
+        private KeyClient GetKeyClient() =>
+            new KeyClient(new Uri($"https://{Configuration.VaultName}.vault.azure.net/"),
+                _serviceProvider
+                    .GetService<MultiCredentialProvider>()
+                    .Get(CredentialType)
+                    .AzureIdentityTokenCredential);
     }
 }

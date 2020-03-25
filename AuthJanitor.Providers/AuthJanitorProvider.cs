@@ -134,7 +134,7 @@ namespace AuthJanitor.Providers
         /// Get a list of risky items for the Provider independent of Secret validity period
         /// </summary>
         /// <returns></returns>
-        public virtual IList<RiskyConfigurationItem> GetRisks() => Configuration.GetRiskyConfigurations();
+        public virtual IList<RiskyConfigurationItem> GetRisks() => new List<RiskyConfigurationItem>();
 
         protected async Task<Microsoft.Azure.Management.Fluent.IAzure> GetAzure()
         {

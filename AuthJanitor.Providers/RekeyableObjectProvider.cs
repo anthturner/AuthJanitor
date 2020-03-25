@@ -7,6 +7,13 @@ namespace AuthJanitor.Providers
     public interface IRekeyableObjectProvider : IAuthJanitorProvider
     {
         /// <summary>
+        /// Call before Rekeying occurs to get a secondary secret which will continue
+        /// to work while Rekeying is taking place (if any).
+        /// </summary>
+        /// <returns></returns>
+        Task<RegeneratedSecret> GetSecretToUseDuringRekeying();
+
+        /// <summary>
         /// Call when ready to rekey a given RekeyableService.
         /// </summary>
         /// <param name="requestedValidPeriod">Requested period of validity for new key/secret</param>
@@ -45,10 +52,14 @@ namespace AuthJanitor.Providers
             return Task.FromResult(true);
         }
 
-        public override string GetDescription()
+        /// <summary>
+        /// Call before Rekeying occurs to get a secondary secret which will continue
+        /// to work while Rekeying is taking place (if any).
+        /// </summary>
+        public virtual async Task<RegeneratedSecret> GetSecretToUseDuringRekeying()
         {
-            return string.IsNullOrEmpty(ResourceName) ? $"+ Rekeyable Service does not have an AzureRM resource associated" :
-            $"+ Rekeyable Service has Resource Name '{ResourceName}' from Resource Group '{ResourceGroup}'";
+            await Task.Yield();
+            return null;
         }
     }
 }
