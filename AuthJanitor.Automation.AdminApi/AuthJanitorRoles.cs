@@ -18,34 +18,38 @@ namespace AuthJanitor.Automation.AdminApi
         private static bool IsRunningLocally => string.IsNullOrEmpty(Environment.GetEnvironmentVariable("WEBSITE_INSTANCE_ID"));
 #endif
 
+        public static string GetUserRole(HttpRequest req)
+        {
+            if (req.HttpContext.User == null ||
+                req.HttpContext.User.Claims == null ||
+                !req.HttpContext.User.Claims.Any()) return string.Empty;
+            var roles = req.HttpContext.User.Claims.FirstOrDefault(c => c.Type == "roles");
+            if (roles == null || roles.Value == null || !roles.Value.Any()) return string.Empty;
+            return roles.Value;
+        }
+
         public static bool IsValidUser(this HttpRequest req)
         {
 #if DEBUG
             if (IsRunningLocally) return true;
 #endif
-            if (req.HttpContext.User == null ||
-                req.HttpContext.User.Claims == null ||
-                !req.HttpContext.User.Claims.Any()) return false;
-            var roles = req.HttpContext.User.Claims.FirstOrDefault(c => c.Type == "roles");
-            if (roles == null || roles.Value == null || !roles.Value.Any()) return false;
-
-            if (roles.Value.Contains(AuthJanitorRoles.GlobalAdmin) ||
-                roles.Value.Contains(AuthJanitorRoles.ResourceAdmin) ||
-                roles.Value.Contains(AuthJanitorRoles.SecretAdmin) ||
-                roles.Value.Contains(AuthJanitorRoles.ServiceOperator) ||
-                roles.Value.Contains(AuthJanitorRoles.Auditor))
+            var role = GetUserRole(req);
+            if (role == AuthJanitorRoles.GlobalAdmin ||
+                role == AuthJanitorRoles.ResourceAdmin ||
+                role == AuthJanitorRoles.SecretAdmin ||
+                role == AuthJanitorRoles.ServiceOperator ||
+                role == AuthJanitorRoles.Auditor)
                 return true;
             return false;
         }
         public static bool IsValidUser(this HttpRequest req, params string[] validRoles)
         {
-            if (req.HttpContext.User == null ||
-                req.HttpContext.User.Claims == null ||
-                !req.HttpContext.User.Claims.Any()) return false;
-            var roles = req.HttpContext.User.Claims.FirstOrDefault(c => c.Type == "roles");
-            if (roles == null || roles.Value == null || !roles.Value.Any()) return false;
-
-            if (validRoles.Any(validRole => roles.Value.Contains(validRole)))
+#if DEBUG
+            if (IsRunningLocally) return true;
+#endif
+            var role = GetUserRole(req);
+            if (role == string.Empty) return false;
+            if (validRoles.Any(validRole => role == validRole))
                 return true;
             return false;
         }

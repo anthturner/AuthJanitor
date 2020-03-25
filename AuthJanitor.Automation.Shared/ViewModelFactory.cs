@@ -117,8 +117,16 @@ namespace AuthJanitor.Automation.Shared
             };
         }
 
-        private static RekeyingTaskViewModel GetViewModel(IServiceProvider serviceProvider, RekeyingTask rekeyingTask) =>
-            new RekeyingTaskViewModel()
+        private static RekeyingTaskViewModel GetViewModel(IServiceProvider serviceProvider, RekeyingTask rekeyingTask)
+        {
+            ManagedSecretViewModel secret;
+            try
+            {
+                secret = serviceProvider.GetRequiredService<Func<ManagedSecret, ManagedSecretViewModel>>()(
+                             serviceProvider.GetRequiredService<IDataStore<ManagedSecret>>().GetAsync(rekeyingTask.ManagedSecretId).Result);
+            }
+            catch (Exception ex) { secret = new ManagedSecretViewModel() { ObjectId = Guid.Empty }; }
+            return new RekeyingTaskViewModel()
             {
                 ObjectId = rekeyingTask.ObjectId,
                 Queued = rekeyingTask.Queued,
@@ -128,9 +136,9 @@ namespace AuthJanitor.Automation.Shared
                 RekeyingCompleted = rekeyingTask.RekeyingCompleted,
                 RekeyingErrorMessage = rekeyingTask.RekeyingErrorMessage,
                 RekeyingInProgress = rekeyingTask.RekeyingInProgress,
-                ManagedSecret = serviceProvider.GetRequiredService<Func<ManagedSecret, ManagedSecretViewModel>>()(
-                                    serviceProvider.GetRequiredService<IDataStore<ManagedSecret>>().GetAsync(rekeyingTask.ManagedSecretId).Result)
+                ManagedSecret = secret
             };
+        }
 
         private static ViewModels.ResourceViewModel GetViewModel(IServiceProvider serviceProvider, Resource resource)
         {

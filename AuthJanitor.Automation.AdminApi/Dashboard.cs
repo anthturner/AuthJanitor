@@ -47,7 +47,7 @@ namespace AuthJanitor.Automation.AdminApi
                     " " +
                     claimsPrincipal.FindFirst(ClaimTypes.Surname)?.Value,
                 SignedInEmail = claimsPrincipal.FindFirst(ClaimTypes.Email)?.Value,
-                SignedInRole = claimsPrincipal.FindFirst(ClaimTypes.Role)?.Value,
+                SignedInRole = AuthJanitorRoleExtensions.GetUserRole(req),
                 TotalResources = allResources.Count,
                 TotalSecrets = allSecrets.Count,
                 TotalPendingApproval = allTasks.Where(t => 

@@ -5,13 +5,6 @@
         <BarBrand>
             <img style="height: 5vh" src="css/logo.png" alt="AuthJanitor Logo" />
         </BarBrand>
-        <span class="float-right align-middle">
-            <span class="float-left text-light mr-3">
-                <FigureImage Style="height: 2em;" IsRounded="true" Source="@GetGravatar()" AlternateText="Avatar image" Margin="Margin.Is2.FromRight" />
-                <span title="Role: @Metrics.SignedInRole">
-                    @Metrics.SignedInName
-                </span>
-            </span>
             <BarToggler Float="Float.Right" />
             <BarMenu>
                 <BarStart>
@@ -64,6 +57,19 @@
                                 </Paragraph>
                             </Column>
                             <Column></Column>
+                            <Column ColumnSize="ColumnSize.IsAuto" Class="m-0 p-0">
+                                <div class="text-light p-0 mr-1 mt-1">
+                                    <img src="@GetGravatar()" style="height: 2.7em;" class="img-fluid rounded mr-2" alt="Avatar Image" />
+                                    @if (!string.IsNullOrEmpty(Metrics.SignedInRole))
+                                    {
+                                        <span title="Role: @Metrics.SignedInRole">
+                                            @Metrics.SignedInName
+                                        </span>
+                                    } else {
+                                        <span>@Metrics.SignedInName</span>
+                                    }
+                                </div>
+                            </Column>
                             <Column ColumnSize="ColumnSize.IsAuto">
                                 <div style="padding: 6px 3px 4px 7px; border: 2px solid #656565; border-radius: 5px;">
                                     <a class="text-light text-decoration-none" href="https://github.com/anthturner/AuthJanitor/wiki" target="_blank" title="Documentation">
@@ -78,7 +84,6 @@
                     </BarItem>
                 </BarEnd>
             </BarMenu>
-        </span>
     </Bar>
     <div class="app-content">
         @Body
