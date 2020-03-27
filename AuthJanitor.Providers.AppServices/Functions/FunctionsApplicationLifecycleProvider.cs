@@ -8,7 +8,7 @@ namespace AuthJanitor.Providers.AppServices.Functions
     public abstract class FunctionsApplicationLifecycleProvider<TConsumerConfiguration> : SlottableApplicationLifecycleProvider<TConsumerConfiguration>
         where TConsumerConfiguration : SlottableProviderConfiguration
     {
-        protected FunctionsApplicationLifecycleProvider(ILoggerFactory loggerFactory, IServiceProvider serviceProvider) : base(loggerFactory, serviceProvider)
+        protected FunctionsApplicationLifecycleProvider(ILogger logger, IServiceProvider serviceProvider) : base(logger, serviceProvider)
         {
         }
 

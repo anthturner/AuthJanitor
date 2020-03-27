@@ -102,9 +102,9 @@ namespace AuthJanitor.Providers
         protected ILogger Logger { get; }
 
         protected IServiceProvider _serviceProvider;
-        protected AuthJanitorProvider(ILoggerFactory loggerFactory, IServiceProvider serviceProvider)
+        protected AuthJanitorProvider(ILogger logger, IServiceProvider serviceProvider)
         {
-            Logger = loggerFactory.CreateLogger(GetType());
+            Logger = logger;
             _serviceProvider = serviceProvider;
         }
 

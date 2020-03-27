@@ -12,7 +12,7 @@ namespace AuthJanitor.Providers.AzureAD
     [ProviderImage(ProviderImages.AZURE_AD_SVG)]
     public class AccessTokenRekeyableObjectProvider : RekeyableObjectProvider<AccessTokenConfiguration>
     {
-        public AccessTokenRekeyableObjectProvider(ILoggerFactory loggerFactory, IServiceProvider serviceProvider) : base(loggerFactory, serviceProvider)
+        public AccessTokenRekeyableObjectProvider(ILogger logger, IServiceProvider serviceProvider) : base(logger, serviceProvider)
         {
         }
 

@@ -7,14 +7,13 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
-using System.Runtime.CompilerServices;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using System.Web.Http;
 
@@ -111,6 +110,7 @@ namespace AuthJanitor.Automation.AdminApi
         public async Task<IActionResult> Approve(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "tasks/{taskId:guid}/approve")] HttpRequest req,
             Guid taskId,
+            ClaimsPrincipal claimsPrincipal,
             ILogger log)
         {
             if (!req.IsValidUser(AuthJanitorRoles.ServiceOperator, AuthJanitorRoles.GlobalAdmin)) return new UnauthorizedResult();
@@ -138,17 +138,35 @@ namespace AuthJanitor.Automation.AdminApi
                 task.RekeyingInProgress = true;
                 await RekeyingTasks.UpdateAsync(task);
 
-                var result = await ExecuteRekeyingWorkflow(log, task);
+                var aggregatedStringLogger = new RekeyingAttemptLogger(log)
+                {
+                    UserDisplayName =
+                        claimsPrincipal.FindFirst(ClaimTypes.GivenName)?.Value +
+                        " " +
+                        claimsPrincipal.FindFirst(ClaimTypes.Surname)?.Value,
+                    UserEmail = claimsPrincipal.FindFirst(ClaimTypes.Email)?.Value
+                };
+                try
+                {
+                    await ExecuteRekeyingWorkflow(task, aggregatedStringLogger);
+                    task.RekeyingInProgress = false;
+                    task.RekeyingCompleted = aggregatedStringLogger.IsSuccessfulAttempt;
+                    task.RekeyingFailed = !aggregatedStringLogger.IsSuccessfulAttempt;
+                    task.Attempts.Add(aggregatedStringLogger);
+                }
+                catch (Exception ex)
+                {
+                    task.RekeyingInProgress = false;
+                    task.RekeyingCompleted = false;
+                    task.RekeyingFailed = true;
+                    if (aggregatedStringLogger.OuterException == null)
+                        aggregatedStringLogger.OuterException = ex;
+                    task.Attempts.Add(aggregatedStringLogger);
+                }
 
-                task.RekeyingInProgress = false;
-                if (result != string.Empty)
-                    task.RekeyingErrorMessage = result;
-                else
-                    task.RekeyingCompleted = true;
                 await RekeyingTasks.UpdateAsync(task);
-
-                if (result != string.Empty)
-                    return new BadRequestErrorMessageResult(result);
+                if (task.RekeyingFailed)
+                    return new BadRequestErrorMessageResult(aggregatedStringLogger.OuterException.Message);
                 else
                     return new OkResult();
             }
@@ -175,7 +193,6 @@ namespace AuthJanitor.Automation.AdminApi
                 client_secret = Environment.GetEnvironmentVariable("CLIENT_SECRET", EnvironmentVariableTarget.Process),
                 assertion = request.Headers["X-MS-TOKEN-AAD-ID-TOKEN"].FirstOrDefault(),
                 resource = "https://management.core.windows.net",
-                //scope = "https://management.core.windows.net//user_impersonation",
                 requested_token_use = "on_behalf_of"
             });
 

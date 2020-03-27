@@ -1,4 +1,6 @@
-﻿using System;
+﻿using AuthJanitor.Providers;
+using System;
+using System.Collections.Generic;
 
 namespace AuthJanitor.Automation.Shared
 {
@@ -11,8 +13,7 @@ namespace AuthJanitor.Automation.Shared
 
         public bool RekeyingInProgress { get; set; } = false;
         public bool RekeyingCompleted { get; set; } = false;
-        public string RekeyingErrorMessage { get; set; } = string.Empty;
-
+        public bool RekeyingFailed { get; set; } = false;
 
         public TaskConfirmationStrategies ConfirmationType { get; set; }
 
@@ -22,5 +23,7 @@ namespace AuthJanitor.Automation.Shared
         public Guid AvailabilityScheduleId { get; set; }
 
         public Guid ManagedSecretId { get; set; }
+
+        public List<RekeyingAttemptLogger> Attempts { get; set; } = new List<RekeyingAttemptLogger>();
     }
 }

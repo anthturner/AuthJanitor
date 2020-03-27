@@ -32,7 +32,7 @@ namespace AuthJanitor.Providers
     /// </summary>
     public abstract class RekeyableObjectProvider<TConfiguration> : AuthJanitorProvider<TConfiguration>, IRekeyableObjectProvider where TConfiguration : AuthJanitorProviderConfiguration
     {
-        protected RekeyableObjectProvider(ILoggerFactory loggerFactory, IServiceProvider serviceProvider) : base(loggerFactory, serviceProvider)
+        protected RekeyableObjectProvider(ILogger logger, IServiceProvider serviceProvider) : base(logger, serviceProvider)
         {
         }
 

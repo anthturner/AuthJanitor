@@ -30,7 +30,7 @@ namespace AuthJanitor.Providers
                 var selectedProvider = loadedProviders.FirstOrDefault(p => p.ProviderTypeName == key);
                 if (selectedProvider == null) throw new Exception($"Provider '{key}' not available!");
                 return Activator.CreateInstance(selectedProvider.ProviderType, new object[] {
-                    serviceProvider.GetRequiredService<ILoggerFactory>(),
+                    serviceProvider.GetRequiredService<ILogger>(),
                     serviceProvider
                 }) as IAuthJanitorProvider;
             });

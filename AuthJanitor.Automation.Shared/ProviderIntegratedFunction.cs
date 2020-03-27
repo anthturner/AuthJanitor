@@ -3,9 +3,11 @@ using AuthJanitor.Automation.Shared.SecureStorageProviders;
 using AuthJanitor.Automation.Shared.ViewModels;
 using AuthJanitor.Providers;
 using Microsoft.Extensions.Logging;
+using Microsoft.IdentityModel.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.NetworkInformation;
 using System.Threading.Tasks;
 
 namespace AuthJanitor.Automation.Shared
@@ -60,15 +62,19 @@ namespace AuthJanitor.Automation.Shared
             LoadedProviders = loadedProviders;
         }
 
-        protected async Task<string> ExecuteRekeyingWorkflow(ILogger log, RekeyingTask task)
+        
+
+        protected async Task<RekeyingAttemptLogger> ExecuteRekeyingWorkflow(RekeyingTask task, RekeyingAttemptLogger log = null)
         {
+            if (log == null) log = new RekeyingAttemptLogger();
+
             MultiCredentialProvider.CredentialType credentialType;
             if (task.ConfirmationType == TaskConfirmationStrategies.AdminCachesSignOff)
             {
                 if (task.PersistedCredentialId == default)
                 {
                     log.LogError("Cached sign-off is preferred but no credentials were persisted!");
-                    return "Cached sign-off is preferred but no credentials were persisted!";
+                    throw new Exception("Cached sign-off is preferred but no credentials were persisted!");
                 }
                 var token = await SecureStorageProvider.Retrieve<Azure.Core.AccessToken>(task.PersistedCredentialId);
                 CredentialProvider.Register(
@@ -102,7 +108,7 @@ namespace AuthJanitor.Automation.Shared
                     .Where(r => !r.Value)
                     .Select(r => resources.FirstOrDefault(resource => resource.ObjectId == r.Key).Name);                    
                 log.LogCritical("Access tests failed on: {0}", string.Join("; ", failedResourceNames));
-                return $"Access tests failed on: {string.Join("; ", failedResourceNames)}";
+                throw new Exception($"Access tests failed on: {string.Join("; ", failedResourceNames)}");
             }
 
             try
@@ -113,7 +119,7 @@ namespace AuthJanitor.Automation.Shared
             }
             catch (Exception ex)
             {
-                return $"{ex.Message}";
+                throw ex;
             }
 
             secret.LastChanged = DateTimeOffset.UtcNow;
@@ -128,7 +134,7 @@ namespace AuthJanitor.Automation.Shared
             }
 
             log.LogInformation("Rekeying task completed");
-            return string.Empty;
+            return log;
         }
     }
 }

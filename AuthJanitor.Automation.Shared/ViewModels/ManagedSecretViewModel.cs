@@ -26,7 +26,7 @@ namespace AuthJanitor.Automation.Shared.ViewModels
         [JsonIgnore]
         public TimeSpan ValidPeriod => TimeSpan.FromMinutes(ValidPeriodMinutes);
 
-        public IEnumerable<string> AdminEmails { get; set; }
+        public IEnumerable<string> AdminEmails { get; set; } = new List<string>();
 
         /// <summary>
         /// If the ManagedSecret is valid

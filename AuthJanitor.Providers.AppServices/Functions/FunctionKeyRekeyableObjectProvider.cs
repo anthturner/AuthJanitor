@@ -10,7 +10,7 @@ namespace AuthJanitor.Providers.AppServices.Functions
     [ProviderImage(ProviderImages.FUNCTIONS_SVG)]
     public class FunctionKeyRekeyableObjectProvider : RekeyableObjectProvider<FunctionKeyConfiguration>
     {
-        public FunctionKeyRekeyableObjectProvider(ILoggerFactory loggerFactory, IServiceProvider serviceProvider) : base(loggerFactory, serviceProvider)
+        public FunctionKeyRekeyableObjectProvider(ILogger logger, IServiceProvider serviceProvider) : base(logger, serviceProvider)
         {
         }
 

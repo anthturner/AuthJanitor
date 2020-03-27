@@ -14,7 +14,7 @@ namespace AuthJanitor.Providers.AppServices.WebApps
     [ProviderImage(ProviderImages.WEBAPPS_SVG)]
     public class ConnectionStringWebAppApplicationLifecycleProvider : WebAppApplicationLifecycleProvider<ConnectionStringConfiguration>
     {
-        public ConnectionStringWebAppApplicationLifecycleProvider(ILoggerFactory loggerFactory, IServiceProvider serviceProvider) : base(loggerFactory, serviceProvider)
+        public ConnectionStringWebAppApplicationLifecycleProvider(ILogger logger, IServiceProvider serviceProvider) : base(logger, serviceProvider)
         {
         }
 
@@ -68,9 +68,9 @@ namespace AuthJanitor.Providers.AppServices.WebApps
         /// <summary>
         /// Call after all new keys have been committed
         /// </summary>
-        public override Task AfterRekeying()
+        public override async Task AfterRekeying()
         {
-            return SwapTemporaryToDestination();
+            await (await GetDeploymentSlot(DestinationSlotName)).SwapAsync(TemporarySlotName);
         }
 
         public override string GetDescription() =>

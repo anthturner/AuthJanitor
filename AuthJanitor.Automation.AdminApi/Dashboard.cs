@@ -57,7 +57,7 @@ namespace AuthJanitor.Automation.AdminApi
                 TotalExpired = expired.Count(),
                 ExpiringSoon = expiringInNextWeek.Select(s => GetViewModel(s)),
                 PercentExpired = (int)((double)expired.Count() / allSecrets.Count) * 100,
-                TasksInError = allTasks.Count(t => !string.IsNullOrEmpty(t.RekeyingErrorMessage))
+                TasksInError = allTasks.Count(t => t.RekeyingFailed)
             };
 
             foreach (var secret in allSecrets)
@@ -66,8 +66,7 @@ namespace AuthJanitor.Automation.AdminApi
                 foreach (var resourceId in secret.ResourceIds)
                 {
                     var resource = allResources.FirstOrDefault(r => r.ObjectId == resourceId);
-                    var provider = GetProvider(resource.ProviderType);
-                    provider.SerializedConfiguration = resource.ProviderConfiguration;
+                    var provider = GetProvider(resource.ProviderType, resource.ProviderConfiguration);
                     riskScore += provider.GetRisks(secret.ValidPeriod).Sum(r => r.Score);
                 }
                 if (riskScore > 85)

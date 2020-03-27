@@ -62,21 +62,24 @@ namespace AuthJanitor.Automation.Agent
                         };
                         await RekeyingTasks.CreateAsync(task);
 
-                        string result;
+                        var rekeyingAttemptLogger = new RekeyingAttemptLogger(log)
+                        {
+                            UserDisplayName = "Agent Identity",
+                            UserEmail = string.Empty
+                        };
                         try
                         {
-                            result = await ExecuteRekeyingWorkflow(log, task);
+                            await ExecuteRekeyingWorkflow(task, rekeyingAttemptLogger);
                         }
                         catch (Exception ex)
                         {
-                            result = ex.Message;
+                            rekeyingAttemptLogger.OuterException = ex;
                         }
 
                         task.RekeyingInProgress = false;
-                        if (result != string.Empty)
-                            task.RekeyingErrorMessage = result;
-                        else
-                            task.RekeyingCompleted = true;
+                        task.RekeyingCompleted = rekeyingAttemptLogger.IsSuccessfulAttempt;
+                        task.RekeyingFailed = !rekeyingAttemptLogger.IsSuccessfulAttempt;
+                        task.Attempts.Add(rekeyingAttemptLogger);
                         await RekeyingTasks.UpdateAsync(task);
                     },
                     TaskCreationOptions.LongRunning);

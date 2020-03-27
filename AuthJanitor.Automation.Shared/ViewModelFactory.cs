@@ -126,6 +126,14 @@ namespace AuthJanitor.Automation.Shared
                              serviceProvider.GetRequiredService<IDataStore<ManagedSecret>>().GetAsync(rekeyingTask.ManagedSecretId).Result);
             }
             catch (Exception ex) { secret = new ManagedSecretViewModel() { ObjectId = Guid.Empty }; }
+            string errorMessage = string.Empty;
+            var mostRecentAttempt = rekeyingTask != null ? rekeyingTask.Attempts
+                                           .OrderByDescending(a => a.AttemptStarted)
+                                           .FirstOrDefault() : null;
+            if (mostRecentAttempt != null)
+                errorMessage = mostRecentAttempt.IsSuccessfulAttempt ?
+                                 string.Empty : mostRecentAttempt.OuterException?.Message;
+
             return new RekeyingTaskViewModel()
             {
                 ObjectId = rekeyingTask.ObjectId,
@@ -134,9 +142,10 @@ namespace AuthJanitor.Automation.Shared
                 PersistedCredentialUser = rekeyingTask.PersistedCredentialUser,
                 ConfirmationType = rekeyingTask.ConfirmationType,
                 RekeyingCompleted = rekeyingTask.RekeyingCompleted,
-                RekeyingErrorMessage = rekeyingTask.RekeyingErrorMessage,
+                RekeyingErrorMessage = errorMessage,
                 RekeyingInProgress = rekeyingTask.RekeyingInProgress,
-                ManagedSecret = secret
+                ManagedSecret = secret,
+                Attempts = rekeyingTask.Attempts
             };
         }
 

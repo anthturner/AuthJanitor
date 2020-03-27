@@ -1,4 +1,6 @@
-﻿using System;
+﻿using AuthJanitor.Providers;
+using System;
+using System.Collections.Generic;
 
 namespace AuthJanitor.Automation.Shared.ViewModels
 {
@@ -19,6 +21,8 @@ namespace AuthJanitor.Automation.Shared.ViewModels
 
         public Guid AvailabilityScheduleId { get; set; }
 
-        public ManagedSecretViewModel ManagedSecret { get; set; }
+        public ManagedSecretViewModel ManagedSecret { get; set; } = new ManagedSecretViewModel();
+
+        public List<RekeyingAttemptLogger> Attempts { get; set; } = new List<RekeyingAttemptLogger>();
     }
 }

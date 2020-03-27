@@ -20,6 +20,7 @@ namespace AuthJanitor.Automation.AdminApi
 
         public static string GetUserRole(HttpRequest req)
         {
+            if (IsRunningLocally) return AuthJanitorRoles.GlobalAdmin;
             if (req.HttpContext.User == null ||
                 req.HttpContext.User.Claims == null ||
                 !req.HttpContext.User.Claims.Any()) return string.Empty;

@@ -14,7 +14,7 @@ namespace AuthJanitor.Providers.AppServices.WebApps
     [ProviderImage(ProviderImages.WEBAPPS_SVG)]
     public class AppSettingsWebAppApplicationLifecycleProvider : WebAppApplicationLifecycleProvider<AppSettingConfiguration>
     {
-        public AppSettingsWebAppApplicationLifecycleProvider(ILoggerFactory loggerFactory, IServiceProvider serviceProvider) : base(loggerFactory, serviceProvider)
+        public AppSettingsWebAppApplicationLifecycleProvider(ILogger logger, IServiceProvider serviceProvider) : base(logger, serviceProvider)
         {
         }
 
