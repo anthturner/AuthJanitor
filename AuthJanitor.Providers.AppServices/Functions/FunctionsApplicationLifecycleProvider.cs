@@ -12,6 +12,18 @@ namespace AuthJanitor.Providers.AppServices.Functions
         {
         }
 
+        public override async Task Test()
+        {
+            var sourceDeploymentSlot = await GetDeploymentSlot(SourceSlotName);
+            if (sourceDeploymentSlot == null) throw new Exception("Source Deployment Slot is invalid");
+
+            var temporaryDeploymentSlot = await GetDeploymentSlot(TemporarySlotName);
+            if (temporaryDeploymentSlot == null) throw new Exception("Temporary Deployment Slot is invalid");
+
+            var destinationDeploymentSlot = await GetDeploymentSlot(DestinationSlotName);
+            if (destinationDeploymentSlot == null) throw new Exception("Destination Deployment Slot is invalid");
+        }
+
         protected Task<IFunctionApp> GetFunctionsApp() =>
             GetAzure().ContinueWith(az => az.Result.AppServices.FunctionApps.GetByResourceGroupAsync(ResourceGroup, ResourceName)).Unwrap();
 

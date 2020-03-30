@@ -2,7 +2,6 @@
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
 namespace AuthJanitor.Providers.CosmosDb
@@ -24,8 +23,10 @@ namespace AuthJanitor.Providers.CosmosDb
 
         public override async Task<RegeneratedSecret> GetSecretToUseDuringRekeying()
         {
+            Logger.LogInformation("Getting temporary secret to use during rekeying from other ({0}) key...", GetOtherKeyKind(Configuration.KeyKind));
             var cosmosDbAccount = await CosmosDbAccount;
             IDatabaseAccountListKeysResult keys = await cosmosDbAccount.ListKeysAsync();
+            Logger.LogInformation("Successfully retrieved temporary secret!");
             return new RegeneratedSecret()
             {
                 Expiry = DateTimeOffset.UtcNow + TimeSpan.FromMinutes(10),
@@ -37,9 +38,11 @@ namespace AuthJanitor.Providers.CosmosDb
         public override async Task<RegeneratedSecret> Rekey(TimeSpan requestedValidPeriod)
         {
             var cosmosDbAccount = await CosmosDbAccount;
+            Logger.LogInformation("Regenerating CosmosDB key kind {0}", Configuration.KeyKind);
             await cosmosDbAccount.RegenerateKeyAsync(GetKeyKindString(Configuration.KeyKind));
 
             IDatabaseAccountListKeysResult keys = await cosmosDbAccount.ListKeysAsync();
+            Logger.LogInformation("Successfully rekeyed CosmosDB key kind {0}", Configuration.KeyKind);
             return new RegeneratedSecret()
             {
                 Expiry = DateTimeOffset.UtcNow + requestedValidPeriod,
@@ -52,9 +55,12 @@ namespace AuthJanitor.Providers.CosmosDb
         {
             if (!Configuration.SkipScramblingOtherKey)
             {
+                Logger.LogInformation("Scrambling CosmosDB key kind {0}", GetOtherKeyKind(Configuration.KeyKind));
                 await (await CosmosDbAccount).RegenerateKeyAsync(
                     GetKeyKindString(GetOtherKeyKind(Configuration.KeyKind)));
             }
+            else
+                Logger.LogInformation("Skipping scrambling CosmosDB key kind {0}", GetOtherKeyKind(Configuration.KeyKind));
         }
 
         public override IList<RiskyConfigurationItem> GetRisks()

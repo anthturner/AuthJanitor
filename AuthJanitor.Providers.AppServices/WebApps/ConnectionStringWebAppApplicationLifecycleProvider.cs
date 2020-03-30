@@ -24,7 +24,8 @@ namespace AuthJanitor.Providers.AppServices.WebApps
         /// </summary>
         public override async Task BeforeRekeying(List<RegeneratedSecret> temporaryUseSecrets)
         {
-            await(await GetDeploymentSlot(TemporarySlotName)).ApplySlotConfigurationsAsync(SourceSlotName);
+            Logger.LogInformation("Moving slot configuration from '{0}' to '{1}'", SourceSlotName, TemporarySlotName);
+            await (await GetDeploymentSlot(TemporarySlotName)).ApplySlotConfigurationsAsync(SourceSlotName);
             if (temporaryUseSecrets.Count > 1 && temporaryUseSecrets.Select(s => s.UserHint).Distinct().Count() != temporaryUseSecrets.Count)
             {
                 throw new Exception("Multiple secrets sent to Provider but without distinct UserHints!");
@@ -34,14 +35,18 @@ namespace AuthJanitor.Providers.AppServices.WebApps
             foreach (RegeneratedSecret secret in temporaryUseSecrets)
             {
                 var connectionStringName = string.IsNullOrEmpty(secret.UserHint) ? Configuration.ConnectionStringName : $"{Configuration.ConnectionStringName}-{secret.UserHint}";
+                Logger.LogInformation("Updating Connection String '{0}' in slot '{1}'", connectionStringName, TemporarySlotName);
                 updateBase = updateBase.WithoutConnectionString(connectionStringName);
-                updateBase = updateBase.WithAppSetting(connectionStringName, secret.NewConnectionStringOrKey);
+                updateBase = updateBase.WithConnectionString(connectionStringName, secret.NewConnectionStringOrKey, Configuration.ConnectionStringType);
             }
 
+            Logger.LogInformation("Applying changes.");
             await updateBase.ApplyAsync();
 
             // Swap to Temporary (which has temp key)
+            Logger.LogInformation("Swapping to '{0}'", TemporarySlotName);
             await (await GetDeploymentSlot(TemporarySlotName)).SwapAsync(SourceSlotName);
+            Logger.LogInformation("BeforeRekeying completed!");
         }
 
         /// <summary>
@@ -49,20 +54,25 @@ namespace AuthJanitor.Providers.AppServices.WebApps
         /// </summary>
         public override async Task CommitNewSecrets(List<RegeneratedSecret> newSecrets)
         {
+            Logger.LogInformation("Moving slot configuration from '{0}' to '{1}'", TemporarySlotName, DestinationSlotName);
+            await (await GetDeploymentSlot(DestinationSlotName)).ApplySlotConfigurationsAsync(TemporarySlotName);
             if (newSecrets.Count > 1 && newSecrets.Select(s => s.UserHint).Distinct().Count() != newSecrets.Count)
             {
                 throw new Exception("Multiple secrets sent to Provider but without distinct UserHints!");
             }
 
-            IUpdate<IDeploymentSlot> updateBase = (await GetDeploymentSlot(TemporarySlotName)).Update();
+            IUpdate<IDeploymentSlot> updateBase = (await GetDeploymentSlot(DestinationSlotName)).Update();
             foreach (RegeneratedSecret secret in newSecrets)
             {
-                updateBase = updateBase.WithConnectionString($"{Configuration.ConnectionStringName}-{secret.UserHint}",
-                    secret.NewConnectionStringOrKey,
-                    Configuration.ConnectionStringType);
+                var connectionStringName = string.IsNullOrEmpty(secret.UserHint) ? Configuration.ConnectionStringName : $"{Configuration.ConnectionStringName}-{secret.UserHint}";
+                Logger.LogInformation("Updating Connection String '{0}' in slot '{1}'", connectionStringName, DestinationSlotName);
+                updateBase = updateBase.WithoutConnectionString(connectionStringName);
+                updateBase = updateBase.WithConnectionString(connectionStringName, secret.NewConnectionStringOrKey, Configuration.ConnectionStringType);
             }
 
+            Logger.LogInformation("Applying changes.");
             await updateBase.ApplyAsync();
+            Logger.LogInformation("CommitNewSecrets completed!");
         }
 
         /// <summary>
@@ -70,7 +80,9 @@ namespace AuthJanitor.Providers.AppServices.WebApps
         /// </summary>
         public override async Task AfterRekeying()
         {
+            Logger.LogInformation("Swapping to '{0}'", DestinationSlotName);
             await (await GetDeploymentSlot(DestinationSlotName)).SwapAsync(TemporarySlotName);
+            Logger.LogInformation("Swap complete!");
         }
 
         public override string GetDescription() =>

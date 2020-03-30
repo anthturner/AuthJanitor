@@ -1,5 +1,4 @@
-﻿using System;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 
 namespace AuthJanitor.Providers.AppServices
 {
@@ -11,8 +10,12 @@ namespace AuthJanitor.Providers.AppServices
         /// <summary>
         /// AppSetting Name
         /// </summary>
-        [DisplayName("AppSetting Name")]
-        [Description("AppSetting Name")]
+        [DisplayName("Application Setting Name")]
+        [Description("Name of AppSetting to update")]
         public string SettingName { get; set; }
+
+        [DisplayName("Commit Connection String")]
+        [Description("Commit a Connection String instead of a Key to this AppSetting, when available")]
+        public bool CommitAsConnectionString { get; set; }
     }
 }

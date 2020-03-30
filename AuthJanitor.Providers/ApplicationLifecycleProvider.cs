@@ -58,11 +58,5 @@ namespace AuthJanitor.Providers
         {
             return Task.FromResult(true);
         }
-
-        public override string GetDescription()
-        {
-            return string.IsNullOrEmpty(ResourceName) ? $"+ Consuming Application does not have an AzureRM resource associated" :
-            $"+ Consuming Application has Resource Name '{ResourceName}' from Resource Group '{ResourceGroup}'";
-        }
     }
 }

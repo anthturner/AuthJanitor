@@ -14,8 +14,19 @@ namespace AuthJanitor.Providers.AppServices.Functions
         {
         }
 
+        public override async Task Test()
+        {
+            var functionsApp = await(await GetAzure()).AppServices.FunctionApps.GetByResourceGroupAsync(ResourceGroup, ResourceName);
+            if (functionsApp == null)
+                throw new Exception($"Cannot locate Functions application called '{ResourceName}' in group '{ResourceGroup}'");
+            var keys = await functionsApp.ListFunctionKeysAsync(Configuration.FunctionName);
+            if (keys == null)
+                throw new Exception($"Cannot list Function Keys for Function '{Configuration.FunctionName}'");
+        }
+
         public override async Task<RegeneratedSecret> Rekey(TimeSpan requestedValidPeriod)
         {
+            Logger.LogInformation("Generating a new secret of length {0}", Configuration.KeyLength);
             RegeneratedSecret newKey = new RegeneratedSecret()
             {
                 Expiry = DateTimeOffset.UtcNow + requestedValidPeriod,
@@ -23,8 +34,14 @@ namespace AuthJanitor.Providers.AppServices.Functions
                 NewSecretValue = HelperMethods.GenerateCryptographicallySecureString(Configuration.KeyLength)
             };
 
-            // Apply the new Key
-            Microsoft.Azure.Management.AppService.Fluent.IFunctionApp functionsApp = await (await GetAzure()).AppServices.FunctionApps.GetByResourceGroupAsync(ResourceGroup, ResourceName);
+            var functionsApp = await (await GetAzure()).AppServices.FunctionApps.GetByResourceGroupAsync(ResourceGroup, ResourceName);
+            if (functionsApp == null)
+                throw new Exception($"Cannot locate Functions application called '{ResourceName}' in group '{ResourceGroup}'");
+
+            Logger.LogInformation("Removing previous Function Key '{0}' from Function '{1}'", Configuration.FunctionKeyName, Configuration.FunctionName);
+            await functionsApp.RemoveFunctionKeyAsync(Configuration.FunctionName, Configuration.FunctionKeyName);
+
+            Logger.LogInformation("Adding new Function Key '{0}' from Function '{1}'", Configuration.FunctionKeyName, Configuration.FunctionName);
             await functionsApp.AddFunctionKeyAsync(Configuration.FunctionName, Configuration.FunctionKeyName, newKey.NewSecretValue);
 
             return newKey;

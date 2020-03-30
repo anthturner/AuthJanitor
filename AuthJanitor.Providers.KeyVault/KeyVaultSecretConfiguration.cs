@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Linq;
+﻿using System.ComponentModel;
 
 namespace AuthJanitor.Providers.KeyVault
 {
@@ -12,19 +9,22 @@ namespace AuthJanitor.Providers.KeyVault
         /// <summary>
         /// Key Vault name (xxxxx.vault.azure.net)
         /// </summary>
-        [Description("Vault Name")]
+        [DisplayName("Key Vault Name")]
+        [Description("Name of Key Vault containing key to manage")]
         public string VaultName { get; set; }
 
         /// <summary>
         /// Name Secret being operated upon
         /// </summary>
-        [Description("Secret Name")]
+        [DisplayName("Secret Name")]
+        [Description("Secret Name to manage")]
         public string SecretName { get; set; }
 
         /// <summary>
         /// Length of secret to regenerate
         /// </summary>
-        [Description("New Secret Length")]
+        [DisplayName("Secret Length")]
+        [Description("Length of secret to generate")]
         public int SecretLength { get; set; } = DEFAULT_SECRET_LENGTH;
     }
 }

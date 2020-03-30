@@ -11,13 +11,15 @@ namespace AuthJanitor.Providers.AppServices
         /// <summary>
         /// Connection String name
         /// </summary>
-        [Description("Connection String Name")]
+        [DisplayName("Connection String Name")]
+        [Description("Name of Connection String to update")]
         public string ConnectionStringName { get; set; }
 
         /// <summary>
         /// Connection String type
         /// </summary>
-        [Description("Connection String Type")]
+        [DisplayName("Connection String Type")]
+        [Description("Type of Connection String in configuration")]
         public ConnectionStringType ConnectionStringType { get; set; }
     }
 }

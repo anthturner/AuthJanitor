@@ -62,8 +62,6 @@ namespace AuthJanitor.Automation.Shared
             LoadedProviders = loadedProviders;
         }
 
-        
-
         protected async Task<RekeyingAttemptLogger> ExecuteRekeyingWorkflow(RekeyingTask task, RekeyingAttemptLogger log = null)
         {
             if (log == null) log = new RekeyingAttemptLogger();
@@ -93,47 +91,29 @@ namespace AuthJanitor.Automation.Shared
             var secret = await ManagedSecrets.GetAsync(task.ManagedSecretId);
             log.LogInformation("Beginning rekeying for ManagedSecret '{0}' (ID {1})", secret.Name, secret.ObjectId);
 
-            log.LogDebug("Running access sanity check on {0} Resources associated with ManagedSecret", secret.ResourceIds.Count());
-            
-            var testResults = new Dictionary<Guid, bool>();
             var resources = await Resources.GetAsync(r => secret.ResourceIds.Contains(r.ObjectId));
-            await Task.WhenAll(resources.Select(r => 
-                GetProvider(r.ProviderType, r.ProviderConfiguration, credentialType)
-                    .Test()
-                    .ContinueWith(test => testResults[r.ObjectId] = test.Result)));
-
-            if (testResults.Any(r => !r.Value))
-            {
-                var failedResourceNames = testResults
-                    .Where(r => !r.Value)
-                    .Select(r => resources.FirstOrDefault(resource => resource.ObjectId == r.Key).Name);                    
-                log.LogCritical("Access tests failed on: {0}", string.Join("; ", failedResourceNames));
-                throw new Exception($"Access tests failed on: {string.Join("; ", failedResourceNames)}");
-            }
-
+            var workflow = new ProviderActionWorkflow(log,
+                resources.Select(r => GetProvider(r.ProviderType, r.ProviderConfiguration, credentialType)));
             try
             {
-                await HelperMethods.RunRekeyingWorkflow(log, secret.ValidPeriod,
-                    resources.Select(r => GetProvider(r.ProviderType, r.ProviderConfiguration, credentialType))
-                             .ToArray());
+                await workflow.InvokeAsync(secret.ValidPeriod);
+                secret.LastChanged = DateTimeOffset.UtcNow;
+                await ManagedSecrets.UpdateAsync(secret);
+                log.LogInformation("Completed rekeying workflow for ManagedSecret '{0}' (ID {1})", secret.Name, secret.ObjectId);
+                
+                if (credentialType == MultiCredentialProvider.CredentialType.CachedCredential)
+                {
+                    log.LogInformation("Destroying persisted credential");
+                    await SecureStorageProvider.Destroy(task.PersistedCredentialId);
+                }
+
+                log.LogInformation("Rekeying task completed");
             }
             catch (Exception ex)
             {
-                throw ex;
+                log.OuterException = ex;
             }
 
-            secret.LastChanged = DateTimeOffset.UtcNow;
-            await ManagedSecrets.UpdateAsync(secret);
-
-            log.LogInformation("Completed rekeying workflow for ManagedSecret '{0}' (ID {1})", secret.Name, secret.ObjectId);
-
-            if (credentialType == MultiCredentialProvider.CredentialType.CachedCredential)
-            {
-                log.LogInformation("Destroying persisted credential");
-                await SecureStorageProvider.Destroy(task.PersistedCredentialId);
-            }
-
-            log.LogInformation("Rekeying task completed");
             return log;
         }
     }

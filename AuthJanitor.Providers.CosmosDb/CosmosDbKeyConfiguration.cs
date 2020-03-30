@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 
 namespace AuthJanitor.Providers.CosmosDb
 {
@@ -8,22 +6,28 @@ namespace AuthJanitor.Providers.CosmosDb
     {
         public enum CosmosDbKeyKinds
         {
+            [Description("Primary")]
             Primary,
+            [Description("Secondary")]
             Secondary,
+            [Description("Primary (Read-Only)")]
             PrimaryReadOnly,
+            [Description("Secondary (Read-Only)")]
             SecondaryReadOnly
         }
 
         /// <summary>
         /// Kind (type) of CosmosDb Key
         /// </summary>
-        [Description("CosmosDB Key Kind")]
+        [DisplayName("Key Kind")]
+        [Description("Kind of CosmosDB Key to manage")]
         public CosmosDbKeyKinds KeyKind { get; set; }
 
         /// <summary>
         /// Skip the process of scrambling the other (non-active) key
         /// </summary>
-        [Description("Skip Scrambling Other Key")]
+        [DisplayName("Skip Scrambling Other Key?")]
+        [Description("If checked, the opposite key (e.g. primary/secondary) will NOT be scrambled at the end of the rekeying")]
         public bool SkipScramblingOtherKey { get; set; }
     }
 }

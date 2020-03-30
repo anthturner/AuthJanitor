@@ -18,13 +18,18 @@ namespace AuthJanitor.Providers.AzureAD
 
         public override async Task<RegeneratedSecret> Rekey(TimeSpan requestedValidPeriod)
         {
-            // requestedValidPeriod is ignored here, AAD sets token expiry!
+            // TODO: If we use admin-approved, we need to bubble scopes up to the original token request
+            // ..... or re-request the Bearer token on approval, which might be ugly.
+            // TODO: How to refresh this?
 
+            // NOTE: requestedValidPeriod is ignored here, AAD sets token expiry!
+            Logger.LogInformation("Requesting Access Token with scopes '{0}'", Configuration.Scopes);
             var token = await _serviceProvider.GetRequiredService<MultiCredentialProvider>()
                 .Get(CredentialType)
                 .AzureIdentityTokenCredential
                 .GetTokenAsync(new Azure.Core.TokenRequestContext(Configuration.Scopes), System.Threading.CancellationToken.None);
-            
+
+            Logger.LogInformation("Access Token successfully granted! Expires on {0}", token.ExpiresOn);
             return new RegeneratedSecret()
             {
                 UserHint = Configuration.UserHint,

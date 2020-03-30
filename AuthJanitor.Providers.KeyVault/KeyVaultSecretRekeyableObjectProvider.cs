@@ -20,8 +20,10 @@ namespace AuthJanitor.Providers.KeyVault
 
         public override async Task<RegeneratedSecret> GetSecretToUseDuringRekeying()
         {
+            Logger.LogInformation("Getting temporary secret based on current version...");
             var client = GetSecretClient();
             Azure.Response<KeyVaultSecret> currentSecret = await client.GetSecretAsync(Configuration.SecretName);
+            Logger.LogInformation("Successfully retrieved temporary secret!");
             return new RegeneratedSecret()
             {
                 Expiry = currentSecret.Value.Properties.ExpiresOn.Value,
@@ -32,6 +34,7 @@ namespace AuthJanitor.Providers.KeyVault
 
         public override async Task<RegeneratedSecret> Rekey(TimeSpan requestedValidPeriod)
         {
+            Logger.LogInformation("Getting current Secret details from Secret name '{0}'", Configuration.SecretName);
             var client = GetSecretClient();
             Azure.Response<KeyVaultSecret> currentSecret = await client.GetSecretAsync(Configuration.SecretName);
 
@@ -51,7 +54,9 @@ namespace AuthJanitor.Providers.KeyVault
             newSecret.Properties.NotBefore = DateTimeOffset.UtcNow;
             newSecret.Properties.ExpiresOn = DateTimeOffset.UtcNow + requestedValidPeriod;
 
+            Logger.LogInformation("Committing new Secret with name '{0}'", newSecret.Name);
             Azure.Response<KeyVaultSecret> secretResponse = await client.SetSecretAsync(newSecret);
+            Logger.LogInformation("Successfully committed '{0}'", newSecret.Name);
 
             return new RegeneratedSecret()
             {

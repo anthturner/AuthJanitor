@@ -1,10 +1,6 @@
-﻿using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System;
 using System.Security.Cryptography;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace AuthJanitor.Providers
 {
@@ -54,88 +50,6 @@ namespace AuthJanitor.Providers
             if (string.IsNullOrEmpty(formatted)) formatted = "Enter a duration in minutes.";
 
             return formatted;
-        }
-
-        public static async Task RunRekeyingWorkflow(
-            ILogger log,
-            TimeSpan requestedValidPeriod,
-            params IAuthJanitorProvider[] providers)
-        {
-            List<IApplicationLifecycleProvider> alcProviders = providers.Where(p => p is IApplicationLifecycleProvider).Cast<IApplicationLifecycleProvider>().ToList();
-            List<IRekeyableObjectProvider> rkoProviders = providers.Where(p => p is IRekeyableObjectProvider).Cast<IRekeyableObjectProvider>().ToList();
-
-            log.LogInformation("Getting temporary secrets from {0} Rekeyable Object Lifecycle Providers...", rkoProviders.Count);
-            List<RegeneratedSecret> temporarySecrets = new List<RegeneratedSecret>();
-            try
-            {
-                await Task.WhenAll(rkoProviders.Select(rkoProvider => 
-                            rkoProvider.GetSecretToUseDuringRekeying()
-                                       .ContinueWith(task => { if (task != null) temporarySecrets.Add(task.Result); })));
-            }
-            catch (Exception ex)
-            {
-                log.LogError(ex, "Error executing GetSecretToUseDuringRekeying on Rekeyable Object Provider(s)");
-                throw new Exception("Error executing GetSecretToUseDuringRekeying on Rekeyable Object Provider(s)");
-            }
-
-            log.LogInformation("Preparing {0} Application Lifecycle Providers...", alcProviders.Count);
-            try
-            {
-                await Task.WhenAll(alcProviders.Select(alcProvider => alcProvider.BeforeRekeying(temporarySecrets)));
-            }
-            catch (Exception ex)
-            {
-                log.LogError(ex, "Error executing BeforeRekeying on Application Lifecycle Provider(s)");
-                throw new Exception("Error executing BeforeRekeying on Application Lifecycle Provider(s)");
-            }
-
-            log.LogInformation("Rekeying {0} Rekeyable Object Providers...", rkoProviders.Count);
-            List<RegeneratedSecret> generatedSecrets = new List<RegeneratedSecret>();
-            try
-            {
-                await Task.WhenAll(rkoProviders.Select(rop =>
-                            rop.Rekey(requestedValidPeriod)
-                            .ContinueWith(task => generatedSecrets.Add(task.Result))));
-            }
-            catch (Exception ex)
-            {
-                log.LogError(ex, "Error executing Rekey on Rekeyable Object Provider(s)");
-                throw new Exception("Error executing Rekey on Rekeyable Object Provider(s)");
-            }
-
-            log.LogInformation("Committing {0} Keys to {1} Application Lifecycle Providers...", generatedSecrets.Count, alcProviders.Count);
-            try
-            {
-                await Task.WhenAll(alcProviders.Select(alcProvider => alcProvider.CommitNewSecrets(generatedSecrets)));
-            }
-            catch (Exception ex)
-            {
-                log.LogError(ex, "Error executing Commit on Application Lifecycle Provider(s)");
-                throw new Exception("Error executing Commit on Application Lifecycle Provider(s)");
-            }
-
-
-            log.LogInformation("Completing post-rekey operations on {0} Application Lifecycle Providers...", alcProviders.Count);
-            try
-            {
-                await Task.WhenAll(alcProviders.Select(alp => alp.AfterRekeying()));
-            }
-            catch (Exception ex)
-            {
-                log.LogError(ex, "Error executing AfterRekeying on Application Lifecycle Provider(s)");
-                throw new Exception("Error executing AfterRekeying on Application Lifecycle Provider(s)");
-            }
-
-            log.LogInformation("Completing finalizing operations on {0} Rekeyable Object Providers...", alcProviders.Count);
-            try
-            {
-                await Task.WhenAll(rkoProviders.Select(rko => rko.OnConsumingApplicationSwapped()));
-            }
-            catch (Exception ex)
-            {
-                log.LogError(ex, "Error executing OnConsumingApplicationSwapped on Rekeyable Object Provider(s)");
-                throw new Exception("Error executing OnConsumingApplicationSwapped on Rekeyable Object Provider(s)");
-            }
         }
 
         public static T GetEnumValueAttribute<T>(this Enum enumVal) where T : Attribute

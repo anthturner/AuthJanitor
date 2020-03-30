@@ -22,9 +22,11 @@ namespace AuthJanitor.Providers.KeyVault
         /// </summary>
         public override async Task CommitNewSecrets(List<RegeneratedSecret> newSecrets)
         {
+            Logger.LogInformation("Committing new secrets to Key Vault secret {0}", Configuration.SecretName);
             var client = GetSecretClient();
             foreach (RegeneratedSecret secret in newSecrets)
             {
+                Logger.LogInformation("Getting current secret version from secret name {0}", Configuration.SecretName);
                 Azure.Response<KeyVaultSecret> currentSecret = await client.GetSecretAsync(Configuration.SecretName);
 
                 // Create a new version of the Secret
@@ -45,7 +47,9 @@ namespace AuthJanitor.Providers.KeyVault
                 newKvSecret.Properties.NotBefore = DateTimeOffset.UtcNow;
                 newKvSecret.Properties.ExpiresOn = secret.Expiry;
 
+                Logger.LogInformation("Committing new secret '{0}'", secretName);
                 await client.SetSecretAsync(newKvSecret);
+                Logger.LogInformation("Successfully committed new secret '{0}'", secretName);
             }
         }
 
@@ -59,6 +63,6 @@ namespace AuthJanitor.Providers.KeyVault
         public override string GetDescription() =>
             $"Populates a Key Vault Secret called '{Configuration.SecretName}' " +
             $"from vault '{Configuration.VaultName}' with a given " +
-            (Configuration.UseConnectionString ? "connection string" : "key") + ".";
+            (Configuration.CommitAsConnectionString ? "connection string" : "key") + ".";
     }
 }

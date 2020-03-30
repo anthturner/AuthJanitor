@@ -1,5 +1,4 @@
-﻿using System;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 
 namespace AuthJanitor.Providers.KeyVault
 {
@@ -8,13 +7,15 @@ namespace AuthJanitor.Providers.KeyVault
         /// <summary>
         /// Key Vault name (xxxxx.vault.azure.net)
         /// </summary>
-        [Description("Vault Name")]
+        [DisplayName("Key Vault Name")]
+        [Description("Name of Key Vault containing key to manage")]
         public string VaultName { get; set; }
 
         /// <summary>
         /// Name of Key or Secret being operated upon
         /// </summary>
-        [Description("Key Name")]
+        [DisplayName("Key Name")]
+        [Description("Key Name to manage")]
         public string KeyName { get; set; }
     }
 }

@@ -35,7 +35,7 @@ namespace AuthJanitor.Providers
         /// Test if the current credentials can execute an Extension 
         /// </summary>
         /// <returns></returns>
-        Task<bool> Test();
+        Task Test();
 
         /// <summary>
         /// Get a text description of the action which is taken by the Extension
@@ -112,7 +112,7 @@ namespace AuthJanitor.Providers
         /// Test if the current credentials can execute an Extension 
         /// </summary>
         /// <returns></returns>
-        public virtual Task<bool> Test()
+        public virtual Task Test()
         {
             return Task.FromResult(true);
         }

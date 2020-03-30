@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 
 namespace AuthJanitor.Providers.AzureAD
 {
@@ -9,7 +7,15 @@ namespace AuthJanitor.Providers.AzureAD
         /// <summary>
         /// Scopes/Resources to request for the Access Token
         /// </summary>
-        [Description("Access Token Scopes")]
+        [DisplayName("Token Scopes")]
+        [Description("Access Token Scopes, comma-delimited")]
         public string[] Scopes { get; set; }
+
+        /// <summary>
+        /// Automatically refresh the Access Token
+        /// </summary>
+        [DisplayName("Auto-Refresh?")]
+        [Description("Allow AuthJanitor to automatically refresh the Access Token when it expires?")]
+        public bool AutomaticallyRefresh { get; set; }
     }
 }

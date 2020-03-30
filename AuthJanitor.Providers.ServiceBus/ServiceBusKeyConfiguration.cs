@@ -16,19 +16,22 @@ namespace AuthJanitor.Providers.ServiceBus
         /// <summary>
         /// Kind (type) of Service Bus Key
         /// </summary>
-        [Description("Service Bus Key Type")]
+        [DisplayName("Service Bus Key Type")]
+        [Description("Type of Service Bus Key to manage")]
         public ServiceBusKeyTypes KeyType { get; set; }
 
         /// <summary>
         /// Service Bus Authorization Rule name
         /// </summary>
-        [Description("Authorization Rule")]
+        [DisplayName("Authorization Rule")]
+        [Description("Authorization Rule to manage")]
         public string AuthorizationRuleName { get; set; }
 
         /// <summary>
         /// Skip the process of scrambling the other (non-active) key
         /// </summary>
-        [Description("Skip Scrambling Other Key?")]
+        [DisplayName("Skip Scrambling Other Key?")]
+        [Description("If checked, the opposite key (e.g. primary/secondary) will NOT be scrambled at the end of the rekeying")]
         public bool SkipScramblingOtherKey { get; set; }
     }
 }

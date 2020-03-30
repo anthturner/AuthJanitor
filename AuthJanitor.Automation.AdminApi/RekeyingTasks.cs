@@ -152,7 +152,6 @@ namespace AuthJanitor.Automation.AdminApi
                     task.RekeyingInProgress = false;
                     task.RekeyingCompleted = aggregatedStringLogger.IsSuccessfulAttempt;
                     task.RekeyingFailed = !aggregatedStringLogger.IsSuccessfulAttempt;
-                    task.Attempts.Add(aggregatedStringLogger);
                 }
                 catch (Exception ex)
                 {
@@ -161,9 +160,9 @@ namespace AuthJanitor.Automation.AdminApi
                     task.RekeyingFailed = true;
                     if (aggregatedStringLogger.OuterException == null)
                         aggregatedStringLogger.OuterException = ex;
-                    task.Attempts.Add(aggregatedStringLogger);
                 }
 
+                task.Attempts.Add(aggregatedStringLogger);
                 await RekeyingTasks.UpdateAsync(task);
                 if (task.RekeyingFailed)
                     return new BadRequestErrorMessageResult(aggregatedStringLogger.OuterException.Message);
