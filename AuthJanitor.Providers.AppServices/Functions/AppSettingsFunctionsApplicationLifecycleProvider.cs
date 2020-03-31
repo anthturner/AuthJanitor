@@ -27,60 +27,18 @@ namespace AuthJanitor.Providers.AppServices.Functions
         /// </summary>
         public override async Task BeforeRekeying(List<RegeneratedSecret> temporaryUseSecrets)
         {
-            Logger.LogInformation("Moving slot configuration from '{0}' to '{1}'", SourceSlotName, TemporarySlotName);
-            await (await GetDeploymentSlot(TemporarySlotName)).ApplySlotConfigurationsAsync(SourceSlotName);
-            if (temporaryUseSecrets.Count > 1 && temporaryUseSecrets.Select(s => s.UserHint).Distinct().Count() != temporaryUseSecrets.Count)
-            {
-                throw new Exception("Multiple secrets sent to Provider but without distinct UserHints!");
-            }
-
-            IUpdate<IFunctionDeploymentSlot> updateBase = (await GetDeploymentSlot(TemporarySlotName)).Update();
-            foreach (RegeneratedSecret secret in temporaryUseSecrets)
-            {
-                var appSettingName = string.IsNullOrEmpty(secret.UserHint) ? Configuration.SettingName : $"{Configuration.SettingName}-{secret.UserHint}";
-                Logger.LogInformation("Updating AppSetting '{0}' in slot '{1}' (as {2})", appSettingName, TemporarySlotName,
-                    Configuration.CommitAsConnectionString ? "connection string" : "secret");
-                updateBase = updateBase.WithoutAppSetting(appSettingName);
-                if (Configuration.CommitAsConnectionString)
-                    updateBase = updateBase.WithAppSetting(appSettingName, secret.NewConnectionStringOrKey);
-                else
-                    updateBase = updateBase.WithAppSetting(appSettingName, secret.NewSecretValue);
-            }
-
-            Logger.LogInformation("Applying changes.");
-            await updateBase.ApplyAsync();
-
-            Logger.LogInformation("Swapping to '{0}'", TemporarySlotName);
-            await (await GetDeploymentSlot(TemporarySlotName)).SwapAsync(SourceSlotName);
+            await ApplySecrets(TemporarySlotName, temporaryUseSecrets);
             Logger.LogInformation("BeforeRekeying completed!");
         }
+
+        
 
         /// <summary>
         /// Call to commit the newly generated secret
         /// </summary>
         public override async Task CommitNewSecrets(List<RegeneratedSecret> newSecrets)
         {
-            Logger.LogInformation("Moving slot configuration from '{0}' to '{1}'", TemporarySlotName, DestinationSlotName);
-            await (await GetDeploymentSlot(DestinationSlotName)).ApplySlotConfigurationsAsync(TemporarySlotName);
-            if (newSecrets.Count > 1 && newSecrets.Select(s => s.UserHint).Distinct().Count() != newSecrets.Count)
-            {
-                throw new Exception("Multiple secrets sent to Provider but without distinct UserHints!");
-            }
-
-            IUpdate<IFunctionDeploymentSlot> updateBase = (await GetDeploymentSlot(DestinationSlotName)).Update();
-            foreach (RegeneratedSecret secret in newSecrets)
-            {
-                Logger.LogInformation("Updating AppSetting '{0}' in slot '{1}'", Configuration.SettingName, DestinationSlotName);
-                var secretName = string.IsNullOrEmpty(secret.UserHint) ? Configuration.SettingName : $"{Configuration.SettingName}-{secret.UserHint}";
-                updateBase = updateBase.WithoutAppSetting(secretName);
-                if (Configuration.CommitAsConnectionString)
-                    updateBase = updateBase.WithAppSetting(secretName, secret.NewConnectionStringOrKey);
-                else
-                    updateBase = updateBase.WithAppSetting(secretName, secret.NewSecretValue);
-            }
-
-            Logger.LogInformation("Applying changes.");
-            await updateBase.ApplyAsync();
+            await ApplySecrets(TemporarySlotName, newSecrets);
             Logger.LogInformation("CommitNewSecrets completed!");
         }
 
@@ -89,8 +47,8 @@ namespace AuthJanitor.Providers.AppServices.Functions
         /// </summary>
         public override async Task AfterRekeying()
         {
-            Logger.LogInformation("Swapping to '{0}'", DestinationSlotName);
-            await (await GetDeploymentSlot(DestinationSlotName)).SwapAsync(TemporarySlotName);
+            Logger.LogInformation("Swapping to '{0}'", TemporarySlotName);
+            await (await GetFunctionsApp()).SwapAsync(TemporarySlotName);
             Logger.LogInformation("Swap complete!");
         }
 
@@ -100,5 +58,30 @@ namespace AuthJanitor.Providers.AppServices.Functions
             $"'{Configuration.ResourceGroup}'). During the rekeying, the Functions App will " +
             $"be moved from slot '{Configuration.SourceSlot}' to slot '{Configuration.TemporarySlot}' " +
             $"temporarily, and then to slot '{Configuration.DestinationSlot}'.";
+
+        private async Task ApplySecrets(string slotName, List<RegeneratedSecret> secrets)
+        {
+            if (secrets.Count > 1 && secrets.Select(s => s.UserHint).Distinct().Count() != secrets.Count)
+            {
+                throw new Exception("Multiple secrets sent to Provider but without distinct UserHints!");
+            }
+
+            IUpdate<IFunctionDeploymentSlot> updateBase = (await GetDeploymentSlot(TemporarySlotName)).Update();
+            foreach (RegeneratedSecret secret in secrets)
+            {
+                var appSettingName = string.IsNullOrEmpty(secret.UserHint) ? Configuration.SettingName : $"{Configuration.SettingName}-{secret.UserHint}";
+                Logger.LogInformation("Updating AppSetting '{0}' in slot '{1}' (as {2})", appSettingName, TemporarySlotName,
+                    Configuration.CommitAsConnectionString ? "connection string" : "secret");
+
+                updateBase = updateBase.WithAppSetting(appSettingName,
+                    Configuration.CommitAsConnectionString ? secret.NewConnectionStringOrKey : secret.NewSecretValue);
+            }
+
+            Logger.LogInformation("Applying changes.");
+            await updateBase.ApplyAsync();
+
+            Logger.LogInformation("Swapping to '{0}'", TemporarySlotName);
+            await (await GetFunctionsApp()).SwapAsync(TemporarySlotName);
+        }
     }
 }

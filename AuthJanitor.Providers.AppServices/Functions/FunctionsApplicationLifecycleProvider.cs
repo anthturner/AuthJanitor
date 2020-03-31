@@ -8,20 +8,24 @@ namespace AuthJanitor.Providers.AppServices.Functions
     public abstract class FunctionsApplicationLifecycleProvider<TConsumerConfiguration> : SlottableApplicationLifecycleProvider<TConsumerConfiguration>
         where TConsumerConfiguration : SlottableProviderConfiguration
     {
+        private const string PRODUCTION_SLOT_NAME = "production";
         protected FunctionsApplicationLifecycleProvider(ILogger logger, IServiceProvider serviceProvider) : base(logger, serviceProvider)
         {
         }
 
         public override async Task Test()
         {
-            var sourceDeploymentSlot = await GetDeploymentSlot(SourceSlotName);
-            if (sourceDeploymentSlot == null) throw new Exception("Source Deployment Slot is invalid");
-
-            var temporaryDeploymentSlot = await GetDeploymentSlot(TemporarySlotName);
-            if (temporaryDeploymentSlot == null) throw new Exception("Temporary Deployment Slot is invalid");
-
-            var destinationDeploymentSlot = await GetDeploymentSlot(DestinationSlotName);
-            if (destinationDeploymentSlot == null) throw new Exception("Destination Deployment Slot is invalid");
+            if (SourceSlotName != PRODUCTION_SLOT_NAME)
+                await TestSlot(SourceSlotName);
+            if (TemporarySlotName != PRODUCTION_SLOT_NAME)
+                await TestSlot(TemporarySlotName);
+            if (DestinationSlotName != PRODUCTION_SLOT_NAME)
+                await TestSlot(DestinationSlotName);
+        }
+        private async Task TestSlot(string slotName)
+        {
+            var resolvedSlotObject = await GetDeploymentSlot(slotName);
+            if (resolvedSlotObject == null) throw new Exception($"Invalid slot name '{slotName}'");
         }
 
         protected Task<IFunctionApp> GetFunctionsApp() =>
