@@ -41,23 +41,14 @@ namespace AuthJanitor.Providers
 
             // -----
 
-            bool testFailed = false;
             Logger.LogInformation("Performing sanity tests.");
             try
             {
-                await Task.WhenAll(Providers.ToList().Select(p => p.Test()
-                          .ContinueWith(t => {
-                              if (t.IsFaulted) testFailed = true;
-                            })));
+                await Task.WhenAll(Providers.ToList().Select(p => p.Test()));
             }
             catch (Exception ex)
             {
-                Logger.LogCritical("Error running one or more sanity tests.", ex);
-            }
-            if (!testFailed)
-            {
-                Logger.LogCritical("Error running one or more sanity tests!");
-                return;
+                throw new Exception("Error running one or more sanity tests.", ex);
             }
 
             // -----
@@ -69,17 +60,14 @@ namespace AuthJanitor.Providers
                 await Task.WhenAll(
                     RekeyableObjectProviders.Select(rkoProvider =>
                                  rkoProvider.GetSecretToUseDuringRekeying()
-                                            .ContinueWith(task => 
-                                            {
-                                                if (task.IsFaulted)
-                                                    Logger.LogError(task.Exception, "Exception during temporary secret retrieval!");
-                                                TemporarySecrets.Add(task.Result);
-                                            })));
+                                 .ContinueWith(t => {
+                                     if (t.Result != null)
+                                         TemporarySecrets.Add(t.Result);
+                                 })));
             }
             catch (Exception ex)
             {
-                Logger.LogError(ex, "Error retrieving temporary secret(s) from Rekeyable Object Provider(s)");
-                throw ex;
+                throw new Exception("Error retrieving temporary secret(s) from Rekeyable Object Provider(s)", ex);
             }
 
             // -----
@@ -89,17 +77,11 @@ namespace AuthJanitor.Providers
             {
                 await Task.WhenAll(
                     ApplicationLifecycleProviders.Select(alcProvider =>
-                            alcProvider.BeforeRekeying(TemporarySecrets)
-                                       .ContinueWith(task =>
-                                       {
-                                           if (task.IsFaulted)
-                                               Logger.LogError(task.Exception, "Exception during pre-rekeying operations!");
-                                       })));
+                            alcProvider.BeforeRekeying(TemporarySecrets)));
             }
             catch (Exception ex)
             {
-                Logger.LogError(ex, "Error preparing Application Lifecycle Provider(s)");
-                throw new Exception("Error preparing Application Lifecycle Provider(s)");
+                throw new Exception("Error preparing Application Lifecycle Provider(s)", ex);
             }
 
             // -----
@@ -113,8 +95,7 @@ namespace AuthJanitor.Providers
             }
             catch (Exception ex)
             {
-                Logger.LogError(ex, "Error executing Rekey on Rekeyable Object Provider(s)");
-                throw new Exception("Error executing Rekey on Rekeyable Object Provider(s)");
+                throw new Exception("Error executing Rekey on Rekeyable Object Provider(s)", ex);
             }
 
             // -----
@@ -125,17 +106,11 @@ namespace AuthJanitor.Providers
             try
             {
                 await Task.WhenAll(ApplicationLifecycleProviders
-                    .Select(alcProvider => alcProvider.CommitNewSecrets(NewSecrets)
-                    .ContinueWith(task =>
-                    {
-                        if (task.IsFaulted)
-                            Logger.LogError(task.Exception, "Exception occured while committing secrets!");
-                    })));
+                    .Select(alcProvider => alcProvider.CommitNewSecrets(NewSecrets)));
             }
             catch (Exception ex)
             {
-                Logger.LogError(ex, "Error executing Commit on Application Lifecycle Provider(s)");
-                throw new Exception("Error executing Commit on Application Lifecycle Provider(s)");
+                throw new Exception("Error executing Commit on Application Lifecycle Provider(s)", ex);
             }
 
             // -----
@@ -144,17 +119,11 @@ namespace AuthJanitor.Providers
             try
             {
                 await Task.WhenAll(ApplicationLifecycleProviders
-                    .Select(alp => alp.AfterRekeying()
-                    .ContinueWith(task =>
-                    {
-                        if (task.IsFaulted)
-                            Logger.LogError(task.Exception, "Exception occured while completing post-rekey operations!");
-                    })));
+                    .Select(alp => alp.AfterRekeying()));
             }
             catch (Exception ex)
             {
-                Logger.LogError(ex, "Error executing AfterRekeying on Application Lifecycle Provider(s)");
-                throw new Exception("Error executing AfterRekeying on Application Lifecycle Provider(s)");
+                throw new Exception("Error executing AfterRekeying on Application Lifecycle Provider(s)", ex);
             }
 
             // -----
@@ -163,17 +132,11 @@ namespace AuthJanitor.Providers
             try
             {
                 await Task.WhenAll(RekeyableObjectProviders
-                    .Select(rko => rko.OnConsumingApplicationSwapped()
-                    .ContinueWith(task =>
-                    {
-                        if (task.IsFaulted)
-                            Logger.LogError(task.Exception, "Exception occured while finalizing Rekeyable Object Provider(s)!");
-                    })));
+                    .Select(rko => rko.OnConsumingApplicationSwapped()));
             }
             catch (Exception ex)
             {
-                Logger.LogError(ex, "Error executing OnConsumingApplicationSwapped on Rekeyable Object Provider(s)");
-                throw new Exception("Error executing OnConsumingApplicationSwapped on Rekeyable Object Provider(s)");
+                throw new Exception("Error executing OnConsumingApplicationSwapped on Rekeyable Object Provider(s)", ex);
             }
         }
     }

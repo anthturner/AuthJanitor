@@ -1,6 +1,7 @@
 ﻿using AuthJanitor.Automation.Shared.ViewModels;
 using AuthJanitor.Providers;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -98,7 +99,9 @@ namespace AuthJanitor.Automation.Shared
                                 .Select(resource => serviceProvider.GetRequiredService<Func<Resource, ResourceViewModel>>()(resource));
             foreach (var resource in resources)
             {
-                var provider = serviceProvider.GetRequiredService<Func<string, IAuthJanitorProvider>>()(resource.ProviderType);
+                var provider = serviceProvider.GetRequiredService<Func<string, RekeyingAttemptLogger, IAuthJanitorProvider>>()(resource.ProviderType,
+                    new RekeyingAttemptLogger(serviceProvider.GetRequiredService<ILoggerFactory>()
+                    .CreateLogger("ViewModelLogger")));
                 provider.SerializedConfiguration = resource.SerializedProviderConfiguration;
                 resource.Risks = provider.GetRisks(secret.ValidPeriod);
                 resource.Description = provider.GetDescription();
@@ -132,7 +135,7 @@ namespace AuthJanitor.Automation.Shared
                                            .FirstOrDefault() : null;
             if (mostRecentAttempt != null)
                 errorMessage = mostRecentAttempt.IsSuccessfulAttempt ?
-                                 string.Empty : mostRecentAttempt.OuterException?.Message;
+                                 string.Empty : mostRecentAttempt.OuterException;
 
             return new RekeyingTaskViewModel()
             {
@@ -151,7 +154,9 @@ namespace AuthJanitor.Automation.Shared
 
         private static ViewModels.ResourceViewModel GetViewModel(IServiceProvider serviceProvider, Resource resource)
         {
-            var provider = serviceProvider.GetRequiredService<Func<string, IAuthJanitorProvider>>()(resource.ProviderType);
+            var provider = serviceProvider.GetRequiredService<Func<string, RekeyingAttemptLogger, IAuthJanitorProvider>>()(resource.ProviderType,
+                    new RekeyingAttemptLogger(serviceProvider.GetRequiredService<ILoggerFactory>()
+                    .CreateLogger("ViewModelLogger")));
             provider.SerializedConfiguration = resource.ProviderConfiguration;
 
             return new ViewModels.ResourceViewModel()

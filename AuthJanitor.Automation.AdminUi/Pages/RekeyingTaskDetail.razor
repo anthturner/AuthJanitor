@@ -116,11 +116,13 @@
     </Row>
 
     <Row>
-        @{var current = Task.Attempts.OrderByDescending(a => a.AttemptStarted).FirstOrDefault()?.AttemptStarted;}
-        <Tabs>
+        @{_selectedTab = HelperMethods.MD5HashString(
+            Task.Attempts.OrderByDescending(a => a.AttemptStarted).FirstOrDefault()?.AttemptStarted.ToString());}
+        <Tabs SelectedTabChanged="@OnSelectedTabChanged">
             @foreach (var attempt in Task.Attempts)
         {
-            <Tab Name="@HelperMethods.MD5HashString(attempt.AttemptStarted.ToString())" IsActive="@(attempt.AttemptStarted == current)">
+            <Tab Name="@HelperMethods.MD5HashString(attempt.AttemptStarted.ToString())"
+                 IsActive="@(HelperMethods.MD5HashString(attempt.AttemptStarted.ToString()) == _selectedTab)">
                 @if (attempt.IsSuccessfulAttempt) {
                     <Icon Name="FontAwesomeIcons.CheckCircle" Class="text-success" />
                 } else {
@@ -131,11 +133,16 @@
             </Tab>
         }
         </Tabs>
-        <TabsContent>
+        <TabsContent @ref="attemptTabs">
             @foreach (var attempt in Task.Attempts)
         {
-            <TabPanel Name="@HelperMethods.MD5HashString(attempt.AttemptStarted.ToString())" IsActive="@(attempt.AttemptStarted == current)">
+            <TabPanel Name="@HelperMethods.MD5HashString(attempt.AttemptStarted.ToString())" 
+                      IsActive="@(HelperMethods.MD5HashString(attempt.AttemptStarted.ToString()) == _selectedTab)">
                 <pre><code>@attempt.LogString</code></pre>
+                @if (!attempt.IsSuccessfulAttempt)
+                {
+                    <pre class="border border-danger"><code>@attempt.OuterException</code></pre>
+                }
             </TabPanel>
         }
         </TabsContent>
@@ -155,6 +162,8 @@
     public ManagedSecretViewModel Secret => Task == null ? new ManagedSecretViewModel() : Task.ManagedSecret;
     public RekeyingTaskViewModel Task { get; set; } = new RekeyingTaskViewModel();
 
+    private TabsContent attemptTabs;
+
     [Parameter]
     public string RekeyingTaskId { get; set; }
 
@@ -163,7 +172,12 @@
     protected override async Task OnInitializedAsync()
     {
         Task = await Http.AJGet<RekeyingTaskViewModel>(Guid.Parse(RekeyingTaskId));
-        //foreach (var item in Secret.Resources) Visibilities[item.ObjectId] = false;
-        await base.OnInitializedAsync();
+    }
+
+    private string _selectedTab;
+    private void OnSelectedTabChanged(string name)
+    {
+        _selectedTab = name;
+        attemptTabs.SelectPanel(name);
     }
 }

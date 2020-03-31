@@ -25,12 +25,12 @@ namespace AuthJanitor.Providers
                         SvgImage = type.GetCustomAttribute<ProviderImageAttribute>()?.SvgImage
                     });
 
-            serviceCollection.AddTransient<Func<string, IAuthJanitorProvider>>(serviceProvider => key =>
+            serviceCollection.AddTransient<Func<string, RekeyingAttemptLogger, IAuthJanitorProvider>>(serviceProvider => (key, log) =>
             {
                 var selectedProvider = loadedProviders.FirstOrDefault(p => p.ProviderTypeName == key);
                 if (selectedProvider == null) throw new Exception($"Provider '{key}' not available!");
                 return Activator.CreateInstance(selectedProvider.ProviderType, new object[] {
-                    serviceProvider.GetRequiredService<ILogger>(),
+                    log,
                     serviceProvider
                 }) as IAuthJanitorProvider;
             });

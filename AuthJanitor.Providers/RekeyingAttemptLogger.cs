@@ -1,13 +1,14 @@
 ﻿using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System;
+using System.Text.RegularExpressions;
 
 namespace AuthJanitor.Providers
 {
     public class RekeyingAttemptLogger : ILogger
     {
-        public bool IsSuccessfulAttempt => OuterException == null;
-        public Exception OuterException { get; set; }
+        public bool IsSuccessfulAttempt => string.IsNullOrEmpty(OuterException);
+        public string OuterException { get; set; }
 
         public DateTimeOffset AttemptStarted { get; set; }
         public DateTimeOffset AttemptFinished { get; set; }
@@ -44,7 +45,17 @@ namespace AuthJanitor.Providers
 
         public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
         {
-            LogString += $"[{logLevel}] " + formatter(state, exception) + Environment.NewLine;
+            LogString += 
+                $"[{Math.Round((DateTime.Now - AttemptStarted).TotalSeconds, 4)}]" +
+                $"[{logLevel}] " + 
+                formatter(state, exception) + 
+                Environment.NewLine;
+            if (exception != null)
+            {
+                var exceptionString = exception.ToString() + Environment.NewLine;
+                exceptionString = Regex.Replace(exceptionString, "Bearer [A-Za-z0-9\\-\\._~\\+\\/]+=*", "<<REDACTED BEARER TOKEN>>");
+                LogString += exceptionString;
+            }
             if (ChainedLogger != null)
                 ChainedLogger.Log<TState>(logLevel, eventId, state, exception, formatter);
             AttemptFinished = DateTimeOffset.UtcNow;

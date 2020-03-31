@@ -4,6 +4,7 @@ using AuthJanitor.Automation.Shared.ViewModels;
 using AuthJanitor.Providers;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Logging;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,21 +15,21 @@ namespace AuthJanitor.Automation.Shared
 {
     public abstract class ProviderIntegratedFunction : StorageIntegratedFunction
     {
-        private readonly Func<string, IAuthJanitorProvider> _providerFactory;
+        private readonly Func<string, RekeyingAttemptLogger, IAuthJanitorProvider> _providerFactory;
         private readonly Func<string, AuthJanitorProviderConfiguration> _providerConfigurationFactory;
         private readonly Func<string, LoadedProviderMetadata> _providerDetailsFactory;
 
-        protected IAuthJanitorProvider GetProvider(string name) => _providerFactory(name);
-        protected IAuthJanitorProvider GetProvider(string name, string configuration)
+        protected IAuthJanitorProvider GetProvider(RekeyingAttemptLogger logger, string name) => _providerFactory(name, logger);
+        protected IAuthJanitorProvider GetProvider(RekeyingAttemptLogger logger, string name, string configuration)
         {
-            var provider = GetProvider(name);
+            var provider = GetProvider(logger, name);
             if (provider == null) return null;
             provider.SerializedConfiguration = configuration;
             return provider;
         }
-        protected IAuthJanitorProvider GetProvider(string name, string configuration, MultiCredentialProvider.CredentialType credentialType)
+        protected IAuthJanitorProvider GetProvider(RekeyingAttemptLogger logger, string name, string configuration, MultiCredentialProvider.CredentialType credentialType)
         {
-            var provider = GetProvider(name, configuration);
+            var provider = GetProvider(logger, name, configuration);
             provider.CredentialType = credentialType;
             return provider;
         }
@@ -51,7 +52,7 @@ namespace AuthJanitor.Automation.Shared
             Func<AuthJanitorProviderConfiguration, ProviderConfigurationViewModel> configViewModelDelegate,
             Func<ScheduleWindow, ScheduleWindowViewModel> scheduleViewModelDelegate,
             Func<LoadedProviderMetadata, LoadedProviderViewModel> providerViewModelDelegate,
-            Func<string, IAuthJanitorProvider> providerFactory,
+            Func<string, RekeyingAttemptLogger, IAuthJanitorProvider> providerFactory,
             Func<string, AuthJanitorProviderConfiguration> providerConfigurationFactory,
             Func<string, LoadedProviderMetadata> providerDetailsFactory,
             List<LoadedProviderMetadata> loadedProviders) : base(serviceConfiguration, credentialProvider, notificationProvider, secureStorageProvider,  managedSecretStore, resourceStore, rekeyingTaskStore, managedSecretViewModelDelegate, resourceViewModelDelegate, rekeyingTaskViewModelDelegate, configViewModelDelegate, scheduleViewModelDelegate, providerViewModelDelegate)
@@ -93,7 +94,7 @@ namespace AuthJanitor.Automation.Shared
 
             var resources = await Resources.GetAsync(r => secret.ResourceIds.Contains(r.ObjectId));
             var workflow = new ProviderActionWorkflow(log,
-                resources.Select(r => GetProvider(r.ProviderType, r.ProviderConfiguration, credentialType)));
+                resources.Select(r => GetProvider(log, r.ProviderType, r.ProviderConfiguration, credentialType)));
             try
             {
                 await workflow.InvokeAsync(secret.ValidPeriod);
@@ -111,7 +112,10 @@ namespace AuthJanitor.Automation.Shared
             }
             catch (Exception ex)
             {
-                log.OuterException = ex;
+                log.LogCritical(ex, "Error running rekeying task!");
+                log.LogCritical(ex.Message);
+                log.LogCritical(ex.StackTrace);
+                log.OuterException = JsonConvert.SerializeObject(ex, Formatting.Indented);
             }
 
             return log;

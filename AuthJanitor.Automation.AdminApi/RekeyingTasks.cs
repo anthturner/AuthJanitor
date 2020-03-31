@@ -25,7 +25,7 @@ namespace AuthJanitor.Automation.AdminApi
     /// </summary>
     public class RekeyingTasks : ProviderIntegratedFunction
     {
-        public RekeyingTasks(AuthJanitorServiceConfiguration serviceConfiguration, MultiCredentialProvider credentialProvider, INotificationProvider notificationProvider, ISecureStorageProvider secureStorageProvider, IDataStore<ManagedSecret> managedSecretStore, IDataStore<Resource> resourceStore, IDataStore<RekeyingTask> rekeyingTaskStore, Func<ManagedSecret, ManagedSecretViewModel> managedSecretViewModelDelegate, Func<Resource, ResourceViewModel> resourceViewModelDelegate, Func<RekeyingTask, RekeyingTaskViewModel> rekeyingTaskViewModelDelegate, Func<AuthJanitorProviderConfiguration, ProviderConfigurationViewModel> configViewModelDelegate, Func<ScheduleWindow, ScheduleWindowViewModel> scheduleViewModelDelegate, Func<LoadedProviderMetadata, LoadedProviderViewModel> providerViewModelDelegate, Func<string, IAuthJanitorProvider> providerFactory, Func<string, AuthJanitorProviderConfiguration> providerConfigurationFactory, Func<string, LoadedProviderMetadata> providerDetailsFactory, List<LoadedProviderMetadata> loadedProviders) : base(serviceConfiguration, credentialProvider, notificationProvider, secureStorageProvider, managedSecretStore, resourceStore, rekeyingTaskStore, managedSecretViewModelDelegate, resourceViewModelDelegate, rekeyingTaskViewModelDelegate, configViewModelDelegate, scheduleViewModelDelegate, providerViewModelDelegate, providerFactory, providerConfigurationFactory, providerDetailsFactory, loadedProviders)
+        public RekeyingTasks(AuthJanitorServiceConfiguration serviceConfiguration, MultiCredentialProvider credentialProvider, INotificationProvider notificationProvider, ISecureStorageProvider secureStorageProvider, IDataStore<ManagedSecret> managedSecretStore, IDataStore<Resource> resourceStore, IDataStore<RekeyingTask> rekeyingTaskStore, Func<ManagedSecret, ManagedSecretViewModel> managedSecretViewModelDelegate, Func<Resource, ResourceViewModel> resourceViewModelDelegate, Func<RekeyingTask, RekeyingTaskViewModel> rekeyingTaskViewModelDelegate, Func<AuthJanitorProviderConfiguration, ProviderConfigurationViewModel> configViewModelDelegate, Func<ScheduleWindow, ScheduleWindowViewModel> scheduleViewModelDelegate, Func<LoadedProviderMetadata, LoadedProviderViewModel> providerViewModelDelegate, Func<string, RekeyingAttemptLogger, IAuthJanitorProvider> providerFactory, Func<string, AuthJanitorProviderConfiguration> providerConfigurationFactory, Func<string, LoadedProviderMetadata> providerDetailsFactory, List<LoadedProviderMetadata> loadedProviders) : base(serviceConfiguration, credentialProvider, notificationProvider, secureStorageProvider, managedSecretStore, resourceStore, rekeyingTaskStore, managedSecretViewModelDelegate, resourceViewModelDelegate, rekeyingTaskViewModelDelegate, configViewModelDelegate, scheduleViewModelDelegate, providerViewModelDelegate, providerFactory, providerConfigurationFactory, providerDetailsFactory, loadedProviders)
         {
         }
 
@@ -117,10 +117,18 @@ namespace AuthJanitor.Automation.AdminApi
 
             log.LogInformation("Administrator approved Task ID {0}", taskId);
 
-            log.LogInformation("Registering incoming user credential...");
-            await RegisterUserCredential(req);
-
             var task = await RekeyingTasks.GetAsync(taskId);
+
+            log.LogInformation("Registering incoming user credential...");
+            try { await RegisterUserCredential(req); }
+            catch (Exception ex)
+            {
+                var logger = new RekeyingAttemptLogger();
+                logger.LogCritical(ex, "Error registering user credential!");
+                task.Attempts.Add(logger);
+                await RekeyingTasks.UpdateAsync(task);
+                return new BadRequestErrorMessageResult(ex.Message);
+            }
 
             if (task.ConfirmationType == TaskConfirmationStrategies.AdminCachesSignOff)
             {
@@ -159,13 +167,13 @@ namespace AuthJanitor.Automation.AdminApi
                     task.RekeyingCompleted = false;
                     task.RekeyingFailed = true;
                     if (aggregatedStringLogger.OuterException == null)
-                        aggregatedStringLogger.OuterException = ex;
+                        aggregatedStringLogger.OuterException = JsonConvert.SerializeObject(ex, Formatting.Indented);
                 }
 
                 task.Attempts.Add(aggregatedStringLogger);
                 await RekeyingTasks.UpdateAsync(task);
                 if (task.RekeyingFailed)
-                    return new BadRequestErrorMessageResult(aggregatedStringLogger.OuterException.Message);
+                    return new BadRequestErrorMessageResult(aggregatedStringLogger.OuterException);
                 else
                     return new OkResult();
             }
