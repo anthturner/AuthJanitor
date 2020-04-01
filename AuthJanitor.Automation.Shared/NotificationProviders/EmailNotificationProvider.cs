@@ -1,4 +1,5 @@
-﻿using SendGrid;
+﻿using AuthJanitor.Automation.Shared.Models;
+using SendGrid;
 using SendGrid.Helpers.Mail;
 using System;
 using System.Linq;
@@ -12,11 +13,11 @@ namespace AuthJanitor.Automation.Shared.NotificationProviders
         public string FromName { get; }
         public string AuthJanitorUiBase { get; }
 
-        private string _sendGridApiKey;
+        private readonly string _sendGridApiKey;
         public EmailNotificationProvider(
-            string sendGridApiKey, 
+            string sendGridApiKey,
             string authJanitorUiBase,
-            string fromEmail, 
+            string fromEmail,
             string fromName = "AuthJanitor Managed Secret Agent")
         {
             _sendGridApiKey = sendGridApiKey;
@@ -34,7 +35,7 @@ namespace AuthJanitor.Automation.Shared.NotificationProviders
             msg.AddContent(MimeType.Text,
                 "Administrator approval is required for a new task!" + Environment.NewLine +
                 $"{new Uri(AuthJanitorUiBase + "aj/tasks/" + task.ObjectId)}");
-            msg.AddContent(MimeType.Html, 
+            msg.AddContent(MimeType.Html,
                 "<p>Administrator approval is required for a new task!</p><br />" +
                 $"<a href=\"{new Uri(AuthJanitorUiBase + "aj/tasks/" + task.ObjectId)}\">Click here to review!</a>");
 

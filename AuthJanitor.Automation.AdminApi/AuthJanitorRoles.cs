@@ -51,7 +51,7 @@ namespace AuthJanitor.Automation.AdminApi
             if (IsRunningLocally) return true;
 #endif
             var role = GetUserRole(req);
-            if (role == string.Empty) return false;
+            if (string.IsNullOrEmpty(role)) return false;
             if (validRoles.Any(validRole => role == validRole))
                 return true;
             return false;

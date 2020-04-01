@@ -1,8 +1,8 @@
 ﻿using System;
 
-namespace AuthJanitor.Automation.Shared
+namespace AuthJanitor.Automation.Shared.Models
 {
-    public class Resource : IDataStoreCompatibleStructure
+    public class Resource : IAuthJanitorModel
     {
         public Guid ObjectId { get; set; } = Guid.NewGuid();
         public string Name { get; set; }

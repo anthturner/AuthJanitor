@@ -1,14 +1,16 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using AuthJanitor.Automation.Shared;
+using AuthJanitor.Automation.Shared.DataStores;
+using AuthJanitor.Automation.Shared.Models;
 using AuthJanitor.Automation.Shared.NotificationProviders;
 using AuthJanitor.Automation.Shared.SecureStorageProviders;
 using AuthJanitor.Automation.Shared.ViewModels;
 using AuthJanitor.Providers;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Extensions.Logging;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace AuthJanitor.Automation.AdminApi
 {
@@ -21,6 +23,8 @@ namespace AuthJanitor.Automation.AdminApi
         [FunctionName("ScheduleRekeyingTasks")]
         public async Task Run([TimerTrigger("0 */5 * * * *")]TimerInfo myTimer, ILogger log)
         {
+            _ = myTimer; // unused but required for attribute
+
             log.LogInformation($"Scheduling Rekeying Tasks for upcoming ManagedSecret expirations");
 
             await ScheduleApprovalRequiredTasks(log);

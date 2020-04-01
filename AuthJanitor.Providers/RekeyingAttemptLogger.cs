@@ -24,7 +24,7 @@ namespace AuthJanitor.Providers
             AttemptStarted = DateTimeOffset.UtcNow;
             ChainedLogger = chainedLogger;
         }
-        
+
         public IDisposable BeginScope<TState>(TState state)
         {
             if (ChainedLogger != null)
@@ -45,10 +45,10 @@ namespace AuthJanitor.Providers
 
         public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
         {
-            LogString += 
+            LogString +=
                 $"[{(DateTime.Now - AttemptStarted).TotalSeconds.ToString("00000.000")}]" +
-                $"[{logLevel}] " + 
-                formatter(state, exception) + 
+                $"[{logLevel}] " +
+                formatter(state, exception) +
                 Environment.NewLine;
             if (exception != null)
             {

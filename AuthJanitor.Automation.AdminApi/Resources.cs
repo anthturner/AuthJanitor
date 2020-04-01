@@ -1,4 +1,6 @@
 ﻿using AuthJanitor.Automation.Shared;
+using AuthJanitor.Automation.Shared.DataStores;
+using AuthJanitor.Automation.Shared.Models;
 using AuthJanitor.Automation.Shared.NotificationProviders;
 using AuthJanitor.Automation.Shared.SecureStorageProviders;
 using AuthJanitor.Automation.Shared.ViewModels;
@@ -57,7 +59,7 @@ namespace AuthJanitor.Automation.AdminApi
             }
             catch { return new BadRequestErrorMessageResult("Invalid Provider configuration"); }
 
-            Shared.Resource newResource = new Shared.Resource()
+            Resource newResource = new Resource()
             {
                 Name = resource.Name,
                 Description = resource.Description,
@@ -114,7 +116,7 @@ namespace AuthJanitor.Automation.AdminApi
 
             if (!await Resources.ContainsIdAsync(resourceId))
                 return new BadRequestErrorMessageResult("Resource not found!");
-            
+
             await Resources.DeleteAsync(resourceId);
             return new OkResult();
         }
@@ -122,7 +124,7 @@ namespace AuthJanitor.Automation.AdminApi
         [ProtectedApiEndpoint]
         [FunctionName("Resources-Update")]
         public async Task<IActionResult> Update(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "resources/{resourceId:guid}")] Shared.Resource resource,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "resources/{resourceId:guid}")] Resource resource,
             HttpRequest req,
             Guid resourceId,
             ILogger log)
@@ -139,7 +141,7 @@ namespace AuthJanitor.Automation.AdminApi
             }
             catch { return new BadRequestErrorMessageResult("Invalid Provider configuration"); }
 
-            Shared.Resource newResource = new Shared.Resource()
+            Resource newResource = new Resource()
             {
                 ObjectId = resourceId,
                 Name = resource.Name,

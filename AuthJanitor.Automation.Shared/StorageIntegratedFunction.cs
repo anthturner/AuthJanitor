@@ -1,4 +1,6 @@
-﻿using AuthJanitor.Automation.Shared.NotificationProviders;
+﻿using AuthJanitor.Automation.Shared.DataStores;
+using AuthJanitor.Automation.Shared.Models;
+using AuthJanitor.Automation.Shared.NotificationProviders;
 using AuthJanitor.Automation.Shared.SecureStorageProviders;
 using AuthJanitor.Automation.Shared.ViewModels;
 using AuthJanitor.Providers;
@@ -16,7 +18,7 @@ namespace AuthJanitor.Automation.Shared
         private readonly Func<LoadedProviderMetadata, LoadedProviderViewModel> _providerViewModelDelegate;
 
         protected IDataStore<ManagedSecret> ManagedSecrets { get; }
-        protected IDataStore<Shared.Resource> Resources { get; }
+        protected IDataStore<Resource> Resources { get; }
         protected IDataStore<RekeyingTask> RekeyingTasks { get; }
 
         protected AuthJanitorServiceConfiguration ServiceConfiguration { get; }

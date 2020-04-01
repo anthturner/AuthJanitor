@@ -13,9 +13,9 @@ namespace AuthJanitor.Automation.Shared
         public const string HEADER_NAME = "AuthJanitor";
         public const string HEADER_VALUE = "administrator";
 
-        private static Dictionary<Type, string> ApiFormatStrings = new Dictionary<Type, string>()
+        private static readonly Dictionary<Type, string> ApiFormatStrings = new Dictionary<Type, string>()
         {
-            { typeof(DashboardMetrics), "dashboard" },
+            { typeof(DashboardMetricsViewModel), "dashboard" },
             { typeof(ManagedSecretViewModel), "managedSecrets" },
             { typeof(RekeyingTaskViewModel), "tasks" },
             { typeof(ResourceViewModel), "resources" },

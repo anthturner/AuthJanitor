@@ -2,9 +2,9 @@
 using System;
 using System.Collections.Generic;
 
-namespace AuthJanitor.Automation.Shared
+namespace AuthJanitor.Automation.Shared.Models
 {
-    public class RekeyingTask : IDataStoreCompatibleStructure
+    public class RekeyingTask : IAuthJanitorModel
     {
         public Guid ObjectId { get; set; } = Guid.NewGuid();
 

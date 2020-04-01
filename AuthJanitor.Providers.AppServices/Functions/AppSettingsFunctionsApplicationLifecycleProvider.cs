@@ -31,7 +31,7 @@ namespace AuthJanitor.Providers.AppServices.Functions
             Logger.LogInformation("BeforeRekeying completed!");
         }
 
-        
+
 
         /// <summary>
         /// Call to commit the newly generated secret
@@ -66,11 +66,11 @@ namespace AuthJanitor.Providers.AppServices.Functions
                 throw new Exception("Multiple secrets sent to Provider but without distinct UserHints!");
             }
 
-            IUpdate<IFunctionDeploymentSlot> updateBase = (await GetDeploymentSlot(TemporarySlotName)).Update();
+            IUpdate<IFunctionDeploymentSlot> updateBase = (await GetDeploymentSlot(slotName)).Update();
             foreach (RegeneratedSecret secret in secrets)
             {
                 var appSettingName = string.IsNullOrEmpty(secret.UserHint) ? Configuration.SettingName : $"{Configuration.SettingName}-{secret.UserHint}";
-                Logger.LogInformation("Updating AppSetting '{0}' in slot '{1}' (as {2})", appSettingName, TemporarySlotName,
+                Logger.LogInformation("Updating AppSetting '{0}' in slot '{1}' (as {2})", appSettingName, slotName,
                     Configuration.CommitAsConnectionString ? "connection string" : "secret");
 
                 updateBase = updateBase.WithAppSetting(appSettingName,
@@ -80,8 +80,8 @@ namespace AuthJanitor.Providers.AppServices.Functions
             Logger.LogInformation("Applying changes.");
             await updateBase.ApplyAsync();
 
-            Logger.LogInformation("Swapping to '{0}'", TemporarySlotName);
-            await (await GetFunctionsApp()).SwapAsync(TemporarySlotName);
+            Logger.LogInformation("Swapping to '{0}'", slotName);
+            await (await GetFunctionsApp()).SwapAsync(slotName);
         }
     }
 }

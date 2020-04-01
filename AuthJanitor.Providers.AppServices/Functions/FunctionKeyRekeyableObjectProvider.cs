@@ -16,7 +16,7 @@ namespace AuthJanitor.Providers.AppServices.Functions
 
         public override async Task Test()
         {
-            var functionsApp = await(await GetAzure()).AppServices.FunctionApps.GetByResourceGroupAsync(ResourceGroup, ResourceName);
+            var functionsApp = await (await GetAzure()).AppServices.FunctionApps.GetByResourceGroupAsync(ResourceGroup, ResourceName);
             if (functionsApp == null)
                 throw new Exception($"Cannot locate Functions application called '{ResourceName}' in group '{ResourceGroup}'");
             var keys = await functionsApp.ListFunctionKeysAsync(Configuration.FunctionName);
@@ -51,7 +51,7 @@ namespace AuthJanitor.Providers.AppServices.Functions
             $"Regenerates a Functions key for an Azure " +
             $"Functions application called {Configuration.ResourceName} (Resource Group " +
             $"'{Configuration.ResourceGroup}').";
-        
+
         // TODO: Zero-downtime rotation here with similar slotting?
         //During the rekeying, the Functions App will " +
         //    $"be moved from slot '{Configuration.SourceSlot}' to slot '{Configuration.TemporarySlot}' " +

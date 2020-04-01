@@ -1,7 +1,7 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using Newtonsoft.Json;
 
 namespace AuthJanitor.Automation.Shared.ViewModels
 {
@@ -10,7 +10,7 @@ namespace AuthJanitor.Automation.Shared.ViewModels
         public Guid ObjectId { get; set; }
         public string Name { get; set; }
         public string Description { get; set; }
-        
+
         [JsonIgnore]
         public TaskConfirmationStrategies TaskConfirmationStrategies
         {

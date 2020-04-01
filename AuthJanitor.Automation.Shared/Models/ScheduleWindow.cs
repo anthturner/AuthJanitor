@@ -4,9 +4,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace AuthJanitor.Automation.Shared
+namespace AuthJanitor.Automation.Shared.Models
 {
-    public class ScheduleWindow : IDataStoreCompatibleStructure
+    public class ScheduleWindow : IAuthJanitorModel
     {
         public Guid ObjectId { get; set; }
 

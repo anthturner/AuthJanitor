@@ -1,4 +1,6 @@
 ﻿using AuthJanitor.Automation.Shared;
+using AuthJanitor.Automation.Shared.DataStores;
+using AuthJanitor.Automation.Shared.Models;
 using AuthJanitor.Automation.Shared.NotificationProviders;
 using AuthJanitor.Automation.Shared.PersistenceEncryption;
 using AuthJanitor.Automation.Shared.SecureStorageProviders;
@@ -111,7 +113,7 @@ namespace AuthJanitor.Automation.AdminApi
             // -----
 
             logger.LogDebug("Scanning for Provider modules at {0}\\{1} recursively", PROVIDER_SEARCH_PATH, PROVIDER_SEARCH_MASK);
-            
+
             var providerTypes = Directory.GetFiles(PROVIDER_SEARCH_PATH, PROVIDER_SEARCH_MASK, new EnumerationOptions() { RecurseSubdirectories = true })
                                          .SelectMany(libraryFile => PluginLoader.CreateFromAssemblyFile(libraryFile, PROVIDER_SHARED_TYPES)
                                                                             .LoadDefaultAssembly()

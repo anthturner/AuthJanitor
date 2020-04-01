@@ -1,4 +1,6 @@
 ﻿using AuthJanitor.Automation.Shared;
+using AuthJanitor.Automation.Shared.DataStores;
+using AuthJanitor.Automation.Shared.Models;
 using AuthJanitor.Automation.Shared.NotificationProviders;
 using AuthJanitor.Automation.Shared.SecureStorageProviders;
 using AuthJanitor.Automation.Shared.ViewModels;
@@ -42,7 +44,7 @@ namespace AuthJanitor.Automation.AdminApi
 
             if (!await ManagedSecrets.ContainsIdAsync(Guid.Parse(secretId)))
                 return new BadRequestErrorMessageResult("Invalid Managed Secret ID");
-            
+
             var secret = await ManagedSecrets.GetAsync(Guid.Parse(secretId));
             if (!secret.TaskConfirmationStrategies.HasFlag(TaskConfirmationStrategies.AdminCachesSignOff) &&
                 !secret.TaskConfirmationStrategies.HasFlag(TaskConfirmationStrategies.AdminSignsOffJustInTime))

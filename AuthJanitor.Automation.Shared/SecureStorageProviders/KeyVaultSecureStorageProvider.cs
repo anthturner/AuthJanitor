@@ -10,10 +10,10 @@ namespace AuthJanitor.Automation.Shared.SecureStorageProviders
     public class KeyVaultSecureStorageProvider : ISecureStorageProvider
     {
         private const string PERSISTENCE_PREFIX = "AJPersist-";
-        private string _vaultName;
+        private readonly string _vaultName;
 
-        private IPersistenceEncryption _encryption;
-        private MultiCredentialProvider _credentialProvider;
+        private readonly IPersistenceEncryption _encryption;
+        private readonly MultiCredentialProvider _credentialProvider;
         public KeyVaultSecureStorageProvider(
             IPersistenceEncryption encryption,
             MultiCredentialProvider credentialProvider,
@@ -32,7 +32,7 @@ namespace AuthJanitor.Automation.Shared.SecureStorageProviders
         public async Task<Guid> Persist<T>(DateTimeOffset expiry, T persistedObject)
         {
             var newId = Guid.NewGuid();
-            var newSecret = new KeyVaultSecret($"{PERSISTENCE_PREFIX}{newId}", 
+            var newSecret = new KeyVaultSecret($"{PERSISTENCE_PREFIX}{newId}",
                 await _encryption.Encrypt(
                     newId.ToString(),
                     JsonConvert.SerializeObject(persistedObject)));

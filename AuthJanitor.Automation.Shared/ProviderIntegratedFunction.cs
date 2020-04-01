@@ -1,14 +1,14 @@
-﻿using AuthJanitor.Automation.Shared.NotificationProviders;
+﻿using AuthJanitor.Automation.Shared.DataStores;
+using AuthJanitor.Automation.Shared.Models;
+using AuthJanitor.Automation.Shared.NotificationProviders;
 using AuthJanitor.Automation.Shared.SecureStorageProviders;
 using AuthJanitor.Automation.Shared.ViewModels;
 using AuthJanitor.Providers;
 using Microsoft.Extensions.Logging;
-using Microsoft.IdentityModel.Logging;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.NetworkInformation;
 using System.Threading.Tasks;
 
 namespace AuthJanitor.Automation.Shared
@@ -55,7 +55,7 @@ namespace AuthJanitor.Automation.Shared
             Func<string, RekeyingAttemptLogger, IAuthJanitorProvider> providerFactory,
             Func<string, AuthJanitorProviderConfiguration> providerConfigurationFactory,
             Func<string, LoadedProviderMetadata> providerDetailsFactory,
-            List<LoadedProviderMetadata> loadedProviders) : base(serviceConfiguration, credentialProvider, notificationProvider, secureStorageProvider,  managedSecretStore, resourceStore, rekeyingTaskStore, managedSecretViewModelDelegate, resourceViewModelDelegate, rekeyingTaskViewModelDelegate, configViewModelDelegate, scheduleViewModelDelegate, providerViewModelDelegate)
+            List<LoadedProviderMetadata> loadedProviders) : base(serviceConfiguration, credentialProvider, notificationProvider, secureStorageProvider, managedSecretStore, resourceStore, rekeyingTaskStore, managedSecretViewModelDelegate, resourceViewModelDelegate, rekeyingTaskViewModelDelegate, configViewModelDelegate, scheduleViewModelDelegate, providerViewModelDelegate)
         {
             _providerFactory = providerFactory;
             _providerConfigurationFactory = providerConfigurationFactory;
@@ -77,7 +77,7 @@ namespace AuthJanitor.Automation.Shared
                 }
                 var token = await SecureStorageProvider.Retrieve<Azure.Core.AccessToken>(task.PersistedCredentialId);
                 CredentialProvider.Register(
-                    MultiCredentialProvider.CredentialType.CachedCredential, 
+                    MultiCredentialProvider.CredentialType.CachedCredential,
                     token.Token,
                     token.ExpiresOn);
                 credentialType = MultiCredentialProvider.CredentialType.CachedCredential;
@@ -101,7 +101,7 @@ namespace AuthJanitor.Automation.Shared
                 secret.LastChanged = DateTimeOffset.UtcNow;
                 await ManagedSecrets.UpdateAsync(secret);
                 log.LogInformation("Completed rekeying workflow for ManagedSecret '{0}' (ID {1})", secret.Name, secret.ObjectId);
-                
+
                 if (credentialType == MultiCredentialProvider.CredentialType.CachedCredential)
                 {
                     log.LogInformation("Destroying persisted credential");

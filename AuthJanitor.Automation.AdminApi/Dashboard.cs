@@ -1,18 +1,20 @@
-using System;
-using System.Threading.Tasks;
+using AuthJanitor.Automation.Shared;
+using AuthJanitor.Automation.Shared.DataStores;
+using AuthJanitor.Automation.Shared.Models;
+using AuthJanitor.Automation.Shared.NotificationProviders;
+using AuthJanitor.Automation.Shared.SecureStorageProviders;
+using AuthJanitor.Automation.Shared.ViewModels;
+using AuthJanitor.Providers;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
-using AuthJanitor.Automation.Shared;
-using AuthJanitor.Automation.Shared.ViewModels;
-using AuthJanitor.Providers;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using AuthJanitor.Automation.Shared.NotificationProviders;
-using AuthJanitor.Automation.Shared.SecureStorageProviders;
 using System.Security.Claims;
+using System.Threading.Tasks;
 
 namespace AuthJanitor.Automation.AdminApi
 {
@@ -40,17 +42,17 @@ namespace AuthJanitor.Automation.AdminApi
             var expiringInNextWeek = allSecrets.Where(s => DateTimeOffset.UtcNow.AddDays(7) < (s.LastChanged + s.ValidPeriod));
             var expired = allSecrets.Where(s => !s.IsValid);
 
-            var metrics = new DashboardMetrics()
+            var metrics = new DashboardMetricsViewModel()
             {
-                SignedInName = 
-                    claimsPrincipal.FindFirst(ClaimTypes.GivenName)?.Value + 
+                SignedInName =
+                    claimsPrincipal.FindFirst(ClaimTypes.GivenName)?.Value +
                     " " +
                     claimsPrincipal.FindFirst(ClaimTypes.Surname)?.Value,
                 SignedInEmail = claimsPrincipal.FindFirst(ClaimTypes.Email)?.Value,
                 SignedInRole = AuthJanitorRoleExtensions.GetUserRole(req),
                 TotalResources = allResources.Count,
                 TotalSecrets = allSecrets.Count,
-                TotalPendingApproval = allTasks.Where(t => 
+                TotalPendingApproval = allTasks.Where(t =>
                     t.ConfirmationType.HasFlag(TaskConfirmationStrategies.AdminCachesSignOff) ||
                     t.ConfirmationType.HasFlag(TaskConfirmationStrategies.AdminSignsOffJustInTime)).Count(),
                 TotalExpiringSoon = expiringInNextWeek.Count(),

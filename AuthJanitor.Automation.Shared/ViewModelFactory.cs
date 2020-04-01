@@ -1,4 +1,6 @@
-﻿using AuthJanitor.Automation.Shared.ViewModels;
+﻿using AuthJanitor.Automation.Shared.DataStores;
+using AuthJanitor.Automation.Shared.Models;
+using AuthJanitor.Automation.Shared.ViewModels;
 using AuthJanitor.Providers;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -41,7 +43,9 @@ namespace AuthJanitor.Automation.Shared
             serviceCollection.AddTransient<Func<AuthJanitorProviderConfiguration, ProviderConfigurationViewModel>>(serviceProvider => config => GetViewModel(serviceProvider, config));
         }
 
+#pragma warning disable IDE0060 // Remove unused parameter
         private static ProviderConfigurationViewModel GetViewModel(IServiceProvider serviceProvider, AuthJanitorProviderConfiguration config) =>
+#pragma warning restore IDE0060 // Remove unused parameter
             new ProviderConfigurationViewModel()
             {
                 ConfigurationItems = config.GetType().GetProperties()
@@ -78,7 +82,9 @@ namespace AuthJanitor.Automation.Shared
                     })
             };
 
+#pragma warning disable IDE0060 // Remove unused parameter
         private static LoadedProviderViewModel GetViewModel(IServiceProvider serviceProvider, LoadedProviderMetadata provider) =>
+#pragma warning restore IDE0060 // Remove unused parameter
                 new LoadedProviderViewModel()
                 {
                     AssemblyVersion = provider.AssemblyName.Version.ToString(),
@@ -128,11 +134,11 @@ namespace AuthJanitor.Automation.Shared
                 secret = serviceProvider.GetRequiredService<Func<ManagedSecret, ManagedSecretViewModel>>()(
                              serviceProvider.GetRequiredService<IDataStore<ManagedSecret>>().GetAsync(rekeyingTask.ManagedSecretId).Result);
             }
-            catch (Exception ex) { secret = new ManagedSecretViewModel() { ObjectId = Guid.Empty }; }
+            catch (Exception) { secret = new ManagedSecretViewModel() { ObjectId = Guid.Empty }; }
             string errorMessage = string.Empty;
-            var mostRecentAttempt = rekeyingTask != null ? rekeyingTask.Attempts
-                                           .OrderByDescending(a => a.AttemptStarted)
-                                           .FirstOrDefault() : null;
+            var mostRecentAttempt = rekeyingTask?.Attempts
+                                                 .OrderByDescending(a => a.AttemptStarted)
+                                                 .FirstOrDefault();
             if (mostRecentAttempt != null)
                 errorMessage = mostRecentAttempt.IsSuccessfulAttempt ?
                                  string.Empty : mostRecentAttempt.OuterException;
@@ -152,14 +158,14 @@ namespace AuthJanitor.Automation.Shared
             };
         }
 
-        private static ViewModels.ResourceViewModel GetViewModel(IServiceProvider serviceProvider, Resource resource)
+        private static ResourceViewModel GetViewModel(IServiceProvider serviceProvider, Resource resource)
         {
             var provider = serviceProvider.GetRequiredService<Func<string, RekeyingAttemptLogger, IAuthJanitorProvider>>()(resource.ProviderType,
                     new RekeyingAttemptLogger(serviceProvider.GetRequiredService<ILoggerFactory>()
                     .CreateLogger("ViewModelLogger")));
             provider.SerializedConfiguration = resource.ProviderConfiguration;
 
-            return new ViewModels.ResourceViewModel()
+            return new ResourceViewModel()
             {
                 ObjectId = resource.ObjectId,
                 Name = resource.Name,
@@ -179,7 +185,9 @@ namespace AuthJanitor.Automation.Shared
             };
         }
 
+#pragma warning disable IDE0060 // Remove unused parameter
         private static ScheduleWindowViewModel GetViewModel(IServiceProvider serviceProvider, ScheduleWindow scheduleWindow) =>
+#pragma warning restore IDE0060 // Remove unused parameter
             new ScheduleWindowViewModel()
             {
                 ObjectId = scheduleWindow.ObjectId,

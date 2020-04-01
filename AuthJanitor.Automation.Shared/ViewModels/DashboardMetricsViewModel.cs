@@ -1,9 +1,8 @@
-﻿using AuthJanitor.Automation.Shared.ViewModels;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
-namespace AuthJanitor.Automation.Shared
+namespace AuthJanitor.Automation.Shared.ViewModels
 {
-    public class DashboardMetrics : IAuthJanitorViewModel
+    public class DashboardMetricsViewModel : IAuthJanitorViewModel
     {
         public string SignedInName { get; set; } = "John Doe";
         public string SignedInEmail { get; set; } = "john.doe@contoso.com";

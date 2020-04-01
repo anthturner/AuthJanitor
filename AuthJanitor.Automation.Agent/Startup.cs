@@ -1,4 +1,6 @@
 ﻿using AuthJanitor.Automation.Shared;
+using AuthJanitor.Automation.Shared.DataStores;
+using AuthJanitor.Automation.Shared.Models;
 using AuthJanitor.Automation.Shared.NotificationProviders;
 using AuthJanitor.Automation.Shared.PersistenceEncryption;
 using AuthJanitor.Automation.Shared.SecureStorageProviders;
@@ -8,12 +10,10 @@ using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.WindowsAzure.Storage;
 using System;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Threading.Tasks;
 
 [assembly: WebJobsStartup(typeof(AuthJanitor.Automation.Agent.Startup))]
 namespace AuthJanitor.Automation.Agent

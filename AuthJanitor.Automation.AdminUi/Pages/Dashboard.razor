@@ -81,11 +81,11 @@
 @using AuthJanitor.Automation.Components.Common.Secrets
 @using AuthJanitor.Automation.Shared.ViewModels
 @code {
-    protected DashboardMetrics Metrics { get; set; } = new DashboardMetrics();
+    protected DashboardMetricsViewModel Metrics { get; set; } = new DashboardMetricsViewModel();
 
     protected override async Task OnInitializedAsync()
     {
-        Metrics = await Http.AJGet<DashboardMetrics>();
+        Metrics = await Http.AJGet<DashboardMetricsViewModel>();
     }
 
     protected Blazorise.Charts.ChartData<int> GetRiskDataSet()

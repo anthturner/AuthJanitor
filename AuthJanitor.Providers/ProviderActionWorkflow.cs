@@ -60,7 +60,8 @@ namespace AuthJanitor.Providers
                 await Task.WhenAll(
                     RekeyableObjectProviders.Select(rkoProvider =>
                                  rkoProvider.GetSecretToUseDuringRekeying()
-                                 .ContinueWith(t => {
+                                 .ContinueWith(t =>
+                                 {
                                      if (t.Result != null)
                                          TemporarySecrets.Add(t.Result);
                                  })));
@@ -100,8 +101,8 @@ namespace AuthJanitor.Providers
 
             // -----
 
-            Logger.LogInformation("Committing {0} new managed secrets to {1} Application Lifecycle Providers...", 
-                NewSecrets.Count(), 
+            Logger.LogInformation("Committing {0} new managed secrets to {1} Application Lifecycle Providers...",
+                NewSecrets.Count(),
                 ApplicationLifecycleProviders.Count());
             try
             {

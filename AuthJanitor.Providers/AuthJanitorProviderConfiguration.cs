@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-namespace AuthJanitor.Providers
+﻿namespace AuthJanitor.Providers
 {
     /// <summary>
     /// Describes the configuration of an Extension

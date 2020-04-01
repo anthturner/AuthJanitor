@@ -92,11 +92,11 @@
 
 @using AuthJanitor.Providers
 @code {
-    protected DashboardMetrics Metrics { get; set; } = new DashboardMetrics();
+    protected DashboardMetricsViewModel Metrics { get; set; } = new DashboardMetricsViewModel();
 
     protected override async Task OnInitializedAsync()
     {
-        Metrics = await Http.AJGet<DashboardMetrics>();
+        Metrics = await Http.AJGet<DashboardMetricsViewModel>();
     }
 
     protected string GetGravatar()

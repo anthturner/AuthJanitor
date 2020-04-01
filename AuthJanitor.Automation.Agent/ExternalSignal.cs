@@ -1,19 +1,21 @@
-using System;
-using System.Threading.Tasks;
+using AuthJanitor.Automation.Shared;
+using AuthJanitor.Automation.Shared.DataStores;
+using AuthJanitor.Automation.Shared.Models;
+using AuthJanitor.Automation.Shared.NotificationProviders;
+using AuthJanitor.Automation.Shared.SecureStorageProviders;
+using AuthJanitor.Automation.Shared.ViewModels;
+using AuthJanitor.Providers;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
-using AuthJanitor.Automation.Shared;
-using AuthJanitor.Automation.Shared.ViewModels;
-using AuthJanitor.Providers;
-using System.Collections.Generic;
-using System.Web.Http;
-using System.Linq;
-using AuthJanitor.Automation.Shared.NotificationProviders;
-using AuthJanitor.Automation.Shared.SecureStorageProviders;
 using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using System.Web.Http;
 
 namespace AuthJanitor.Automation.Agent
 {
@@ -36,7 +38,9 @@ namespace AuthJanitor.Automation.Agent
             string nonce,
             ILogger log)
         {
-            log.LogInformation("External signal called to check ManagedSecret ID {0} against nonce {1}", managedSecretId,  nonce);
+            _ = req; // unused but required for attribute
+
+            log.LogInformation("External signal called to check ManagedSecret ID {0} against nonce {1}", managedSecretId, nonce);
 
             var secret = await ManagedSecrets.GetAsync(managedSecretId);
             if (secret == null)

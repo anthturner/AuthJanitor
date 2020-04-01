@@ -14,19 +14,22 @@ namespace AuthJanitor.Providers
         /// <summary>
         /// Source Slot (original application)
         /// </summary>
-        [Description("Original Application Slot")]
+        [DisplayName("Original Application Slot")]
+        [Description("Slot to copy settings from, where the app is currently running")]
         public string SourceSlot { get; set; } = DEFAULT_ORIGINAL_SLOT;
 
         /// <summary>
         /// Temporary Slot (to coalesce new keys/configuration)
         /// </summary>
-        [Description("Temporary Application Slot")]
+        [DisplayName("Temporary Application Slot")]
+        [Description("Slot to copy settings to, where secrets will be updated prior to switching to destination slot.")]
         public string TemporarySlot { get; set; } = DEFAULT_TEMPORARY_SLOT;
 
         /// <summary>
         /// Destination Slot (updated application). By default this is the same as the Source Slot.
         /// </summary>
-        [Description("Destination Application Slot")]
+        [DisplayName("Destination Application Slot")]
+        [Description("Slot to swap to by the end of the secret rotation process.")]
         public string DestinationSlot { get; set; } = DEFAULT_DESTINATION_SLOT;
     }
 }

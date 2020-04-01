@@ -98,7 +98,7 @@ namespace AuthJanitor.Providers.ServiceBus
             AuthorizationRule.ContinueWith(rule => rule.Result.RegenerateKeyAsync(keyType)).Unwrap();
         private Task<IAuthorizationKeys> Get() =>
             AuthorizationRule.ContinueWith(rule => rule.Result.GetKeysAsync()).Unwrap();
-        
+
         private Task<IServiceBusNamespace> ServiceBusNamespace => GetAzure().ContinueWith(az => az.Result.ServiceBusNamespaces.GetByResourceGroupAsync(ResourceGroup, ResourceName)).Unwrap();
         private Task<INamespaceAuthorizationRule> AuthorizationRule => ServiceBusNamespace.ContinueWith(ns => ns.Result.AuthorizationRules.GetByNameAsync(Configuration.AuthorizationRuleName)).Unwrap();
 

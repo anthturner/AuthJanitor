@@ -1,4 +1,6 @@
 ﻿using AuthJanitor.Automation.Shared;
+using AuthJanitor.Automation.Shared.DataStores;
+using AuthJanitor.Automation.Shared.Models;
 using AuthJanitor.Automation.Shared.NotificationProviders;
 using AuthJanitor.Automation.Shared.SecureStorageProviders;
 using AuthJanitor.Automation.Shared.ViewModels;
@@ -112,7 +114,7 @@ namespace AuthJanitor.Automation.AdminApi
 
             return new OkResult();
         }
-        
+
         [ProtectedApiEndpoint]
         [FunctionName("ManagedSecrets-Update")]
         public async Task<IActionResult> Update(

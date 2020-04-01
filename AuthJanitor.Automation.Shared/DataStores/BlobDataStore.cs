@@ -1,4 +1,5 @@
-﻿using Microsoft.WindowsAzure.Storage;
+﻿using AuthJanitor.Automation.Shared.Models;
+using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Blob;
 using Newtonsoft.Json;
 using System;
@@ -6,9 +7,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace AuthJanitor.Automation.Shared
+namespace AuthJanitor.Automation.Shared.DataStores
 {
-    public class AzureBlobDataStore<TDataType> : IDataStore<TDataType> where TDataType : IDataStoreCompatibleStructure
+    public class AzureBlobDataStore<TDataType> : IDataStore<TDataType> where TDataType : IAuthJanitorModel
     {
         protected CloudBlockBlob Blob { get; }
 
@@ -20,7 +21,8 @@ namespace AuthJanitor.Automation.Shared
             this(CloudStorageAccount.Parse(connectionString)
                 .CreateCloudBlobClient()
                 .GetContainerReference(container)
-                .GetBlockBlobReference(name)) { }
+                .GetBlockBlobReference(name))
+        { }
 
         public Task<bool> ContainsIdAsync(Guid id) =>
             ListAsync().ContinueWith(t => t.Result.Any(o => o.ObjectId == id));
@@ -75,7 +77,7 @@ namespace AuthJanitor.Automation.Shared
             await Commit(list);
         }
 
-        private Task Commit(List<TDataType> data) => 
+        private Task Commit(List<TDataType> data) =>
             Blob.UploadTextAsync(JsonConvert.SerializeObject(data, Formatting.None));
 
         private async Task<List<TDataType>> Retrieve()

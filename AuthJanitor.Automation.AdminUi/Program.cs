@@ -1,11 +1,11 @@
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
-using Microsoft.Extensions.DependencyInjection;
+using AuthJanitor.Automation.Shared;
 using Blazorise;
 using Blazorise.Bootstrap;
 using Blazorise.Icons.FontAwesome;
+using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
+using Microsoft.Extensions.DependencyInjection;
 using System.Net.Http;
-using AuthJanitor.Automation.Shared;
+using System.Threading.Tasks;
 
 namespace AuthJanitor.Automation.AdminUi
 {
@@ -31,7 +31,7 @@ namespace AuthJanitor.Automation.AdminUi
             host.Services
                 .UseBootstrapProviders()
                 .UseFontAwesomeIcons();
-            
+
             await host.RunAsync();
         }
     }
