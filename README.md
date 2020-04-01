@@ -1,44 +1,40 @@
-# AuthJanitor
-Manage the lifecycle of application tokens, keys, and secrets in Azure
+![AuthJanitor Logo](../master/docs/assets/img/AJLogoDark.png?raw=true)
 
-*NOTE: This is incomplete and just serves as a swiss-army knife of Extensions to rekey various things in Azure while 
-prioritizing service availability*
+![.NET Core](https://github.com/anthturner/AuthJanitor/workflows/.NET%20Core/badge.svg?branch=master)
+
+Manage the lifecycle of your application secrets in Azure with ease. Migrate to more secure, auditable operations standards on your own terms. AuthJanitor supports varying levels of application secret security, based on your organization's security requirements.
 
 ## Concepts
 ### Task Queuing
-The Key Management agent will pre-emptively queue a rekeying Task when a managed secret is about to expire. The expectation
+The Key Management agent will pre-emptively queue a Rekeying Task when a Managed Secret is about to expire. The expectation
 is that when using JIT administration (see below), this pre-emptive duration must be enough to allow an admin to manually
 execute the rekeying prior to secret expiry.
 
-### Just-In-Time Administration
-Queued rekeying tasks must be "signed off" by an administrator. To provide the administrator with the proper knowledge to either
-approve or deny the rotation task, all Extensions must provide a GetDescription and a GetRisks method.
+### Administrator Signs Off Just-in-Time
+Queued Rekeying Tasks using this strategy must be approved by an administrator. To provide the administrator with the proper knowledge to either approve or deny the Rekeying Task, all Providers are required to provide an Action Description and a scored list of Risks to help the administrator user understand the impact of their approval.
 
-The GetDescription function should render a brief summarized explanation of the task which will be performed by the extension. 
-The GetRisks function should return a scored list of risks and recommendations.
+Once an administrator reviews this information, they can approve the actions, which are then executed in the administrator's user context using on-behalf-of access tokens. Approaching application secret rotation in this way allows for traceability of the actions performed back to the administrator approving them.
 
-These two functions together are rendered to the administrator user as a "preview" of the tasks to be executed, as well as a brief
-boolean test as to whether the admin's token can perform the necessary actions. This pre-test prevents partial rotation/breaking.
+Using only Administrator-driven strategies is recommended, as it prevents the need for granting overly broad access to a service principal or managed identity.
 
-Once an administrator reviews this information, they can "sign off" on the actions, which are then executed in the admin's context
-using OBO tokens. This restricts the amount of access the agent's service principal must have to the Azure subscription. Tasks
-which cannot be executed as the administrator due to lack of privilege will be sent back to the queue.
+### Administrator Caches Sign-Off Token
+Similar to "Administrator Signs Off Just-in-Time" above, this approach uses an on-behalf-of token to act as the administrator for automated actions. However, this approach persists an access token/refresh token using a Secure Storage Provider (and optional Persistence Encryption). When the scheduled window arrives, the token is retrieved, used, and destroyed (if the rotation succeeded).
 
-### Latent Signature Administration
-If JIT Administration is non-compliant with the expected business cases for the application (such as requiring rotations happen on
-off-hours or weekends), an administrator can approve a Task for execution at a later time/date by providing an access token upfront
-which is stored as securely as possible for the agent. This decreases security because it potentially exposes the access token for
-an administrator and should only be used if required.
+This method is less secure than signing off just-in-time, as a credential is saved for future use. However, it does allow for business continuity to dictate the secret rotation strategy, by setting availability windows. This could be used to only rotate secrets on weekends, for example.
 
-### Multi-Phase Rotation
-When the Task is ready to be executed, the rotation occurs in several steps:
-* The ConsumingApplication is given a chance to do pre-work prior to the rekeying action.
-* The rekeying action is invoked against the RekeyableService
-* The newly created key is stored as-appropriate for the ConsumingApplication
-* The ConsumingApplication performs a swap or other action to "commit" configuration changes
-* The rekeying action is informed the ConsumingApplication has completed its swap. This allows for the scrambling of unused keys.
+### AuthJanitor Agent Rekeys Just-in-Time
+When this strategy is used, the AuthJanitor Agent's identity context is used to perform the secret rotation. Immediately prior to the expiry of the Managed Secret, the Agent will execute the secret rotation.
 
-## Glossary
+### AuthJanitor Agent Rekeys on an Availability Schedule
+Similar to the Just-in-Time strategy above, the AuthJanitor Agent's identity context is used to perform the secret rotation. However, this is done on a given schedule based on availability windows during which the secret rotation can occur.
+
+### AuthJanitor Agent Rekeys When Prompted by an External Signal
+When this strategy is used, the AuthJanitor Agent accepts HTTP requests from an external service. This request must contain the ObjectId of the Managed Secret, as well as what the external service believes the Managed Secret's nonce to be. If that nonce is valid, the Agent will return `0`. If it is invalid (i.e. the Managed Secret has been rotated, and a new nonce generated), the Agent will return `1`. The expectation is that the external service will reach out independently to a location where the secret material is stored to retrieve it. This may mean reloading an application to re-cache the value of a secret from Key Vault, for example.
+
+### Secret Rotation Process
+![Secret Rotation Process](../master/docs/assets/img/SecretRotationWorkflow.png?raw=true)
+
+## Glossary of Terms
 #### Provider
 A module which implements some functionality, either to handle an **Application Lifecycle** or rekey a **Rekeyable Object**.
 
@@ -46,66 +42,17 @@ A module which implements some functionality, either to handle an **Application 
 Configuration which the **Provider** consumes in order to access the **Application Lifecycle** or **Rekeyable Object**.
 
 #### Application Lifecycle Provider
-A **Provider** with the logic necessary to handle the lifecycle of application which consumes some information (key, secret, environment variable,
-connection string) to access a **Rekeyable Object**.
+A **Provider** with the logic necessary to handle the lifecycle of application which consumes some information (key, secret, environment variable, connection string) to access a **Rekeyable Object**.
 
 #### Rekeyable Object Provider
 A **Provider** with the logic necessary to rekey a service or object. This might be a database, storage, or an encryption key.
 
 #### Resource
-A GUID-identified pair which joins a **Provider** with its **Provider Configuration**. Resources also have a display name and description.
-A Resource can either be an **Application Lifecycle** _or_ a **Rekeyable Object**.
+A GUID-identified model which joins a **Provider** with its **Provider Configuration**. Resources also have a display name and description. A Resource can either wrap an **Application Lifecycle** _or_ a **Rekeyable Object** provider.
 
 #### Managed Secret
-A GUID-identified pair which joins an **Application Lifecycle Resource** with a **Rekeyable Object Resource**. Managed Secrets also have a
-display name and description, as well as metadata on the validity period and rotation history.
+A GUID-identified model which joins one or more **Resources** which make up one or more rekeyable objects and their corresponding application lifecycles. When using multiple rekeyable objects and/or lifecycles, a **User Hint** must be specified. When the rekeying is performed, the **User Hints** are matched between rekeyable objects and application lifecycles to identify where different secrets should be persisted. Managed Secrets also have a display name and description, as well as metadata on the validity period and rotation history.
 
 #### Rekeying Task
-A GUID-identified pointer to a **Managed Secret** which needs to be rekeyed. A Rekeying Task has a queued date and an expiry date; the
-expiry date refers to the point in time where the key is rendered invalid. A Rekeying Task must be approved by an administrator.
-
-## Sample Code
-```csharp
-public static async Task RotateKey()
-{
-    // Initialize DI container with your own LoggerFactory
-    HelperMethods.InitializeServiceProvider(new LoggerFactory());
-
-    // Get a RekeyableObjectProvider (this one is for Azure Storage keys)
-    var rekeyableProvider = HelperMethods.ServiceProvider.GetService(
-        typeof(Providers.Storage.StorageAccountRekeyableObjectProvider)) as Providers.Storage.StorageAccountRekeyableObjectProvider;
-
-    // Configure the RekeyableObjectProvider
-    rekeyableProvider.Configuration = new Providers.Storage.StorageAccountKeyConfiguration()
-    {
-        KeyType = Providers.Storage.StorageAccountKeyConfiguration.StorageKeyTypes.Key1,
-        ResourceGroup = "resource_group",
-        ResourceName = "resource_name",
-        SkipScramblingOtherKey = false
-    };
-
-    // Get an ApplicationLifecycleProvider (this one is for an Azure WebApp, consuming from AppSettings)
-    var appProvider = HelperMethods.ServiceProvider.GetService(
-        typeof(Providers.AppServices.WebApps.AppSettingsWebAppApplicationLifecycleProvider)) as Providers.AppServices.WebApps.AppSettingsWebAppApplicationLifecycleProvider;
-    
-    // Configure the ApplicationLifecycleProvider
-    appProvider.Configuration = new Providers.AppServices.AppSettingConfiguration()
-    {
-        ResourceGroup = "resource_group",
-        ResourceName = "resource_name",
-        SettingName = "storage_key",
-        SourceSlot = "production",
-        TemporarySlot = "temporary",
-        DestinationSlot = "production"
-    };
-
-    // Execute the rekeying workflow.
-    // This will:
-    // - Run sanity tests on all Providers
-    // - Prep all ApplicationLifecycleProviders
-    // - Rekey all RekeyableObjectProviders
-    // - Commit generated keys to ApplicationLifecycleProviders
-    // - Run post-commit activities on all ApplicationLifecycleProviders
-    await HelperMethods.RunRekeyingWorkflow(TimeSpan.FromDays(7), rekeyableProvider, appProvider);
-}
-```
+A GUID-identified model to a **Managed Secret** which needs to be rekeyed. A Rekeying Task has a queued date and an expiry date; the
+expiry date refers to the point in time where the key is rendered invalid. A Rekeying Task must be approved by an administrator or will be executed automatically by the AuthJanitor Agent.
