@@ -4,6 +4,10 @@
 
 Manage the lifecycle of your application secrets in Azure with ease. Migrate to more secure, auditable operations standards on your own terms. AuthJanitor supports varying levels of application secret security, based on your organization's security requirements.
 
+*Disclaimer:* Using AuthJanitor does not guarantee the security of your application. There is no substitute for a proper security review from a reputable cybersecurity and/or auditing partner.
+
+:red_circle: **This system has not been thoroughly tested yet! Please use at your own risk!** :red_circle:
+
 ## Concepts
 ### Task Queuing
 The Key Management agent will pre-emptively queue a Rekeying Task when a Managed Secret is about to expire. The expectation
