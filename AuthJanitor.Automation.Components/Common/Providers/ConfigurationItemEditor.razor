@@ -13,15 +13,13 @@
     case ProviderConfigurationItemViewModel.InputTypes.Enumeration:
         <SelectEdit @bind-SelectedValue="Value.Value">
             @foreach (var option in Value.Options)
-            {
+                    {
                 <SelectItem Value="@option.Value">@option.DisplayName</SelectItem>
-            }
+                    }
         </SelectEdit>
         break;
 }
 
-@using Blazorise 
-@using AuthJanitor.Automation.Shared.ViewModels 
 @code {
     [Parameter]
     public ProviderConfigurationItemViewModel Value { get; set; }

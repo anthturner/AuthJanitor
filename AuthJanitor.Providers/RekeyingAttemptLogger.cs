@@ -46,7 +46,7 @@ namespace AuthJanitor.Providers
         public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
         {
             LogString += 
-                $"[{Math.Round((DateTime.Now - AttemptStarted).TotalSeconds, 4)}]" +
+                $"[{(DateTime.Now - AttemptStarted).TotalSeconds.ToString("00000.000")}]" +
                 $"[{logLevel}] " + 
                 formatter(state, exception) + 
                 Environment.NewLine;

@@ -24,6 +24,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\AuthJanitor.Automation.Components\AuthJanitor.Automation.Components.csproj" />
     <ProjectReference Include="..\AuthJanitor.Automation.Shared\AuthJanitor.Automation.Shared.csproj" />
     <ProjectReference Include="..\AuthJanitor.Providers.AppServices\AuthJanitor.Providers.AppServices.csproj" />
     <ProjectReference Include="..\AuthJanitor.Providers.AzureAD\AuthJanitor.Providers.AzureAD.csproj" />

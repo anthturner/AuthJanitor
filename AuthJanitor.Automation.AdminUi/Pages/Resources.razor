@@ -25,23 +25,23 @@
     </BlazorTable.Column>
 
     <!-- Resource Name -->
-    <BlazorTable.Column TableItem="Automation.Shared.ViewModels.ResourceViewModel" 
-                        Title="Name" Field="@(x => x.Name)" 
+    <BlazorTable.Column TableItem="Automation.Shared.ViewModels.ResourceViewModel"
+                        Title="Name" Field="@(x => x.Name)"
                         Sortable="true" Filterable="true" />
 
     <!-- Description -->
-    <BlazorTable.Column TableItem="Automation.Shared.ViewModels.ResourceViewModel" 
-                        Title="Description" Field="@(x => x.Description)" 
+    <BlazorTable.Column TableItem="Automation.Shared.ViewModels.ResourceViewModel"
+                        Title="Description" Field="@(x => x.Description)"
                         Sortable="true" Filterable="true" />
 
     <!-- Provider -->
-    <BlazorTable.Column TableItem="Automation.Shared.ViewModels.ResourceViewModel" 
-                        Title="Provider" Field="@(x => x.ProviderDetail.Name)" 
+    <BlazorTable.Column TableItem="Automation.Shared.ViewModels.ResourceViewModel"
+                        Title="Provider" Field="@(x => x.ProviderDetail.Name)"
                         Sortable="true" Filterable="true" />
 
     <!-- Risk Score -->
-    <BlazorTable.Column TableItem="Automation.Shared.ViewModels.ResourceViewModel" 
-                        Title="Risk Score" Field="@(x => x.RiskScore)" 
+    <BlazorTable.Column TableItem="Automation.Shared.ViewModels.ResourceViewModel"
+                        Title="Risk Score" Field="@(x => x.RiskScore)"
                         Sortable="true" Filterable="true" />
 
     <!-- Pager -->
@@ -58,16 +58,15 @@
            YesButton="Create"
            NoButton="Cancel"
            ResultClicked="@CreateCallback">
-    <ResourceEditorComponent @bind-Value="@SelectedValue" />
+    <ResourceEditor @bind-Value="@SelectedValue" />
 </DataModal>
 <DeleteConfirmationModal @bind-Visible="@DeleteModalShowing"
                          ObjectId="@SelectedValue.ObjectId"
                          ObjectName="@SelectedValue.Name"
                          ResultClicked="@DeleteConfirmCallback" />
 
-@using AuthJanitor.Automation.AdminUi.Components
-@using AuthJanitor.Automation.AdminUi.Components.Resources
-@using AuthJanitor.Automation.Shared.ViewModels
+@using AuthJanitor.Automation.Components.Editors
+@using AuthJanitor.Automation.Components.Modals
 @code {
     protected IEnumerable<ResourceViewModel> ManagedResources { get; set; } = new List<ResourceViewModel>();
 

@@ -16,8 +16,7 @@
     }
 </SelectEdit>
 
-@using AuthJanitor.Automation.Shared.ViewModels 
-@using Blazorise 
+@using AuthJanitor.Automation.Shared.ViewModels
 @code {
     [Parameter]
     public string Value { get; set; }
@@ -25,12 +24,9 @@
     [Parameter]
     public EventCallback<string> ValueChanged { get; set; }
 
-    public IEnumerable<LoadedProviderViewModel> Providers { get; set; }
+    protected IEnumerable<LoadedProviderViewModel> Providers { get; set; } = new List<LoadedProviderViewModel>();
 
-    protected override async Task OnInitializedAsync()
-    {
-        Providers = await Http.AJList<LoadedProviderViewModel>();
-    }
+    protected override async Task OnInitializedAsync() => Providers = await Http.AJList<LoadedProviderViewModel>();
 
     protected Task SelectedValueChanged(string value)
     {

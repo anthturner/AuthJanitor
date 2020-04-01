@@ -12,14 +12,14 @@
     <Row>
         @foreach (var item in ProviderList)
         {
-        <Column ColumnSize="ColumnSize.Is4">
-            <ProviderDescriptionComponent Provider="@item" />
+        <Column ColumnSize="ColumnSize.Is4.OnDesktop.Is6.OnTablet.Is12.OnMobile">
+            <ProviderMetadataCard Provider="@item" />
         </Column>
         }
     </Row>
 </Container>
 
-@using AuthJanitor.Automation.AdminUi.Components; 
+@using AuthJanitor.Automation.Components.Cards;
 @using AuthJanitor.Automation.Shared.ViewModels; 
 @code {
     protected IEnumerable<LoadedProviderViewModel> ProviderList { get; set; } = new List<LoadedProviderViewModel>();

@@ -20,7 +20,7 @@
                     <TableRowCell Class="align-middle" Padding="Padding.Is1.OnAll">
                         @if (ShowEditControls)
                         {
-                            <ProviderConfigurationItemEditorComponent @bind-Value="@setting" />
+                            <ConfigurationItemEditor @bind-Value="@setting" />
                         }
                         else
                         {
@@ -33,8 +33,6 @@
     </TableBody>
 </Table>
 
-@using Blazorise 
-@using AuthJanitor.Automation.Shared.ViewModels 
 @code {
     [Parameter]
     public ProviderConfigurationViewModel Value { get; set; }

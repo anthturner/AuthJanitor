@@ -19,29 +19,28 @@
         <Field IsHorizontal="true" ColumnSize="ColumnSize.Is12">
             <FieldLabel ColumnSize="ColumnSize.Is4">Provider</FieldLabel>
             <FieldBody ColumnSize="ColumnSize.Is8">
-                <ProviderSelectComponent Value="@Value.ProviderType" ValueChanged="ProviderTypeChanged" />
+                <ProviderSelector Value="@Value.ProviderType" ValueChanged="ProviderTypeChanged" />
             </FieldBody>
         </Field>
     </Row>
 </Container>
-@if (Value.ProviderConfiguration != null && 
-     Value.ProviderConfiguration.ConfigurationItems != null &&
-     Value.ProviderConfiguration.ConfigurationItems.Any())
+@if (Value.ProviderConfiguration != null &&
+    Value.ProviderConfiguration.ConfigurationItems != null &&
+    Value.ProviderConfiguration.ConfigurationItems.Any())
 {
-<Container Class="hasSectionHeader">
-    <span class="sectionHeader">Provider Settings</span>
-    <Row>
-        <ProviderSettingsComponent @bind-Value="@Value.ProviderConfiguration"
-                                   ShowEditControls="true" />
-    </Row>
-</Container>
+    <Container Class="hasSectionHeader">
+        <span class="sectionHeader">Provider Settings</span>
+        <Row>
+            <ConfigurationVisualizer @bind-Value="@Value.ProviderConfiguration"
+                                      ShowEditControls="true" />
+        </Row>
+    </Container>
 }
 
-@using Blazorise
-@using AuthJanitor.Automation.Shared.ViewModels 
+@using AuthJanitor.Automation.Components.Common.Providers
 @code {
     [Parameter]
-    public ResourceViewModel Value { get; set; }
+    public ResourceViewModel Value { get; set; } = new ResourceViewModel();
 
     [Parameter]
     public EventCallback<ResourceViewModel> ValueChanged { get; set; }

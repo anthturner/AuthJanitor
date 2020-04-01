@@ -1,69 +1,35 @@
 ﻿@page "/resources/{ResourceId}"
 
-<Container IsFluid="true">
-    <Row>
-        <Column ColumnSize="ColumnSize.Is10">
-            <Card Margin="Margin.Is4.FromBottom">
-                <CardHeader Padding="Padding.Is2.OnY">
-                    <Heading Size="HeadingSize.Is5" Class="font-weight-bold" Margin="Margin.Is0">Resource Detail</Heading>
-                </CardHeader>
-                <CardBody>
-                    <Heading Size="HeadingSize.Is6" Class="font-weight-bold">ID<span class="float-right text-muted">@Resource.ObjectId</span></Heading>
-                    <Heading Size="HeadingSize.Is6" Class="font-weight-bold">Name<span class="float-right text-muted">@Resource.Name</span></Heading>
-                    <Heading Size="HeadingSize.Is6" Class="font-weight-bold">Provider<span class="float-right text-muted">@Resource.ProviderDetail?.Name</span></Heading>
-                    <Heading Size="HeadingSize.Is6" Class="font-weight-bold">Description<span class="float-right text-muted">@Resource.Description</span></Heading>
-                </CardBody>
-            </Card>
-        </Column>
-        <Column ColumnSize="ColumnSize.Is2">
+    <Container IsFluid="true" Padding="Padding.Is0">
+        <Row>
+            <Column ColumnSize="ColumnSize.Is10">
+                <Card Margin="Margin.Is4.FromBottom">
+                    <CardHeader>Resource Detail</CardHeader>
+                    <CardBody>
+                        <Heading Size="HeadingSize.Is6" Class="font-weight-bold">ID<span class="float-right text-muted">@Resource.ObjectId</span></Heading>
+                        <Heading Size="HeadingSize.Is6" Class="font-weight-bold">Name<span class="float-right text-muted">@Resource.Name</span></Heading>
+                        <Heading Size="HeadingSize.Is6" Class="font-weight-bold">Provider<span class="float-right text-muted">@Resource.ProviderDetail?.Name</span></Heading>
+                        <Heading Size="HeadingSize.Is6" Class="font-weight-bold">Description<span class="float-right text-muted">@Resource.Description</span></Heading>
+                    </CardBody>
+                </Card>
+            </Column>
+        </Row>
+        <Row>
+            <Column Margin="Margin.Is1.OnY" ColumnSize="ColumnSize.Is12">
+                <ProviderSettingsCard ProviderConfiguration="@Resource.ProviderConfiguration" ShowEditControls="false" />
+            </Column>
+        </Row>
+        <Row>
+            <Column Margin="Margin.Is1.OnY" ColumnSize="ColumnSize.Is3.OnDesktop.Is12">
+                <RiskListCard Risks="@Resource.Risks" />
+            </Column>
+            <Column Margin="Margin.Is1.OnY" ColumnSize="ColumnSize.Is3.OnDesktop.Is12">
+                <ActionDescriptionCard Description="@Resource.RuntimeDescription" />
+            </Column>
+        </Row>
+    </Container>
 
-        </Column>
-    </Row>
-    <Row>
-        <Column>
-            <Card>
-                <CardHeader Padding="Padding.Is1.OnY">
-                    <Heading Size="HeadingSize.Is5" TextColor="TextColor.Info" Margin="Margin.Is0.OnAll" Class="font-weight-bold">Settings</Heading>
-                </CardHeader>
-                <CardBody Padding="Padding.Is0">
-                    @if (Resource.ProviderConfiguration != null)
-                    {
-                        <ProviderSettingsComponent @bind-Value="@Resource.ProviderConfiguration" />
-                    }
-                </CardBody>
-            </Card>
-        </Column>
-        <Column>
-            <Card Margin="Margin.Is2.FromBottom">
-                <CardHeader Padding="Padding.Is1.OnY">
-                    <Heading Size="HeadingSize.Is5" TextColor="TextColor.Warning" Margin="Margin.Is0.OnAll" Class="font-weight-bold">Risks</Heading>
-                </CardHeader>
-                <CardBody>
-                    <RiskListGroupComponent @bind-Value="@Resource.Risks" />
-                </CardBody>
-            </Card>
-            <Card>
-                <CardHeader Padding="Padding.Is1.OnY">
-                    <Heading Size="HeadingSize.Is5" TextColor="TextColor.Info" Margin="Margin.Is0.OnAll" Class="font-weight-bold">Action Description</Heading>
-                </CardHeader>
-                <CardBody>
-                    @if (string.IsNullOrEmpty(Resource.RuntimeDescription))
-                    {
-                        <code>Provider does not describe its actions!</code>
-                    }
-                    else
-                    {
-                        <code>@Resource.RuntimeDescription</code>
-                    }
-                </CardBody>
-            </Card>
-        </Column>
-    </Row>
-</Container>
-
-@using AuthJanitor.Automation.AdminUi.Components
-@using AuthJanitor.Automation.AdminUi.Components.Resources
-@using AuthJanitor.Automation.AdminUi.Components.Risks
+@using AuthJanitor.Automation.Components.Cards
 @using AuthJanitor.Automation.Shared.ViewModels
 @code {
     [Parameter]
