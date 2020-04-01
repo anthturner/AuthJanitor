@@ -1,3 +1,7 @@
+![AuthJanitor Logo](../master/docs/assets/img/AJLogoDark.png?raw=true)
+
+![.NET Core](https://github.com/anthturner/AuthJanitor/workflows/.NET%20Core/badge.svg?branch=master)
+
 # AuthJanitor
 Manage the lifecycle of application tokens, keys, and secrets in Azure
 
