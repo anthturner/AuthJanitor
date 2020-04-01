@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>netcoreapp3.0</TargetFramework>
     <AzureFunctionsVersion>v3</AzureFunctionsVersion>
@@ -14,6 +14,7 @@
     <ProjectReference Include="..\AuthJanitor.Automation.Shared\AuthJanitor.Automation.Shared.csproj" />
     <ProjectReference Include="..\AuthJanitor.Providers.AppServices\AuthJanitor.Providers.AppServices.csproj" />
     <ProjectReference Include="..\AuthJanitor.Providers.AzureAD\AuthJanitor.Providers.AzureAD.csproj" />
+    <ProjectReference Include="..\AuthJanitor.Providers.AzureMaps\AuthJanitor.Providers.AzureMaps.csproj" />
     <ProjectReference Include="..\AuthJanitor.Providers.CosmosDb\AuthJanitor.Providers.CosmosDb.csproj" />
     <ProjectReference Include="..\AuthJanitor.Providers.KeyVault\AuthJanitor.Providers.KeyVault.csproj" />
     <ProjectReference Include="..\AuthJanitor.Providers.ServiceBus\AuthJanitor.Providers.ServiceBus.csproj" />
