@@ -37,6 +37,16 @@ namespace AuthJanitor.Providers
         }
 
         /// <summary>
+        /// Call before Rekeying occurs to get a secondary secret which will continue
+        /// to work while Rekeying is taking place (if any).
+        /// </summary>
+        public virtual async Task<RegeneratedSecret> GetSecretToUseDuringRekeying()
+        {
+            await Task.Yield();
+            return null;
+        }
+
+        /// <summary>
         /// Call when ready to rekey a given RekeyableService.
         /// </summary>
         /// <param name="requestedValidPeriod">Requested period of validity for new key/secret</param>
@@ -50,16 +60,6 @@ namespace AuthJanitor.Providers
         public virtual Task OnConsumingApplicationSwapped()
         {
             return Task.FromResult(true);
-        }
-
-        /// <summary>
-        /// Call before Rekeying occurs to get a secondary secret which will continue
-        /// to work while Rekeying is taking place (if any).
-        /// </summary>
-        public virtual async Task<RegeneratedSecret> GetSecretToUseDuringRekeying()
-        {
-            await Task.Yield();
-            return null;
         }
     }
 }
