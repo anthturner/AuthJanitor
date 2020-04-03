@@ -12,7 +12,7 @@ namespace AuthJanitor.Providers.AppServices.Functions
     /// Defines a Functions application which receives key information through an AppConfig setting
     /// </summary>
     [Provider(Name = "Functions App - AppSettings",
-              IconClass = "fa fa-gears",
+              IconClass = "fa fa-bolt",
               Description = "Manages the lifecycle of an Azure Functions app which reads a Managed Secret from its Application Settings")]
     [ProviderImage(ProviderImages.FUNCTIONS_SVG)]
     public class AppSettingsFunctionsApplicationLifecycleProvider : FunctionsApplicationLifecycleProvider<AppSettingConfiguration>
