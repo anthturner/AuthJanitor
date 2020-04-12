@@ -24,9 +24,7 @@ namespace AuthJanitor.Providers.AzureAD
 
             // NOTE: requestedValidPeriod is ignored here, AAD sets token expiry!
             Logger.LogInformation("Requesting Access Token with scopes '{0}'", Configuration.Scopes);
-            var token = await _serviceProvider.GetRequiredService<MultiCredentialProvider>()
-                .Get(CredentialType)
-                .AzureIdentityTokenCredential
+            var token = await Credential.CreateTokenCredential()
                 .GetTokenAsync(new Azure.Core.TokenRequestContext(Configuration.Scopes), System.Threading.CancellationToken.None);
 
             Logger.LogInformation("Access Token successfully granted! Expires on {0}", token.ExpiresOn);

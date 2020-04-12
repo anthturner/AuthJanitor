@@ -55,10 +55,7 @@ namespace AuthJanitor.Providers.KeyVault
 
         private SecretClient GetSecretClient() =>
             new SecretClient(new Uri($"https://{Configuration.VaultName}.vault.azure.net/"),
-                _serviceProvider
-                    .GetService<MultiCredentialProvider>()
-                    .Get(CredentialType)
-                    .AzureIdentityTokenCredential);
+                Credential.CreateTokenCredential());
 
         public override string GetDescription() =>
             $"Populates a Key Vault Secret called '{Configuration.SecretName}' " +

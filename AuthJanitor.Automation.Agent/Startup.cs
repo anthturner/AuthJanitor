@@ -70,13 +70,16 @@ namespace AuthJanitor.Automation.Agent
             //    "http://localhost:16000/aj/",
             //    "authjanitor@bitoblivion.com"));
 
+            logger.LogDebug("Registering Credential Provider Service");
+            builder.Services.AddSingleton<CredentialProviderService>();
+
             logger.LogDebug("Registering Secure Storage Provider");
             builder.Services.AddSingleton<ISecureStorageProvider>(s =>
                 new SecureStorageProviders.AzureKeyVault.KeyVaultSecureStorageProvider(
                     new Rfc2898AesPersistenceEncryption(
                         s.GetRequiredService<AuthJanitorServiceConfiguration>()
                          .SecurePersistenceEncryptionKey),
-                    s.GetRequiredService<MultiCredentialProvider>(),
+                    s.GetRequiredService<CredentialProviderService>(),
                     s.GetRequiredService<AuthJanitorServiceConfiguration>()
                      .SecurePersistenceContainerName));
 
@@ -118,11 +121,12 @@ namespace AuthJanitor.Automation.Agent
                                          .SelectMany(libraryFile => PluginLoader.CreateFromAssemblyFile(libraryFile, PROVIDER_SHARED_TYPES)
                                                                             .LoadDefaultAssembly()
                                                                             .GetTypes()
-                                                                            .Where(type => !type.IsAbstract && typeof(IAuthJanitorProvider).IsAssignableFrom(type)));
+                                                                            .Where(type => !type.IsAbstract && typeof(IAuthJanitorProvider).IsAssignableFrom(type)))
+                                         .ToArray();
 
             logger.LogInformation("Found {0} providers: {1}", providerTypes.Count(), string.Join("  ", providerTypes.Select(t => t.Name)));
-            logger.LogInformation("Registering providers and service principal default credentials");
-            ProviderFactory.ConfigureProviderServices(builder.Services, providerTypes);
+            logger.LogInformation("Registering Provider Manager Service");
+            ProviderManagerService.ConfigureServices(builder.Services, providerTypes);
 
             // -----
 

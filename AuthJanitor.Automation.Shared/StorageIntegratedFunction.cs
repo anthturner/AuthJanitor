@@ -19,11 +19,6 @@ namespace AuthJanitor.Automation.Shared
         protected IDataStore<Resource> Resources { get; }
         protected IDataStore<RekeyingTask> RekeyingTasks { get; }
 
-        protected AuthJanitorServiceConfiguration ServiceConfiguration { get; }
-        protected EventDispatcherService EventDispatcherService { get; }
-        protected MultiCredentialProvider CredentialProvider { get; }
-        protected ISecureStorageProvider SecureStorageProvider { get; }
-
         protected ManagedSecretViewModel GetViewModel(ManagedSecret secret) => _managedSecretViewModelDelegate(secret);
         protected ResourceViewModel GetViewModel(Resource resource) => _resourceViewModelDelegate(resource);
         protected RekeyingTaskViewModel GetViewModel(RekeyingTask rekeyingTask) => _rekeyingTaskViewModelDelegate(rekeyingTask);
@@ -32,10 +27,6 @@ namespace AuthJanitor.Automation.Shared
         protected LoadedProviderViewModel GetViewModel(LoadedProviderMetadata provider) => _providerViewModelDelegate(provider);
 
         protected StorageIntegratedFunction(
-            AuthJanitorServiceConfiguration serviceConfiguration,
-            MultiCredentialProvider credentialProvider,
-            EventDispatcherService eventDispatcherService,
-            ISecureStorageProvider secureStorageProvider,
             IDataStore<ManagedSecret> managedSecretStore,
             IDataStore<Resource> resourceStore,
             IDataStore<RekeyingTask> rekeyingTaskStore,
@@ -46,11 +37,6 @@ namespace AuthJanitor.Automation.Shared
             Func<ScheduleWindow, ScheduleWindowViewModel> scheduleViewModelDelegate,
             Func<LoadedProviderMetadata, LoadedProviderViewModel> providerViewModelDelegate)
         {
-            ServiceConfiguration = serviceConfiguration;
-            CredentialProvider = credentialProvider;
-            EventDispatcherService = eventDispatcherService;
-            SecureStorageProvider = secureStorageProvider;
-
             ManagedSecrets = managedSecretStore;
             Resources = resourceStore;
             RekeyingTasks = rekeyingTaskStore;
