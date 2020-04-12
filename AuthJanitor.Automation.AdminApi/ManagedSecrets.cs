@@ -19,8 +19,25 @@ namespace AuthJanitor.Automation.AdminApi
     /// </summary>
     public class ManagedSecrets : StorageIntegratedFunction
     {
-        public ManagedSecrets(AuthJanitorServiceConfiguration serviceConfiguration, EventDispatcherService eventDispatcherService, MultiCredentialProvider credentialProvider, ISecureStorageProvider secureStorageProvider, IDataStore<ManagedSecret> managedSecretStore, IDataStore<Resource> resourceStore, IDataStore<RekeyingTask> rekeyingTaskStore, Func<ManagedSecret, ManagedSecretViewModel> managedSecretViewModelDelegate, Func<Resource, ResourceViewModel> resourceViewModelDelegate, Func<RekeyingTask, RekeyingTaskViewModel> rekeyingTaskViewModelDelegate, Func<AuthJanitorProviderConfiguration, ProviderConfigurationViewModel> configViewModelDelegate, Func<ScheduleWindow, ScheduleWindowViewModel> scheduleViewModelDelegate, Func<LoadedProviderMetadata, LoadedProviderViewModel> providerViewModelDelegate) : base(serviceConfiguration, credentialProvider, eventDispatcherService, secureStorageProvider, managedSecretStore, resourceStore, rekeyingTaskStore, managedSecretViewModelDelegate, resourceViewModelDelegate, rekeyingTaskViewModelDelegate, configViewModelDelegate, scheduleViewModelDelegate, providerViewModelDelegate)
+        private readonly ProviderManagerService _providerManager;
+        private readonly EventDispatcherService _eventDispatcher;
+
+        public ManagedSecrets(
+            EventDispatcherService eventDispatcher,
+            ProviderManagerService providerManager,
+            IDataStore<ManagedSecret> managedSecretStore,
+            IDataStore<Resource> resourceStore,
+            IDataStore<RekeyingTask> rekeyingTaskStore,
+            Func<ManagedSecret, ManagedSecretViewModel> managedSecretViewModelDelegate,
+            Func<Resource, ResourceViewModel> resourceViewModelDelegate,
+            Func<RekeyingTask, RekeyingTaskViewModel> rekeyingTaskViewModelDelegate,
+            Func<AuthJanitorProviderConfiguration, ProviderConfigurationViewModel> configViewModelDelegate,
+            Func<ScheduleWindow, ScheduleWindowViewModel> scheduleViewModelDelegate,
+            Func<LoadedProviderMetadata, LoadedProviderViewModel> providerViewModelDelegate) :
+                base(managedSecretStore, resourceStore, rekeyingTaskStore, managedSecretViewModelDelegate, resourceViewModelDelegate, rekeyingTaskViewModelDelegate, configViewModelDelegate, scheduleViewModelDelegate, providerViewModelDelegate)
         {
+            _eventDispatcher = eventDispatcher;
+            _providerManager = providerManager;
         }
 
         [ProtectedApiEndpoint]
@@ -35,7 +52,7 @@ namespace AuthJanitor.Automation.AdminApi
             var resourceIds = inputSecret.ResourceIds.Split(';').Select(r => Guid.Parse(r)).ToList();
             if (resourceIds.Any(id => !resources.Any(r => r.ObjectId == id)))
             {
-                await EventDispatcherService.DispatchEvent(AuthJanitorSystemEvents.AnomalousEventOccurred, nameof(AdminApi.ManagedSecrets.Create), "New Managed Secret attempted to use one or more invalid Resource IDs");
+                await _eventDispatcher.DispatchEvent(AuthJanitorSystemEvents.AnomalousEventOccurred, nameof(AdminApi.ManagedSecrets.Create), "New Managed Secret attempted to use one or more invalid Resource IDs");
                 return new NotFoundObjectResult("One or more Resource IDs not found!");
             }
 
@@ -51,7 +68,7 @@ namespace AuthJanitor.Automation.AdminApi
 
             await ManagedSecrets.CreateAsync(newManagedSecret);
 
-            await EventDispatcherService.DispatchEvent(AuthJanitorSystemEvents.SecretCreated, nameof(AdminApi.ManagedSecrets.Create), newManagedSecret);
+            await _eventDispatcher.DispatchEvent(AuthJanitorSystemEvents.SecretCreated, nameof(AdminApi.ManagedSecrets.Create), newManagedSecret);
 
             return new OkObjectResult(GetViewModel(newManagedSecret));
         }
@@ -76,7 +93,7 @@ namespace AuthJanitor.Automation.AdminApi
 
             if (!await ManagedSecrets.ContainsIdAsync(secretId))
             {
-                await EventDispatcherService.DispatchEvent(AuthJanitorSystemEvents.AnomalousEventOccurred, nameof(AdminApi.ManagedSecrets.Get), "Secret ID not found");
+                await _eventDispatcher.DispatchEvent(AuthJanitorSystemEvents.AnomalousEventOccurred, nameof(AdminApi.ManagedSecrets.Get), "Secret ID not found");
                 return new NotFoundObjectResult("Secret not found!");
             }
 
@@ -93,13 +110,13 @@ namespace AuthJanitor.Automation.AdminApi
 
             if (!await ManagedSecrets.ContainsIdAsync(secretId))
             {
-                await EventDispatcherService.DispatchEvent(AuthJanitorSystemEvents.AnomalousEventOccurred, nameof(AdminApi.ManagedSecrets.Delete), "Secret ID not found");
+                await _eventDispatcher.DispatchEvent(AuthJanitorSystemEvents.AnomalousEventOccurred, nameof(AdminApi.ManagedSecrets.Delete), "Secret ID not found");
                 return new NotFoundObjectResult("Secret not found!");
             }
 
             await ManagedSecrets.DeleteAsync(secretId);
 
-            await EventDispatcherService.DispatchEvent(AuthJanitorSystemEvents.SecretDeleted, nameof(AdminApi.ManagedSecrets.Delete), secretId);
+            await _eventDispatcher.DispatchEvent(AuthJanitorSystemEvents.SecretDeleted, nameof(AdminApi.ManagedSecrets.Delete), secretId);
 
             return new OkResult();
         }
@@ -115,7 +132,7 @@ namespace AuthJanitor.Automation.AdminApi
 
             if (!await ManagedSecrets.ContainsIdAsync(secretId))
             {
-                await EventDispatcherService.DispatchEvent(AuthJanitorSystemEvents.AnomalousEventOccurred, nameof(AdminApi.ManagedSecrets.Update), "Secret ID not found");
+                await _eventDispatcher.DispatchEvent(AuthJanitorSystemEvents.AnomalousEventOccurred, nameof(AdminApi.ManagedSecrets.Update), "Secret ID not found");
                 return new NotFoundObjectResult("Secret not found!");
             }
 
@@ -123,7 +140,7 @@ namespace AuthJanitor.Automation.AdminApi
             var resourceIds = inputSecret.ResourceIds.Split(';').Select(r => Guid.Parse(r)).ToList();
             if (resourceIds.Any(id => !resources.Any(r => r.ObjectId == id)))
             {
-                await EventDispatcherService.DispatchEvent(AuthJanitorSystemEvents.AnomalousEventOccurred, nameof(AdminApi.ManagedSecrets.Update), "New Managed Secret attempted to use one or more invalid Resource IDs");
+                await _eventDispatcher.DispatchEvent(AuthJanitorSystemEvents.AnomalousEventOccurred, nameof(AdminApi.ManagedSecrets.Update), "New Managed Secret attempted to use one or more invalid Resource IDs");
                 return new NotFoundObjectResult("One or more Resource IDs not found!");
             }
 
@@ -139,7 +156,7 @@ namespace AuthJanitor.Automation.AdminApi
 
             await ManagedSecrets.UpdateAsync(newManagedSecret);
 
-            await EventDispatcherService.DispatchEvent(AuthJanitorSystemEvents.SecretUpdated, nameof(AdminApi.ManagedSecrets.Update), newManagedSecret);
+            await _eventDispatcher.DispatchEvent(AuthJanitorSystemEvents.SecretUpdated, nameof(AdminApi.ManagedSecrets.Update), newManagedSecret);
 
             return new OkObjectResult(GetViewModel(newManagedSecret));
         }

@@ -13,10 +13,10 @@ namespace AuthJanitor.Automation.SecureStorageProviders.AzureKeyVault
         private readonly string _vaultName;
 
         private readonly IPersistenceEncryption _encryption;
-        private readonly MultiCredentialProvider _credentialProvider;
+        private readonly CredentialProviderService _credentialProvider;
         public KeyVaultSecureStorageProvider(
             IPersistenceEncryption encryption,
-            MultiCredentialProvider credentialProvider,
+            CredentialProviderService credentialProvider,
             string vaultName)
         {
             _encryption = encryption;
@@ -56,8 +56,7 @@ namespace AuthJanitor.Automation.SecureStorageProviders.AzureKeyVault
         private SecretClient GetClient()
         {
             return new SecretClient(new Uri($"https://{_vaultName}.vault.azure.net/"),
-                _credentialProvider.Get(MultiCredentialProvider.CredentialType.AgentServicePrincipal)
-                                   .AzureIdentityTokenCredential);
+                _credentialProvider.GetAgentIdentity().CreateTokenCredential());
         }
     }
 }

@@ -12,10 +12,30 @@ using System.Threading.Tasks;
 
 namespace AuthJanitor.Automation.AdminApi
 {
-    public class ScheduleRekeyingTasks : ProviderIntegratedFunction
+    public class ScheduleRekeyingTasks : StorageIntegratedFunction
     {
-        public ScheduleRekeyingTasks(AuthJanitorServiceConfiguration serviceConfiguration, MultiCredentialProvider credentialProvider, EventDispatcherService eventDispatcherService, ISecureStorageProvider secureStorageProvider, IDataStore<ManagedSecret> managedSecretStore, IDataStore<Resource> resourceStore, IDataStore<RekeyingTask> rekeyingTaskStore, Func<ManagedSecret, ManagedSecretViewModel> managedSecretViewModelDelegate, Func<Resource, ResourceViewModel> resourceViewModelDelegate, Func<RekeyingTask, RekeyingTaskViewModel> rekeyingTaskViewModelDelegate, Func<AuthJanitorProviderConfiguration, ProviderConfigurationViewModel> configViewModelDelegate, Func<ScheduleWindow, ScheduleWindowViewModel> scheduleViewModelDelegate, Func<LoadedProviderMetadata, LoadedProviderViewModel> providerViewModelDelegate, Func<string, RekeyingAttemptLogger, IAuthJanitorProvider> providerFactory, Func<string, AuthJanitorProviderConfiguration> providerConfigurationFactory, Func<string, LoadedProviderMetadata> providerDetailsFactory, List<LoadedProviderMetadata> loadedProviders) : base(serviceConfiguration, credentialProvider, eventDispatcherService, secureStorageProvider, managedSecretStore, resourceStore, rekeyingTaskStore, managedSecretViewModelDelegate, resourceViewModelDelegate, rekeyingTaskViewModelDelegate, configViewModelDelegate, scheduleViewModelDelegate, providerViewModelDelegate, providerFactory, providerConfigurationFactory, providerDetailsFactory, loadedProviders)
+        private readonly AuthJanitorServiceConfiguration _serviceConfiguration;
+        private readonly ProviderManagerService _providerManager;
+        private readonly EventDispatcherService _eventDispatcher;
+
+        public ScheduleRekeyingTasks(
+            AuthJanitorServiceConfiguration serviceConfiguration,
+            EventDispatcherService eventDispatcher,
+            ProviderManagerService providerManager,
+            IDataStore<ManagedSecret> managedSecretStore,
+            IDataStore<Resource> resourceStore,
+            IDataStore<RekeyingTask> rekeyingTaskStore,
+            Func<ManagedSecret, ManagedSecretViewModel> managedSecretViewModelDelegate,
+            Func<Resource, ResourceViewModel> resourceViewModelDelegate,
+            Func<RekeyingTask, RekeyingTaskViewModel> rekeyingTaskViewModelDelegate,
+            Func<AuthJanitorProviderConfiguration, ProviderConfigurationViewModel> configViewModelDelegate,
+            Func<ScheduleWindow, ScheduleWindowViewModel> scheduleViewModelDelegate,
+            Func<LoadedProviderMetadata, LoadedProviderViewModel> providerViewModelDelegate) :
+                base(managedSecretStore, resourceStore, rekeyingTaskStore, managedSecretViewModelDelegate, resourceViewModelDelegate, rekeyingTaskViewModelDelegate, configViewModelDelegate, scheduleViewModelDelegate, providerViewModelDelegate)
         {
+            _serviceConfiguration = serviceConfiguration;
+            _eventDispatcher = eventDispatcher;
+            _providerManager = providerManager;
         }
 
         [FunctionName("ScheduleRekeyingTasks")]
@@ -33,7 +53,7 @@ namespace AuthJanitor.Automation.AdminApi
         {
             var jitCandidates = await GetSecretsForRekeyingTask(
                 TaskConfirmationStrategies.AdminSignsOffJustInTime,
-                ServiceConfiguration.ApprovalRequiredLeadTimeHours);
+                _serviceConfiguration.ApprovalRequiredLeadTimeHours);
             log.LogInformation("Creating {0} tasks for just-in-time administrator approval", jitCandidates.Count);
             await CreateAndNotify(jitCandidates.Select(s => CreateRekeyingTask(s, s.Expiry)));
 
@@ -43,7 +63,7 @@ namespace AuthJanitor.Automation.AdminApi
             //     expiry.
             var cachedCandidates = await GetSecretsForRekeyingTask(
                 TaskConfirmationStrategies.AdminCachesSignOff,
-                ServiceConfiguration.ApprovalRequiredLeadTimeHours);
+                _serviceConfiguration.ApprovalRequiredLeadTimeHours);
             log.LogInformation("Creating {0} tasks for cached administrator approval", cachedCandidates.Count);
             await CreateAndNotify(cachedCandidates.Select(s => CreateRekeyingTask(s, s.Expiry)));
         }
@@ -52,7 +72,7 @@ namespace AuthJanitor.Automation.AdminApi
         {
             var jitCandidates = await GetSecretsForRekeyingTask(
                 TaskConfirmationStrategies.AutomaticRekeyingAsNeeded,
-                ServiceConfiguration.AutomaticRekeyableTaskCreationLeadTimeHours);
+                _serviceConfiguration.AutomaticRekeyableTaskCreationLeadTimeHours);
             log.LogInformation("Creating {0} tasks for just-in-time auto-rekeying", jitCandidates.Count);
             await CreateAndNotify(jitCandidates.Select(s => CreateRekeyingTask(s, s.Expiry)));
 
@@ -62,7 +82,7 @@ namespace AuthJanitor.Automation.AdminApi
             //     expiry.
             var cachedCandidates = await GetSecretsForRekeyingTask(
                 TaskConfirmationStrategies.AutomaticRekeyingScheduled,
-                ServiceConfiguration.AutomaticRekeyableTaskCreationLeadTimeHours);
+                _serviceConfiguration.AutomaticRekeyableTaskCreationLeadTimeHours);
             log.LogInformation("Creating {0} tasks for scheduled auto-rekeying", cachedCandidates.Count);
             await CreateAndNotify(cachedCandidates.Select(s => CreateRekeyingTask(s, s.Expiry)));
         }
@@ -86,9 +106,9 @@ namespace AuthJanitor.Automation.AdminApi
             {
                 var secret = await ManagedSecrets.GetAsync(task.ManagedSecretId);
                 if (task.ConfirmationType.UsesOBOTokens())
-                    await EventDispatcherService.DispatchEvent(AuthJanitorSystemEvents.RotationTaskCreatedForApproval, nameof(AdminApi.ScheduleRekeyingTasks.CreateAndNotify), task);
+                    await _eventDispatcher.DispatchEvent(AuthJanitorSystemEvents.RotationTaskCreatedForApproval, nameof(AdminApi.ScheduleRekeyingTasks.CreateAndNotify), task);
                 else
-                    await EventDispatcherService.DispatchEvent(AuthJanitorSystemEvents.RotationTaskCreatedForAutomation, nameof(AdminApi.ScheduleRekeyingTasks.CreateAndNotify), task);
+                    await _eventDispatcher.DispatchEvent(AuthJanitorSystemEvents.RotationTaskCreatedForAutomation, nameof(AdminApi.ScheduleRekeyingTasks.CreateAndNotify), task);
             }
         }
 

@@ -9,17 +9,30 @@ using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Logging;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 
 namespace AuthJanitor.Automation.AdminApi
 {
-    public class Dashboard : ProviderIntegratedFunction
+    public class Dashboard : StorageIntegratedFunction
     {
-        public Dashboard(AuthJanitorServiceConfiguration serviceConfiguration, MultiCredentialProvider credentialProvider, EventDispatcherService eventDispatcherService, ISecureStorageProvider secureStorageProvider, IDataStore<ManagedSecret> managedSecretStore, IDataStore<Resource> resourceStore, IDataStore<RekeyingTask> rekeyingTaskStore, Func<ManagedSecret, ManagedSecretViewModel> managedSecretViewModelDelegate, Func<Resource, ResourceViewModel> resourceViewModelDelegate, Func<RekeyingTask, RekeyingTaskViewModel> rekeyingTaskViewModelDelegate, Func<AuthJanitorProviderConfiguration, ProviderConfigurationViewModel> configViewModelDelegate, Func<ScheduleWindow, ScheduleWindowViewModel> scheduleViewModelDelegate, Func<LoadedProviderMetadata, LoadedProviderViewModel> providerViewModelDelegate, Func<string, RekeyingAttemptLogger, IAuthJanitorProvider> providerFactory, Func<string, AuthJanitorProviderConfiguration> providerConfigurationFactory, Func<string, LoadedProviderMetadata> providerDetailsFactory, List<LoadedProviderMetadata> loadedProviders) : base(serviceConfiguration, credentialProvider, eventDispatcherService, secureStorageProvider, managedSecretStore, resourceStore, rekeyingTaskStore, managedSecretViewModelDelegate, resourceViewModelDelegate, rekeyingTaskViewModelDelegate, configViewModelDelegate, scheduleViewModelDelegate, providerViewModelDelegate, providerFactory, providerConfigurationFactory, providerDetailsFactory, loadedProviders)
+        private readonly ProviderManagerService _providerManager;
+
+        public Dashboard(
+            ProviderManagerService providerManager,
+            IDataStore<ManagedSecret> managedSecretStore, 
+            IDataStore<Resource> resourceStore, 
+            IDataStore<RekeyingTask> rekeyingTaskStore, 
+            Func<ManagedSecret, ManagedSecretViewModel> managedSecretViewModelDelegate, 
+            Func<Resource, ResourceViewModel> resourceViewModelDelegate, 
+            Func<RekeyingTask, RekeyingTaskViewModel> rekeyingTaskViewModelDelegate, 
+            Func<AuthJanitorProviderConfiguration, ProviderConfigurationViewModel> configViewModelDelegate, 
+            Func<ScheduleWindow, ScheduleWindowViewModel> scheduleViewModelDelegate, 
+            Func<LoadedProviderMetadata, LoadedProviderViewModel> providerViewModelDelegate) : 
+                base(managedSecretStore, resourceStore, rekeyingTaskStore, managedSecretViewModelDelegate, resourceViewModelDelegate, rekeyingTaskViewModelDelegate, configViewModelDelegate, scheduleViewModelDelegate, providerViewModelDelegate)
         {
+            _providerManager = providerManager;
         }
 
         [ProtectedApiEndpoint]
@@ -66,7 +79,11 @@ namespace AuthJanitor.Automation.AdminApi
                 foreach (var resourceId in secret.ResourceIds)
                 {
                     var resource = allResources.FirstOrDefault(r => r.ObjectId == resourceId);
-                    var provider = GetProvider(new RekeyingAttemptLogger(log), resource.ProviderType, resource.ProviderConfiguration);
+
+                    var provider = _providerManager.GetProvider(
+                        new RekeyingAttemptLogger(log),
+                        resource.ProviderType,
+                        resource.ProviderConfiguration);
                     riskScore += provider.GetRisks(secret.ValidPeriod).Sum(r => r.Score);
                 }
                 if (riskScore > 85)

@@ -118,10 +118,7 @@ namespace AuthJanitor.Providers.KeyVault
             $"'{Configuration.VaultName}' with a length of {Configuration.SecretLength}.";
 
         private SecretClient GetSecretClient() =>
-            new SecretClient(new Uri($"https://{Configuration.VaultName}.vault.azure.net/"),
-                _serviceProvider
-                    .GetService<MultiCredentialProvider>()
-                    .Get(CredentialType)
-                    .AzureIdentityTokenCredential);
+            new SecretClient(new Uri($"https://{Configuration.VaultName}.vault.azure.net/"), 
+                Credential.CreateTokenCredential());
     }
 }

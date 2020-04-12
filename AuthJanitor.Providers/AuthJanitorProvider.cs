@@ -26,9 +26,9 @@ namespace AuthJanitor.Providers
         string SerializedConfiguration { get; set; }
 
         /// <summary>
-        /// Type of Credential to request from MultiCredentialProvider service when using this Provider
+        /// Access Token credential to use when executing Provider actions
         /// </summary>
-        MultiCredentialProvider.CredentialType CredentialType { get; set; }
+        AccessTokenCredential Credential { get; set; }
 
         /// <summary>
         /// Test if the current credentials can execute an Extension 
@@ -91,9 +91,9 @@ namespace AuthJanitor.Providers
         public string SerializedConfiguration { get; set; }
 
         /// <summary>
-        /// Type of Credential to request from MultiCredentialProvider service when using this Provider
+        /// Access Token credential to use when executing Provider actions
         /// </summary>
-        public MultiCredentialProvider.CredentialType CredentialType { get; set; }
+        public AccessTokenCredential Credential { get; set; }
 
         /// <summary>
         /// Logger implementation
@@ -139,10 +139,7 @@ namespace AuthJanitor.Providers
         {
             return await Microsoft.Azure.Management.Fluent.Azure
                 .Configure()
-                .Authenticate(
-                    _serviceProvider.GetService<MultiCredentialProvider>()
-                                    .Get(CredentialType)?
-                                    .ServiceClientCredentials)
+                .Authenticate(Credential.CreateAzureCredentials())
                 .WithDefaultSubscriptionAsync();
         }
     }

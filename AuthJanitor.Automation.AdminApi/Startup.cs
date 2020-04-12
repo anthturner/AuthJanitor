@@ -62,6 +62,9 @@ namespace AuthJanitor.Automation.AdminApi
             logger.LogDebug("Registering Service Configuration");
             builder.Services.AddSingleton(ServiceConfiguration);
 
+            logger.LogDebug("Registering Credential Provider Service");
+            builder.Services.AddSingleton<CredentialProviderService>();
+
             logger.LogDebug("Registering Event Dispatcher");
             // TODO: Register IEventSinks here
             builder.Services.AddSingleton<EventDispatcherService>();
@@ -76,7 +79,7 @@ namespace AuthJanitor.Automation.AdminApi
                     new Rfc2898AesPersistenceEncryption(
                         s.GetRequiredService<AuthJanitorServiceConfiguration>()
                          .SecurePersistenceEncryptionKey),
-                    s.GetRequiredService<MultiCredentialProvider>(),
+                    s.GetRequiredService<CredentialProviderService>(),
                     s.GetRequiredService<AuthJanitorServiceConfiguration>()
                      .SecurePersistenceContainerName));
 
@@ -118,11 +121,12 @@ namespace AuthJanitor.Automation.AdminApi
                                          .SelectMany(libraryFile => PluginLoader.CreateFromAssemblyFile(libraryFile, PROVIDER_SHARED_TYPES)
                                                                             .LoadDefaultAssembly()
                                                                             .GetTypes()
-                                                                            .Where(type => !type.IsAbstract && typeof(IAuthJanitorProvider).IsAssignableFrom(type)));
+                                                                            .Where(type => !type.IsAbstract && typeof(IAuthJanitorProvider).IsAssignableFrom(type)))
+                                         .ToArray();
 
             logger.LogInformation("Found {0} providers: {1}", providerTypes.Count(), string.Join("  ", providerTypes.Select(t => t.Name)));
-            logger.LogInformation("Registering providers and service principal default credentials");
-            ProviderFactory.ConfigureProviderServices(builder.Services, providerTypes);
+            logger.LogInformation("Registering Provider Manager Service");
+            ProviderManagerService.ConfigureServices(builder.Services, providerTypes);
 
             // -----
 

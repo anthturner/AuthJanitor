@@ -95,9 +95,6 @@ namespace AuthJanitor.Providers.KeyVault
 
         private KeyClient GetKeyClient() =>
             new KeyClient(new Uri($"https://{Configuration.VaultName}.vault.azure.net/"),
-                _serviceProvider
-                    .GetService<MultiCredentialProvider>()
-                    .Get(CredentialType)
-                    .AzureIdentityTokenCredential);
+                Credential.CreateTokenCredential());
     }
 }

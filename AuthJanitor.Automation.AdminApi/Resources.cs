@@ -20,10 +20,27 @@ namespace AuthJanitor.Automation.AdminApi
     /// API functions to control the creation and management of AuthJanitor Resources.
     /// A Resource is the description of how to connect to an object or resource, using a given Provider.
     /// </summary>
-    public class Resources : ProviderIntegratedFunction
+    public class Resources : StorageIntegratedFunction
     {
-        public Resources(AuthJanitorServiceConfiguration serviceConfiguration, MultiCredentialProvider credentialProvider, EventDispatcherService eventDispatcherService, ISecureStorageProvider secureStorageProvider, IDataStore<ManagedSecret> managedSecretStore, IDataStore<Resource> resourceStore, IDataStore<RekeyingTask> rekeyingTaskStore, Func<ManagedSecret, ManagedSecretViewModel> managedSecretViewModelDelegate, Func<Resource, ResourceViewModel> resourceViewModelDelegate, Func<RekeyingTask, RekeyingTaskViewModel> rekeyingTaskViewModelDelegate, Func<AuthJanitorProviderConfiguration, ProviderConfigurationViewModel> configViewModelDelegate, Func<ScheduleWindow, ScheduleWindowViewModel> scheduleViewModelDelegate, Func<LoadedProviderMetadata, LoadedProviderViewModel> providerViewModelDelegate, Func<string, RekeyingAttemptLogger, IAuthJanitorProvider> providerFactory, Func<string, AuthJanitorProviderConfiguration> providerConfigurationFactory, Func<string, LoadedProviderMetadata> providerDetailsFactory, List<LoadedProviderMetadata> loadedProviders) : base(serviceConfiguration, credentialProvider, eventDispatcherService, secureStorageProvider, managedSecretStore, resourceStore, rekeyingTaskStore, managedSecretViewModelDelegate, resourceViewModelDelegate, rekeyingTaskViewModelDelegate, configViewModelDelegate, scheduleViewModelDelegate, providerViewModelDelegate, providerFactory, providerConfigurationFactory, providerDetailsFactory, loadedProviders)
+        private readonly ProviderManagerService _providerManager;
+        private readonly EventDispatcherService _eventDispatcher;
+
+        public Resources(
+            EventDispatcherService eventDispatcher,
+            ProviderManagerService providerManager,
+            IDataStore<ManagedSecret> managedSecretStore,
+            IDataStore<Resource> resourceStore,
+            IDataStore<RekeyingTask> rekeyingTaskStore,
+            Func<ManagedSecret, ManagedSecretViewModel> managedSecretViewModelDelegate,
+            Func<Resource, ResourceViewModel> resourceViewModelDelegate,
+            Func<RekeyingTask, RekeyingTaskViewModel> rekeyingTaskViewModelDelegate,
+            Func<AuthJanitorProviderConfiguration, ProviderConfigurationViewModel> configViewModelDelegate,
+            Func<ScheduleWindow, ScheduleWindowViewModel> scheduleViewModelDelegate,
+            Func<LoadedProviderMetadata, LoadedProviderViewModel> providerViewModelDelegate) :
+                base(managedSecretStore, resourceStore, rekeyingTaskStore, managedSecretViewModelDelegate, resourceViewModelDelegate, rekeyingTaskViewModelDelegate, configViewModelDelegate, scheduleViewModelDelegate, providerViewModelDelegate)
         {
+            _eventDispatcher = eventDispatcher;
+            _providerManager = providerManager;
         }
 
         [ProtectedApiEndpoint]
@@ -34,7 +51,7 @@ namespace AuthJanitor.Automation.AdminApi
         {
             if (!req.IsValidUser(AuthJanitorRoles.ResourceAdmin, AuthJanitorRoles.GlobalAdmin)) return new UnauthorizedResult();
 
-            var provider = GetProviderDetails(resource.ProviderType);
+            var provider = _providerManager.GetProviderMetadata(resource.ProviderType);
             if (provider == null)
                 return new NotFoundObjectResult("Provider type not found");
 
@@ -64,7 +81,7 @@ namespace AuthJanitor.Automation.AdminApi
 
             await Resources.CreateAsync(newResource);
 
-            await EventDispatcherService.DispatchEvent(AuthJanitorSystemEvents.ResourceCreated, nameof(AdminApi.Resources.Create), newResource);
+            await _eventDispatcher.DispatchEvent(AuthJanitorSystemEvents.ResourceCreated, nameof(AdminApi.Resources.Create), newResource);
 
             return new OkObjectResult(GetViewModel(newResource));
         }
@@ -89,7 +106,7 @@ namespace AuthJanitor.Automation.AdminApi
 
             if (!await Resources.ContainsIdAsync(resourceId))
             {
-                await EventDispatcherService.DispatchEvent(AuthJanitorSystemEvents.AnomalousEventOccurred, nameof(AdminApi.Resources.Get), "Resource not found");
+                await _eventDispatcher.DispatchEvent(AuthJanitorSystemEvents.AnomalousEventOccurred, nameof(AdminApi.Resources.Get), "Resource not found");
                 return new NotFoundResult();
             }
 
@@ -106,13 +123,13 @@ namespace AuthJanitor.Automation.AdminApi
 
             if (!await Resources.ContainsIdAsync(resourceId))
             {
-                await EventDispatcherService.DispatchEvent(AuthJanitorSystemEvents.AnomalousEventOccurred, nameof(AdminApi.Resources.Delete), "Resource not found");
+                await _eventDispatcher.DispatchEvent(AuthJanitorSystemEvents.AnomalousEventOccurred, nameof(AdminApi.Resources.Delete), "Resource not found");
                 return new NotFoundResult();
             }
 
             await Resources.DeleteAsync(resourceId);
 
-            await EventDispatcherService.DispatchEvent(AuthJanitorSystemEvents.ResourceDeleted, nameof(AdminApi.Resources.Delete), resourceId);
+            await _eventDispatcher.DispatchEvent(AuthJanitorSystemEvents.ResourceDeleted, nameof(AdminApi.Resources.Delete), resourceId);
 
             return new OkResult();
         }
@@ -120,16 +137,20 @@ namespace AuthJanitor.Automation.AdminApi
         [ProtectedApiEndpoint]
         [FunctionName("Resources-Update")]
         public async Task<IActionResult> Update(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "resources/{resourceId:guid}")] Resource resource,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "resources/{resourceId:guid}")] ResourceViewModel resource,
             HttpRequest req,
             Guid resourceId)
         {
             if (!req.IsValidUser(AuthJanitorRoles.ResourceAdmin, AuthJanitorRoles.GlobalAdmin)) return new UnauthorizedResult();
+            
+            var provider = _providerManager.GetProviderMetadata(resource.ProviderType);
+            if (provider == null)
+                return new NotFoundObjectResult("Provider type not found");
 
             try
             {
                 // Test deserialization of configuration to make sure it's valid
-                var obj = JsonConvert.DeserializeObject(resource.ProviderConfiguration, GetProviderConfiguration(resource.ProviderType).GetType());
+                var obj = JsonConvert.DeserializeObject(resource.SerializedProviderConfiguration, provider.ProviderConfigurationType);
                 if (obj == null) return new BadRequestErrorMessageResult("Invalid Provider configuration");
             }
             catch { return new BadRequestErrorMessageResult("Invalid Provider configuration"); }
@@ -141,12 +162,12 @@ namespace AuthJanitor.Automation.AdminApi
                 Description = resource.Description,
                 IsRekeyableObjectProvider = resource.IsRekeyableObjectProvider,
                 ProviderType = resource.ProviderType,
-                ProviderConfiguration = resource.ProviderConfiguration
+                ProviderConfiguration = resource.SerializedProviderConfiguration
             };
 
             await Resources.UpdateAsync(newResource);
 
-            await EventDispatcherService.DispatchEvent(AuthJanitorSystemEvents.ResourceUpdated, nameof(AdminApi.Resources.Update), newResource);
+            await _eventDispatcher.DispatchEvent(AuthJanitorSystemEvents.ResourceUpdated, nameof(AdminApi.Resources.Update), newResource);
 
             return new OkObjectResult(GetViewModel(newResource));
         }

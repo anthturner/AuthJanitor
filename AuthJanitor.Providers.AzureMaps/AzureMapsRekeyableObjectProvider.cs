@@ -89,10 +89,7 @@ namespace AuthJanitor.Providers.AzureMaps
             $"key while rekeying is taking place. The {GetOtherKeyType} " +
             $"key will {(Configuration.SkipScramblingOtherKey ? "not" : "also")} be rotated.";
 
-        private MapsManagementClient ManagementClient => new MapsManagementClient(_serviceProvider
-                .GetService<MultiCredentialProvider>()
-                .Get(CredentialType)?
-                .ServiceClientCredentials);
+        private MapsManagementClient ManagementClient => new MapsManagementClient(Credential.CreateAzureCredentials());
 
         private string GetKeyValue(MapsAccountKeys accountKeys, string keyType) => keyType switch
         {
