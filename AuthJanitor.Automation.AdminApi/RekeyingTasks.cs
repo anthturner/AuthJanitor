@@ -1,7 +1,6 @@
 ﻿using AuthJanitor.Automation.Shared;
 using AuthJanitor.Automation.Shared.DataStores;
 using AuthJanitor.Automation.Shared.Models;
-using AuthJanitor.Automation.Shared.NotificationProviders;
 using AuthJanitor.Automation.Shared.SecureStorageProviders;
 using AuthJanitor.Automation.Shared.ViewModels;
 using AuthJanitor.Providers;
@@ -27,28 +26,31 @@ namespace AuthJanitor.Automation.AdminApi
     /// </summary>
     public class RekeyingTasks : ProviderIntegratedFunction
     {
-        public RekeyingTasks(AuthJanitorServiceConfiguration serviceConfiguration, MultiCredentialProvider credentialProvider, INotificationProvider notificationProvider, ISecureStorageProvider secureStorageProvider, IDataStore<ManagedSecret> managedSecretStore, IDataStore<Resource> resourceStore, IDataStore<RekeyingTask> rekeyingTaskStore, Func<ManagedSecret, ManagedSecretViewModel> managedSecretViewModelDelegate, Func<Resource, ResourceViewModel> resourceViewModelDelegate, Func<RekeyingTask, RekeyingTaskViewModel> rekeyingTaskViewModelDelegate, Func<AuthJanitorProviderConfiguration, ProviderConfigurationViewModel> configViewModelDelegate, Func<ScheduleWindow, ScheduleWindowViewModel> scheduleViewModelDelegate, Func<LoadedProviderMetadata, LoadedProviderViewModel> providerViewModelDelegate, Func<string, RekeyingAttemptLogger, IAuthJanitorProvider> providerFactory, Func<string, AuthJanitorProviderConfiguration> providerConfigurationFactory, Func<string, LoadedProviderMetadata> providerDetailsFactory, List<LoadedProviderMetadata> loadedProviders) : base(serviceConfiguration, credentialProvider, notificationProvider, secureStorageProvider, managedSecretStore, resourceStore, rekeyingTaskStore, managedSecretViewModelDelegate, resourceViewModelDelegate, rekeyingTaskViewModelDelegate, configViewModelDelegate, scheduleViewModelDelegate, providerViewModelDelegate, providerFactory, providerConfigurationFactory, providerDetailsFactory, loadedProviders)
+        public RekeyingTasks(AuthJanitorServiceConfiguration serviceConfiguration, MultiCredentialProvider credentialProvider, EventDispatcherService eventDispatcherService, ISecureStorageProvider secureStorageProvider, IDataStore<ManagedSecret> managedSecretStore, IDataStore<Resource> resourceStore, IDataStore<RekeyingTask> rekeyingTaskStore, Func<ManagedSecret, ManagedSecretViewModel> managedSecretViewModelDelegate, Func<Resource, ResourceViewModel> resourceViewModelDelegate, Func<RekeyingTask, RekeyingTaskViewModel> rekeyingTaskViewModelDelegate, Func<AuthJanitorProviderConfiguration, ProviderConfigurationViewModel> configViewModelDelegate, Func<ScheduleWindow, ScheduleWindowViewModel> scheduleViewModelDelegate, Func<LoadedProviderMetadata, LoadedProviderViewModel> providerViewModelDelegate, Func<string, RekeyingAttemptLogger, IAuthJanitorProvider> providerFactory, Func<string, AuthJanitorProviderConfiguration> providerConfigurationFactory, Func<string, LoadedProviderMetadata> providerDetailsFactory, List<LoadedProviderMetadata> loadedProviders) : base(serviceConfiguration, credentialProvider, eventDispatcherService, secureStorageProvider, managedSecretStore, resourceStore, rekeyingTaskStore, managedSecretViewModelDelegate, resourceViewModelDelegate, rekeyingTaskViewModelDelegate, configViewModelDelegate, scheduleViewModelDelegate, providerViewModelDelegate, providerFactory, providerConfigurationFactory, providerDetailsFactory, loadedProviders)
         {
         }
 
         [ProtectedApiEndpoint]
         [FunctionName("RekeyingTasks-Create")]
         public async Task<IActionResult> Create(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "tasks")] string secretId,
-            HttpRequest req,
-            ILogger log)
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "tasks/{secretId:guid}")] Guid secretId,
+            HttpRequest req)
         {
             if (!req.IsValidUser(AuthJanitorRoles.ServiceOperator, AuthJanitorRoles.GlobalAdmin)) return new UnauthorizedResult();
 
-            log.LogInformation("Creating new Task.");
+            if (!await ManagedSecrets.ContainsIdAsync(secretId))
+            {
+                await EventDispatcherService.DispatchEvent(AuthJanitorSystemEvents.AnomalousEventOccurred, nameof(AdminApi.RekeyingTasks.Create), "Secret ID not found");
+                return new NotFoundObjectResult("Secret not found!");
+            }
 
-            if (!await ManagedSecrets.ContainsIdAsync(Guid.Parse(secretId)))
-                return new BadRequestErrorMessageResult("Invalid Managed Secret ID");
-
-            var secret = await ManagedSecrets.GetAsync(Guid.Parse(secretId));
+            var secret = await ManagedSecrets.GetAsync(secretId);
             if (!secret.TaskConfirmationStrategies.HasFlag(TaskConfirmationStrategies.AdminCachesSignOff) &&
                 !secret.TaskConfirmationStrategies.HasFlag(TaskConfirmationStrategies.AdminSignsOffJustInTime))
+            {
+                await EventDispatcherService.DispatchEvent(AuthJanitorSystemEvents.AnomalousEventOccurred, nameof(AdminApi.ManagedSecrets.Create), "Managed Secret does not support adminstrator approval");
                 return new BadRequestErrorMessageResult("Managed Secret does not support administrator approval!");
+            }
 
             RekeyingTask newTask = new RekeyingTask()
             {
@@ -59,18 +61,17 @@ namespace AuthJanitor.Automation.AdminApi
 
             await RekeyingTasks.CreateAsync(newTask);
 
+            await EventDispatcherService.DispatchEvent(AuthJanitorSystemEvents.RotationTaskCreatedForApproval, nameof(AdminApi.ManagedSecrets.Create), newTask);
+
             return new OkObjectResult(newTask);
         }
 
         [ProtectedApiEndpoint]
         [FunctionName("RekeyingTasks-List")]
         public async Task<IActionResult> List(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "tasks")] HttpRequest req,
-            ILogger log)
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "tasks")] HttpRequest req)
         {
             if (!req.IsValidUser()) return new UnauthorizedResult();
-
-            log.LogInformation("List all Tasks.");
 
             return new OkObjectResult((await RekeyingTasks.ListAsync()).Select(t => GetViewModel(t)));
         }
@@ -79,12 +80,15 @@ namespace AuthJanitor.Automation.AdminApi
         [FunctionName("RekeyingTasks-Get")]
         public async Task<IActionResult> Get(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "tasks/{taskId:guid}")] HttpRequest req,
-            Guid taskId,
-            ILogger log)
+            Guid taskId)
         {
             if (!req.IsValidUser()) return new UnauthorizedResult();
 
-            log.LogInformation("Preview Actions for Task ID {0}.", taskId);
+            if (!await RekeyingTasks.ContainsIdAsync(taskId))
+            {
+                await EventDispatcherService.DispatchEvent(AuthJanitorSystemEvents.AnomalousEventOccurred, nameof(AdminApi.RekeyingTasks.Get), "Rekeying Task not found");
+                return new NotFoundResult();
+            }
 
             return new OkObjectResult(GetViewModel((await RekeyingTasks.GetAsync(taskId))));
         }
@@ -93,17 +97,20 @@ namespace AuthJanitor.Automation.AdminApi
         [FunctionName("RekeyingTasks-Delete")]
         public async Task<IActionResult> Delete(
             [HttpTrigger(AuthorizationLevel.Anonymous, "delete", Route = "tasks/{taskId:guid}")] HttpRequest req,
-            Guid taskId,
-            ILogger log)
+            Guid taskId)
         {
             if (!req.IsValidUser(AuthJanitorRoles.ServiceOperator, AuthJanitorRoles.GlobalAdmin)) return new UnauthorizedResult();
 
-            log.LogInformation("Deleting Task ID {0}.", taskId);
-
             if (!await RekeyingTasks.ContainsIdAsync(taskId))
-                return new BadRequestErrorMessageResult("Task not found!");
+            {
+                await EventDispatcherService.DispatchEvent(AuthJanitorSystemEvents.AnomalousEventOccurred, nameof(AdminApi.RekeyingTasks.Delete), "Rekeying Task not found");
+                return new NotFoundResult();
+            }
 
             await RekeyingTasks.DeleteAsync(taskId);
+
+            await EventDispatcherService.DispatchEvent(AuthJanitorSystemEvents.RotationTaskDeleted, nameof(AdminApi.RekeyingTasks.Delete), taskId);
+
             return new OkResult();
         }
 
@@ -174,6 +181,12 @@ namespace AuthJanitor.Automation.AdminApi
 
                 task.Attempts.Add(aggregatedStringLogger);
                 await RekeyingTasks.UpdateAsync(task);
+
+                if (task.RekeyingCompleted)
+                    await EventDispatcherService.DispatchEvent(AuthJanitorSystemEvents.RotationTaskCompletedManually, nameof(AdminApi.RekeyingTasks.Approve), task);
+                else
+                    await EventDispatcherService.DispatchEvent(AuthJanitorSystemEvents.RotationTaskAttemptFailed, nameof(AdminApi.RekeyingTasks.Approve), task);
+
                 if (task.RekeyingFailed)
                     return new BadRequestErrorMessageResult(aggregatedStringLogger.OuterException);
                 else

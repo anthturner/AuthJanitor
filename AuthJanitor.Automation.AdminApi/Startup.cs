@@ -1,7 +1,6 @@
 ﻿using AuthJanitor.Automation.Shared;
 using AuthJanitor.Automation.Shared.DataStores;
 using AuthJanitor.Automation.Shared.Models;
-using AuthJanitor.Automation.Shared.NotificationProviders;
 using AuthJanitor.Automation.Shared.PersistenceEncryption;
 using AuthJanitor.Automation.Shared.SecureStorageProviders;
 using AuthJanitor.Providers;
@@ -64,11 +63,13 @@ namespace AuthJanitor.Automation.AdminApi
             logger.LogDebug("Registering Service Configuration");
             builder.Services.AddSingleton(ServiceConfiguration);
 
-            logger.LogDebug("Registering Notification Provider");
-            builder.Services.AddSingleton<INotificationProvider>(new EmailNotificationProvider(
-                Environment.GetEnvironmentVariable("SENDGRID_API_KEY", EnvironmentVariableTarget.Process),
-                "http://localhost:16000/aj/",
-                "authjanitor@bitoblivion.com"));
+            logger.LogDebug("Registering Event Dispatcher");
+            // TODO: Register IEventSinks here
+            builder.Services.AddSingleton<EventDispatcherService>();
+            //builder.Services.AddSingleton<INotificationProvider>(new EmailNotificationProvider(
+            //    Environment.GetEnvironmentVariable("SENDGRID_API_KEY", EnvironmentVariableTarget.Process),
+            //    "http://localhost:16000/aj/",
+            //    "authjanitor@bitoblivion.com"));
 
             logger.LogDebug("Registering Secure Storage Provider");
             builder.Services.AddSingleton<ISecureStorageProvider>(s =>
