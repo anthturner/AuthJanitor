@@ -1,11 +1,11 @@
-﻿using AuthJanitor.Automation.Shared.PersistenceEncryption;
+﻿using AuthJanitor.Automation.Shared;
 using AuthJanitor.Providers;
 using Azure.Security.KeyVault.Secrets;
 using Newtonsoft.Json;
 using System;
 using System.Threading.Tasks;
 
-namespace AuthJanitor.Automation.Shared.SecureStorageProviders
+namespace AuthJanitor.Automation.SecureStorageProviders.AzureKeyVault
 {
     public class KeyVaultSecureStorageProvider : ISecureStorageProvider
     {
@@ -20,6 +20,7 @@ namespace AuthJanitor.Automation.Shared.SecureStorageProviders
             string vaultName)
         {
             _encryption = encryption;
+            if (_encryption == null) throw new InvalidOperationException("You must register IPersistenceEncryption, even if using no encryption!");
             _credentialProvider = credentialProvider;
             _vaultName = vaultName;
         }

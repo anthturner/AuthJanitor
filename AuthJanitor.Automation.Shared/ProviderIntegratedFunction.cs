@@ -1,6 +1,5 @@
 ﻿using AuthJanitor.Automation.Shared.DataStores;
 using AuthJanitor.Automation.Shared.Models;
-using AuthJanitor.Automation.Shared.SecureStorageProviders;
 using AuthJanitor.Automation.Shared.ViewModels;
 using AuthJanitor.Providers;
 using Microsoft.Extensions.Logging;

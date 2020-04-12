@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 
-namespace AuthJanitor.Automation.Shared.SecureStorageProviders
+namespace AuthJanitor.Automation.Shared
 {
     public interface ISecureStorageProvider
     {
