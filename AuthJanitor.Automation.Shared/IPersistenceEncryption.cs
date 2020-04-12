@@ -1,6 +1,6 @@
 ﻿using System.Threading.Tasks;
 
-namespace AuthJanitor.Automation.Shared.PersistenceEncryption
+namespace AuthJanitor.Automation.Shared
 {
     public interface IPersistenceEncryption
     {

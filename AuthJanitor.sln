@@ -38,7 +38,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Admin", "Admin", "{4AB5E96D
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AuthJanitor.Automation.Components", "AuthJanitor.Automation.Components\AuthJanitor.Automation.Components.csproj", "{3BB075E4-75CE-4520-B185-6021F8B3F1BA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AuthJanitor.Providers.AzureMaps", "AuthJanitor.Providers.AzureMaps\AuthJanitor.Providers.AzureMaps.csproj", "{CC3E1903-9A04-4A14-8EDB-59444BB57E05}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AuthJanitor.Providers.AzureMaps", "AuthJanitor.Providers.AzureMaps\AuthJanitor.Providers.AzureMaps.csproj", "{CC3E1903-9A04-4A14-8EDB-59444BB57E05}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AuthJanitor.Automation.SecureStorageProviders.AzureKeyVault", "AuthJanitor.Automation.SecureStorageProviders.AzureKeyVault\AuthJanitor.Automation.SecureStorageProviders.AzureKeyVault.csproj", "{C188E0E8-9489-4A7F-857A-882E102C19EF}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -98,6 +100,10 @@ Global
 		{CC3E1903-9A04-4A14-8EDB-59444BB57E05}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CC3E1903-9A04-4A14-8EDB-59444BB57E05}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CC3E1903-9A04-4A14-8EDB-59444BB57E05}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C188E0E8-9489-4A7F-857A-882E102C19EF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C188E0E8-9489-4A7F-857A-882E102C19EF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C188E0E8-9489-4A7F-857A-882E102C19EF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C188E0E8-9489-4A7F-857A-882E102C19EF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -117,6 +123,7 @@ Global
 		{4AB5E96D-1A78-44E0-A52B-5F1A7ABE3B40} = {45A0E86E-0F1A-434E-B3F9-D9AE88C964E1}
 		{3BB075E4-75CE-4520-B185-6021F8B3F1BA} = {4AB5E96D-1A78-44E0-A52B-5F1A7ABE3B40}
 		{CC3E1903-9A04-4A14-8EDB-59444BB57E05} = {9C0E454F-146E-40FB-AFE5-F63DAACAB326}
+		{C188E0E8-9489-4A7F-857A-882E102C19EF} = {45A0E86E-0F1A-434E-B3F9-D9AE88C964E1}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {0461C5FC-1885-4C0F-B202-817D99C927D2}
