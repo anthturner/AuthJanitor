@@ -1,7 +1,7 @@
-﻿using AuthJanitor.Automation.Shared;
+﻿using AuthJanitor.Automation.PersistenceEncryption.SaltedAesEncryption;
+using AuthJanitor.Automation.Shared;
 using AuthJanitor.Automation.Shared.DataStores;
 using AuthJanitor.Automation.Shared.Models;
-using AuthJanitor.Automation.Shared.PersistenceEncryption;
 using AuthJanitor.Providers;
 using McMaster.NETCore.Plugins;
 using Microsoft.Azure.WebJobs;
@@ -76,7 +76,7 @@ namespace AuthJanitor.Automation.Agent
             logger.LogDebug("Registering Secure Storage Provider");
             builder.Services.AddSingleton<ISecureStorageProvider>(s =>
                 new SecureStorageProviders.AzureKeyVault.KeyVaultSecureStorageProvider(
-                    new Rfc2898AesPersistenceEncryption(
+                    new SaltedAesPersistenceEncryption(
                         s.GetRequiredService<AuthJanitorServiceConfiguration>()
                          .SecurePersistenceEncryptionKey),
                     s.GetRequiredService<CredentialProviderService>(),

@@ -1,15 +1,16 @@
-﻿using System;
+﻿using AuthJanitor.Automation.Shared;
+using System;
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace AuthJanitor.Automation.Shared.PersistenceEncryption
+namespace AuthJanitor.Automation.PersistenceEncryption.SaltedAesEncryption
 {
-    public class Rfc2898AesPersistenceEncryption : IPersistenceEncryption
+    public class SaltedAesPersistenceEncryption : IPersistenceEncryption
     {
         private string _key;
-        public Rfc2898AesPersistenceEncryption(string key)
+        public SaltedAesPersistenceEncryption(string key)
         {
             _key = key;
         }

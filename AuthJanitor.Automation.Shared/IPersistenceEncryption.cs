@@ -20,4 +20,11 @@ namespace AuthJanitor.Automation.Shared
         /// <returns>Decrypted text</returns>
         Task<string> Decrypt(string salt, string cipherText);
     }
+
+    public class NoPersistenceEncryption : IPersistenceEncryption
+    {
+        public Task<string> Decrypt(string salt, string cipherText) => Task.FromResult(cipherText);
+
+        public Task<string> Encrypt(string salt, string plainText) => Task.FromResult(plainText);
+    }
 }
