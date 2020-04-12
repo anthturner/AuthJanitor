@@ -1,6 +1,5 @@
 ﻿using AuthJanitor.Automation.Shared.DataStores;
 using AuthJanitor.Automation.Shared.Models;
-using AuthJanitor.Automation.Shared.NotificationProviders;
 using AuthJanitor.Automation.Shared.SecureStorageProviders;
 using AuthJanitor.Automation.Shared.ViewModels;
 using AuthJanitor.Providers;
@@ -41,7 +40,7 @@ namespace AuthJanitor.Automation.Shared
         protected ProviderIntegratedFunction(
             AuthJanitorServiceConfiguration serviceConfiguration,
             MultiCredentialProvider credentialProvider,
-            INotificationProvider notificationProvider,
+            EventDispatcherService eventDispatcherService,
             ISecureStorageProvider secureStorageProvider,
             IDataStore<ManagedSecret> managedSecretStore,
             IDataStore<Resource> resourceStore,
@@ -55,7 +54,7 @@ namespace AuthJanitor.Automation.Shared
             Func<string, RekeyingAttemptLogger, IAuthJanitorProvider> providerFactory,
             Func<string, AuthJanitorProviderConfiguration> providerConfigurationFactory,
             Func<string, LoadedProviderMetadata> providerDetailsFactory,
-            List<LoadedProviderMetadata> loadedProviders) : base(serviceConfiguration, credentialProvider, notificationProvider, secureStorageProvider, managedSecretStore, resourceStore, rekeyingTaskStore, managedSecretViewModelDelegate, resourceViewModelDelegate, rekeyingTaskViewModelDelegate, configViewModelDelegate, scheduleViewModelDelegate, providerViewModelDelegate)
+            List<LoadedProviderMetadata> loadedProviders) : base(serviceConfiguration, credentialProvider, eventDispatcherService, secureStorageProvider, managedSecretStore, resourceStore, rekeyingTaskStore, managedSecretViewModelDelegate, resourceViewModelDelegate, rekeyingTaskViewModelDelegate, configViewModelDelegate, scheduleViewModelDelegate, providerViewModelDelegate)
         {
             _providerFactory = providerFactory;
             _providerConfigurationFactory = providerConfigurationFactory;

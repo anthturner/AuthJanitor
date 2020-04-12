@@ -1,6 +1,5 @@
 ﻿using AuthJanitor.Automation.Shared.DataStores;
 using AuthJanitor.Automation.Shared.Models;
-using AuthJanitor.Automation.Shared.NotificationProviders;
 using AuthJanitor.Automation.Shared.SecureStorageProviders;
 using AuthJanitor.Automation.Shared.ViewModels;
 using AuthJanitor.Providers;
@@ -22,7 +21,7 @@ namespace AuthJanitor.Automation.Shared
         protected IDataStore<RekeyingTask> RekeyingTasks { get; }
 
         protected AuthJanitorServiceConfiguration ServiceConfiguration { get; }
-        protected INotificationProvider NotificationProvider { get; }
+        protected EventDispatcherService EventDispatcherService { get; }
         protected MultiCredentialProvider CredentialProvider { get; }
         protected ISecureStorageProvider SecureStorageProvider { get; }
 
@@ -36,7 +35,7 @@ namespace AuthJanitor.Automation.Shared
         protected StorageIntegratedFunction(
             AuthJanitorServiceConfiguration serviceConfiguration,
             MultiCredentialProvider credentialProvider,
-            INotificationProvider notificationProvider,
+            EventDispatcherService eventDispatcherService,
             ISecureStorageProvider secureStorageProvider,
             IDataStore<ManagedSecret> managedSecretStore,
             IDataStore<Resource> resourceStore,
@@ -50,7 +49,7 @@ namespace AuthJanitor.Automation.Shared
         {
             ServiceConfiguration = serviceConfiguration;
             CredentialProvider = credentialProvider;
-            NotificationProvider = notificationProvider;
+            EventDispatcherService = eventDispatcherService;
             SecureStorageProvider = secureStorageProvider;
 
             ManagedSecrets = managedSecretStore;
