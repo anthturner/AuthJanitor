@@ -82,8 +82,8 @@ namespace AuthJanitor.Automation.Shared
 
             try
             {
-                var providers = resources.Select(r => _providerManager.GetProvider(log, r.ProviderType, r.ProviderConfiguration));
-                _providerManager.ExecuteRekeyingWorkflow(secret.ValidPeriod, providers.ToArray());
+                var providers = resources.Select(r => _providerManager.GetProviderInstance(r.ProviderType, r.ProviderConfiguration));
+                await _providerManager.ExecuteRekeyingWorkflow(log, secret.ValidPeriod, providers.ToArray());
 
                 task.RekeyingInProgress = false;
                 task.RekeyingCompleted = log.IsSuccessfulAttempt;
