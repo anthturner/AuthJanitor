@@ -80,8 +80,7 @@ namespace AuthJanitor.Automation.AdminApi
                 {
                     var resource = allResources.FirstOrDefault(r => r.ObjectId == resourceId);
 
-                    var provider = _providerManager.GetProvider(
-                        new RekeyingAttemptLogger(log),
+                    var provider = _providerManager.GetProviderInstance(
                         resource.ProviderType,
                         resource.ProviderConfiguration);
                     riskScore += provider.GetRisks(secret.ValidPeriod).Sum(r => r.Score);

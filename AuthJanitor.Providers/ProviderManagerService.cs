@@ -41,36 +41,37 @@ namespace AuthJanitor.Providers
             serviceCollection.AddSingleton<ProviderManagerService>((s) => new ProviderManagerService(s, loadedProviderTypes));
         }
 
-        public bool HasProvider(string name) => LoadedProviders.Any(t => t.ProviderTypeName == name);
-        public LoadedProviderMetadata GetProviderMetadata(string name) => LoadedProviders.FirstOrDefault(t => t.ProviderTypeName == name);
+        public bool HasProvider(string providerName) => LoadedProviders.Any(p => p.ProviderTypeName == providerName);
 
-        public IAuthJanitorProvider GetProvider(RekeyingAttemptLogger logger, string name)
+        public LoadedProviderMetadata GetProviderMetadata(string providerName)
         {
-            if (!HasProvider(name))
-                throw new Exception($"Provider '{name}' not available!");
+            if (!HasProvider(providerName))
+                throw new Exception($"Provider '{providerName}' not available!");
             else
-                return ActivatorUtilities.CreateInstance(_serviceProvider, GetProviderMetadata(name).ProviderType) as IAuthJanitorProvider;
+                return LoadedProviders.First(p => p.ProviderTypeName == providerName);
         }
 
-        public IAuthJanitorProvider GetProvider(RekeyingAttemptLogger logger, string name, string configuration)
+        public IAuthJanitorProvider GetProviderInstance(string providerName)
         {
-            var provider = GetProvider(logger, name);
-            provider.SerializedConfiguration = configuration;
-            return provider;
+            var metadata = GetProviderMetadata(providerName);
+            return ActivatorUtilities.CreateInstance(_serviceProvider, metadata.ProviderType) as IAuthJanitorProvider;
+        }
+
+        public IAuthJanitorProvider GetProviderInstance(string providerName, string serializedProviderConfiguration)
+        {
+            var instance = GetProviderInstance(providerName);
+            instance.SerializedConfiguration = serializedProviderConfiguration;
+            return instance;
         }
 
         public AuthJanitorProviderConfiguration GetProviderConfiguration(string name) => ActivatorUtilities.CreateInstance(_serviceProvider, GetProviderMetadata(name).ProviderConfigurationType) as AuthJanitorProviderConfiguration;
         public AuthJanitorProviderConfiguration GetProviderConfiguration(string name, string serializedConfiguration) => JsonConvert.DeserializeObject(serializedConfiguration, GetProviderMetadata(name).ProviderConfigurationType) as AuthJanitorProviderConfiguration;
         public IReadOnlyList<LoadedProviderMetadata> LoadedProviders { get; }
 
-        public RekeyingAttemptLogger ExecuteRekeyingWorkflow(TimeSpan validPeriod, params IAuthJanitorProvider[] providers)
-        {
-            var attemptLogger = new RekeyingAttemptLogger();
-            ExecuteRekeyingWorkflow(attemptLogger, validPeriod, providers);
-            return attemptLogger;
-        }
-
-        private void ExecuteRekeyingWorkflow(RekeyingAttemptLogger logger, TimeSpan validPeriod, IEnumerable<IAuthJanitorProvider> providers)
+        public async Task ExecuteRekeyingWorkflow(
+            RekeyingAttemptLogger logger,
+            TimeSpan validPeriod, 
+            IEnumerable<IAuthJanitorProvider> providers)
         {
             logger.LogInformation("########## BEGIN REKEYING WORKFLOW ##########");
             var rkoProviders = providers.Where(p => p is IRekeyableObjectProvider).Cast<IRekeyableObjectProvider>();
@@ -86,7 +87,7 @@ namespace AuthJanitor.Providers
                 if (t.IsFaulted)
                     logger.LogError(t.Exception, "Error running sanity test on provider '{0}'", p.ProviderMetadata.Name);
             }));
-            Task.WaitAll(testTasks.ToArray());
+            await Task.WhenAll(testTasks.ToArray());
             if (testTasks.Any(t => t.IsFaulted))
                 throw new Exception("Error running one or more sanity tests!");
 
@@ -99,7 +100,7 @@ namespace AuthJanitor.Providers
                     logger.LogError(t.Exception, "Error getting temporary secret from provider '{0}'", p.ProviderMetadata.Name);
                 return t.Result;
             }));
-            Task.WaitAll(tempSecretTasks.ToArray());
+            await Task.WhenAll(tempSecretTasks.ToArray());
             if (tempSecretTasks.Any(t => t.IsFaulted))
                 throw new Exception("Error retrieving temporary secrets from one or more Rekeyable Object Providers!");
 
@@ -113,6 +114,7 @@ namespace AuthJanitor.Providers
                 if (t.IsFaulted)
                     logger.LogError(t.Exception, "Error preparing ALC provider '{0}'", p.GetType().Name);
             }));
+            await Task.WhenAll(prepareTasks.ToArray());
             if (prepareTasks.Any(t => t.IsFaulted))
                 throw new Exception("Error preparing one or more Application Lifecycle Providers for rekeying!");
 
@@ -125,6 +127,7 @@ namespace AuthJanitor.Providers
                     logger.LogError(t.Exception, "Error rekeying provider '{0}'", p.GetType().Name);
                 return t.Result;
             }));
+            await Task.WhenAll(rekeyingTasks.ToArray());
             if (rekeyingTasks.Any(t => t.IsFaulted))
                 throw new Exception("Error rekeying one or more Rekeyable Object Providers!");
 
@@ -140,6 +143,7 @@ namespace AuthJanitor.Providers
                 if (t.IsFaulted)
                     logger.LogError(t.Exception, "Error committing to provider '{0}'", p.GetType().Name);
             }));
+            await Task.WhenAll(commitTasks.ToArray());
             if (commitTasks.Any(t => t.IsFaulted))
                 throw new Exception("Error committing regenerated secrets!");
 
@@ -151,6 +155,7 @@ namespace AuthJanitor.Providers
                 if (t.IsFaulted)
                     logger.LogError(t.Exception, "Error running post-rekey operations on provider '{0}'", p.GetType().Name);
             }));
+            await Task.WhenAll(postRekeyTasks.ToArray());
             if (postRekeyTasks.Any(t => t.IsFaulted))
                 throw new Exception("Error running post-rekey operations on one or more Application Lifecycle Providers!");
 
@@ -162,7 +167,8 @@ namespace AuthJanitor.Providers
                 if (t.IsFaulted)
                     logger.LogError(t.Exception, "Error running after-swap operations on provider '{0}'", p.GetType().Name);
             }));
-            if (postRekeyTasks.Any(t => t.IsFaulted))
+            await Task.WhenAll(afterSwapTasks.ToArray());
+            if (afterSwapTasks.Any(t => t.IsFaulted))
                 throw new Exception("Error running after-swap operations on one or more Rekeyable Object Providers!");
 
 
